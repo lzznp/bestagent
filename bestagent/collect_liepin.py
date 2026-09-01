@@ -19,7 +19,8 @@ import time
 from pathlib import Path
 
 sys.stdout.reconfigure(encoding="utf-8", errors="replace")
-sys.path.insert(0, r"D:\study\lietou-agent\browser-agent")
+from framework_config import BROWSER_AGENT, BRIDGE_URL  # noqa: E402
+sys.path.insert(0, str(BROWSER_AGENT))
 
 from agent.core import submit_task  # noqa: E402
 from agent.recipe_exec import execute_spec, COND_URL, BRIDGE  # noqa: E402
@@ -40,39 +41,45 @@ def find_liepin_tab() -> int:
     raise RuntimeError(f"没找到猎聘 tab，现有: {[t.get('url') for t in tabs]}")
 
 
-def main() -> None:
-    ap = argparse.ArgumentParser()
-    ap.add_argument("--keyword", action="append", required=True, help="搜索关键字，可多次")
-    ap.add_argument("--tab-id", type=int, default=None, help="猎聘 tab_id（默认自动发现）")
-    ap.add_argument("--out", default=None, help="合并结果输出 JSON 路径")
-    ap.add_argument("--conds", action="append", default=None, help="额外条件 group_id=value，可多次")
-    ap.add_argument("--no-quota", action="store_true", help="跳过限速（调试用，默认开）")
-    args = ap.parse_args()
+def collect(keywords: list[str], conds=None, out=None, no_quota: bool = False,
+            tab_id: int | None = None, cond_url: str = COND_URL) -> list[dict]:
+    """多关键字批量采集（可独立调用，供 run_pipeline 复用）。
 
-    q = None if args.no_quota else Quota()
+    conds: 额外条件，list[tuple[group_id, value]] 或 list["group_id=value"] 或 dict
+    out:   输出 JSON 路径（None 只打印前 5 条）
+    返回:  合并去重后的 rows 列表
+    """
+    q = None if no_quota else Quota()
     if q:
         print(f"▶ 限速: {q.stats()}")
 
-    tab = args.tab_id or find_liepin_tab()
+    tab = tab_id or find_liepin_tab()
     print(f"▶ tab: {tab}")
 
-    conds = []
-    if args.conds:
-        for c in args.conds:
-            gid, _, val = c.partition("=")
-            conds.append({"group_id": gid, "value": val})
+    cond_list: list[dict] = []
+    if conds:
+        if isinstance(conds, dict):
+            conds = [(k, v) for k, v in conds.items()]
+        for c in conds:
+            if isinstance(c, (tuple, list)) and len(c) == 2:
+                gid, val = c
+            elif isinstance(c, str):
+                gid, _, val = c.partition("=")
+            else:
+                continue
+            cond_list.append({"group_id": gid, "value": val})
 
     all_rows: list[dict] = []
     seen: set[str] = set()
-    for i, kw in enumerate(args.keyword):
+    for i, kw in enumerate(keywords):
         if q and not q.check("search"):
             print(f"\n⚠ 今日搜索额度已用完，跳过「{kw}」")
             continue
         if q and i > 0:
             q.delay()
-        spec = [{"group_id": "keyword", "value": kw}] + conds
+        spec = [{"group_id": "keyword", "value": kw}] + cond_list
         print(f"\n▶ 关键字「{kw}」 导航+清空+执行")
-        r = submit_task(BRIDGE, "navigate", {"tab_id": tab, "url": COND_URL}, source="collect-v2")
+        r = submit_task(BRIDGE, "navigate", {"tab_id": tab, "url": cond_url}, source="collect-v2")
         if not r.get("ok"):
             print(f"  ⚠ navigate 失败: {r.get('error')}")
             continue
@@ -101,17 +108,30 @@ def main() -> None:
             print(f"  本轮 {len(rows)} 条，新增 {added} 条（累计 {len(all_rows)}）| {q.stats()}")
 
     print(f"\n✅ 合并去重后共 {len(all_rows)} 条")
-    if args.out:
-        Path(args.out).parent.mkdir(parents=True, exist_ok=True)
-        Path(args.out).write_text(
-            json.dumps({"keywords": args.keyword, "conds": conds, "count": len(all_rows), "rows": all_rows},
+    if out:
+        out = Path(out)
+        out.parent.mkdir(parents=True, exist_ok=True)
+        out.write_text(
+            json.dumps({"keywords": keywords, "conds": cond_list, "count": len(all_rows), "rows": all_rows},
                        ensure_ascii=False, indent=1),
             encoding="utf-8",
         )
-        print(f"✅ 已存 {args.out}")
+        print(f"✅ 已存 {out}")
     else:
         for row in all_rows[:5]:
             print("  -", (row.get("text") or "")[:130].replace("\n", " | "))
+    return all_rows
+
+
+def main() -> None:
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--keyword", action="append", required=True, help="搜索关键字，可多次")
+    ap.add_argument("--tab-id", type=int, default=None, help="猎聘 tab_id（默认自动发现）")
+    ap.add_argument("--out", default=None, help="合并结果输出 JSON 路径")
+    ap.add_argument("--conds", action="append", default=None, help="额外条件 group_id=value，可多次")
+    ap.add_argument("--no-quota", action="store_true", help="跳过限速（调试用，默认开）")
+    args = ap.parse_args()
+    collect(args.keyword, conds=args.conds, out=args.out, no_quota=args.no_quota, tab_id=args.tab_id)
 
 
 if __name__ == "__main__":

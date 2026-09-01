@@ -107,6 +107,17 @@
 - **教训**：agent 写的报告 JSON 带 UTF-8 BOM，读取用 utf-8-sig
 - **意义**：数字合伙人开始有"业务记忆"（L1），为 M3 界面/漏斗统计铺路；后续采集评估应直接写库（当前是先落 JSON 再导入）
 
+## 框架整合 v1.0（2026-09-01，统一入口 + 闭环直写库 + 通用化）
+
+- **背景**：M1/M2 各环节是独立脚本、手动串联、硬编码本机路径与 GPGPU 岗位条件——按决策 14（代码 90% 原样复用）整合成可交付框架
+- **新增**：
+  - `framework_config.py`：集中配置（WORKSPACE/DSH_ROOT/RUNTIME_BIN/CORDIS/BRIDGE/模型/token/分批上限），全部相对定位或环境变量覆盖（DSP_WORKSPACE/DSH_ROOT/BROWSER_AGENT_PATH）→ **换电脑只改配置**；含 `check_env()` 环境自检、`load_env_file()`
+  - `run_pipeline.py`：统一入口 `python run_pipeline.py --jd data/inbox/xxx.txt --env-file .env` → 全链路 ①岗前分析 ②采集 ③评估（自动分批 ≤72/批 + 自动合并）④**直写 business.db** → 老板汇报；支持 `--step` 单步、`--keywords/--conds/--requirements` 覆盖、`--skip-collect`、`--dry-run`
+- **改造（保持独立运行能力）**：m1_run（抽 `analyze_job()`）、m2_eval_run（JD/岗位条件参数化，抽 `eval_pool()`）、collect_liepin（browser-agent 路径 config 化，抽 `collect()`）、import_to_db（岗位/路径参数化，抽 `write_to_db()`，供闭环直写）
+- **换岗试跑验证（北极星达成 ✅）**：新 JD「AI应用开发工程师（NLP）·中国移动」（应届博士/C9/QS50/≤30岁/北京）走完 ①分析（16分优质/建议沟通：佣金高+央企+72h新发→满分，博士+C9门槛+HC1→难度0分，判别力成立）→ ②采集（条件筛选首验：education=博士/博士后 + years=应届生 + city_current=北京 全部生效，30/30 命中 2026-2027 毕业窗口）→ ③评估（池子「中」4高/4中/22低，捞出中科院林**/清华张**/北大吴**真实 C9 博士）→ ④直写库（+30 候选人/+30 评估 → 库共 307/307）
+- **条件筛选首次真实启用**：GPGPU 轮"整页端走事后滤噪音"→ 本轮"前置过滤"（education/years/city_current 配方组验证通过）；院校 C9/QS50 猎聘无筛选项，只能后置评估过滤（预期内）
+- **遗留**：m3_auto_run 仍为实验脚本（硬编码路径未参数化，保留作 agent 自主演示）；Streamlit 界面（M3）未做
+
 ## 工作方式记录（2026-09-01）
 
 - 新增 `工作文档\协作工作流草案.md`（v0.1）：5 步循环（人定目标/派活/验收/纠错，agent 实施/测试/汇报）——**可选、非强制**的工作方式提议，刚考虑不成熟，后续按需取用；《对话交接规范》纪律照旧必守
@@ -119,7 +130,7 @@
 
 ## 下一步
 
-1. **换岗试跑**（北极星）：拿新 JD 走完整链路（岗前分析→采集→评估→入库），验证底座通用性
-2. **M3 界面**：Streamlit 汇报面板（读 business.db；汇报卡片+确认/纠错按钮 = 信任演进界面）
-3. **闭环直写库**：评估结果直接写 business.db（省 import_to_db 一步）
-4. **补采优化**：技能关键字定向补采目标公司（限速已生效）
+1. **M3 界面**：Streamlit 汇报面板（读 business.db；汇报卡片+确认/纠错按钮 = 信任演进界面）
+2. **agent 自主动态优化**：让 agent 看评估结果→自己决定加/改条件重采（多轮寻优闭环，工具已齐：pwsh+配方表）
+3. **补采优化**：技能关键字定向补采（本单 agent 建议：Agent/智能体/MCP 关键字补一轮）
+4. **换电脑试跑**（验收方式）：框架已配置化（framework_config.py），新电脑装环境+拷代码即可；.env 从参考代码处取

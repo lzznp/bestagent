@@ -18,19 +18,18 @@ try:
 except Exception:
     pass
 
-# SDK 客户端源码路径（本地 checkout，不装 PyPI）
-DSH_ROOT = Path(r"C:\deepseek\deepseek-harness")
+# 集中配置（换电脑只改 framework_config.py 或环境变量）
+from framework_config import (
+    WORKSPACE, SESSIONS, PROMPTS, DSH_ROOT, RUNTIME_BIN, CORDIS_MINIMAL,
+    MAX_TOKENS_ANALYZE, REQUEST_TIMEOUT, ensure_dirs,
+)
+
 sys.path.insert(0, str(DSH_ROOT / "python" / "sdk" / "src"))
 sys.path.insert(0, str(DSH_ROOT / "python" / "sdk-runtime" / "src"))
 
 from deepseek_harness import DeepSeekHarness  # noqa: E402
 
-# dev node carrier：pnpm deploy 生成的完整闭包
-RUNTIME_BIN = (
-    Path(r"D:\study\bestagent\bestagent\.dsh-staging")
-    / "node_modules/@deepseek-ai/dsh-sdk-jsonrpc-demo/lib/packaged-bin.js"
-)
-CORDIS = DSH_ROOT / "examples/jsonrpc-agent/minimal.cordis.yml"
+CORDIS = CORDIS_MINIMAL
 
 # 数字合伙人 persona（覆盖 cordis 默认的 software engineer 人设）
 PERSONA = (
@@ -45,7 +44,7 @@ def build_task(jd: Path, report: Path) -> str:
     return f"""老板往 inbox 丢了一条新 JD（禾蛙平台真实职位）。请把下面这条工作链路一次做完，全程用工具完成，不要让我手动粘贴任何内容：
 
 1. 读取你的岗前分析方法论手册（必须严格按它的 JSON 输出格式，不增不减字段）：
-   D:/study/bestagent/bestagent/data/prompts/analyze_job.txt
+   {PROMPTS.as_posix()}/analyze_job.txt
 
 2. 读取 JD 文件：
    {jd.as_posix()}
@@ -72,6 +71,29 @@ def load_env_file(path: Path) -> dict[str, str]:
     return env
 
 
+def analyze_job(jd: Path, report: Path, session_id: str, env: dict,
+                max_tokens: int = MAX_TOKENS_ANALYZE,
+                request_timeout: int = REQUEST_TIMEOUT,
+                workspace: Path = WORKSPACE, session_root: Path = SESSIONS):
+    """岗前分析（可独立调用，供 run_pipeline 复用）：SDK agent 读手册+JD → 写报告 → 返回 run 结果。"""
+    ensure_dirs()
+    outbox = (workspace / report).parent
+    outbox.mkdir(parents=True, exist_ok=True)
+    with DeepSeekHarness(
+        provider="deepseek-official",
+        model="deepseek-v4-flash",
+        max_tokens=max_tokens,
+        cwd=str(workspace),
+        session_root=str(session_root),
+        cordis=str(CORDIS),
+        launch_args_override=("node", str(RUNTIME_BIN)),
+        env=env,
+        request_timeout_seconds=request_timeout,
+        shutdown_timeout_seconds=10,
+    ) as harness:
+        return harness.run(build_task(jd, report), session_id=session_id)
+
+
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--env-file", type=Path, required=True)
@@ -86,11 +108,8 @@ def main() -> None:
         sys.exit(1)
     env["DSH_SYSTEM_PROMPT"] = PERSONA
 
-    session_root = Path(r"D:\study\bestagent\bestagent\.sessions")
-    workspace = Path(r"D:\study\bestagent\bestagent")
-    outbox = (workspace / args.report).parent
-    outbox.mkdir(parents=True, exist_ok=True)
-    session_root.mkdir(parents=True, exist_ok=True)
+    workspace, session_root = WORKSPACE, SESSIONS
+    ensure_dirs()
 
     print(f"▶ runtime: {RUNTIME_BIN.name}")
     print(f"▶ cordis : {CORDIS.name}")
@@ -101,19 +120,7 @@ def main() -> None:
     print(f"▶ persona: {PERSONA[:50]}…")
     print("─" * 60)
 
-    with DeepSeekHarness(
-        provider="deepseek-official",
-        model="deepseek-v4-flash",
-        max_tokens=4096,
-        cwd=str(workspace),
-        session_root=str(session_root),
-        cordis=str(CORDIS),
-        launch_args_override=("node", str(RUNTIME_BIN)),
-        env=env,
-        request_timeout_seconds=600,
-        shutdown_timeout_seconds=10,
-    ) as harness:
-        result = harness.run(build_task(args.jd, args.report), session_id=args.session_id)
+    result = analyze_job(args.jd, args.report, args.session_id, env)
 
     print("─" * 60)
     print("✅ final_response:")

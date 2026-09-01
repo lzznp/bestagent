@@ -22,17 +22,18 @@ try:
 except Exception:
     pass
 
-DSH_ROOT = Path(r"C:\deepseek\deepseek-harness")
+# 集中配置（换电脑只改 framework_config.py 或环境变量）
+from framework_config import (
+    WORKSPACE, SESSIONS, PROMPTS, DSH_ROOT, RUNTIME_BIN, CORDIS_MINIMAL,
+    MAX_TOKENS_EVAL, REQUEST_TIMEOUT, ensure_dirs,
+)
+
 sys.path.insert(0, str(DSH_ROOT / "python" / "sdk" / "src"))
 sys.path.insert(0, str(DSH_ROOT / "python" / "sdk-runtime" / "src"))
 
 from deepseek_harness import DeepSeekHarness  # noqa: E402
 
-RUNTIME_BIN = (
-    Path(r"D:\study\bestagent\bestagent\.dsh-staging")
-    / "node_modules/@deepseek-ai/dsh-sdk-jsonrpc-demo/lib/packaged-bin.js"
-)
-CORDIS = DSH_ROOT / "examples/jsonrpc-agent/minimal.cordis.yml"
+CORDIS = CORDIS_MINIMAL
 
 PERSONA = (
     "你是猎头数字合伙人「小猎」，一位资深猎头助理，替老板（一位猎头顾问）做候选人池评估、"
@@ -41,35 +42,41 @@ PERSONA = (
     "（“老板，我弄的咋样？”的口吻）。"
 )
 
-JD_PATH = Path("data/inbox/jd_1.txt")
+JD_DEFAULT = Path("data/inbox/jd_1.txt")
 COLLECT_PATH = Path("data/outbox/collected_gpgpu_all.json")
 REPORT_PATH = Path("data/outbox/pool_report_gpgpu_all.json")
+# 岗位硬性条件（评分依据；run_pipeline 会对不同 JD 传入不同条件）
+DEFAULT_REQUIREMENTS = (
+    "985/211 统招硕士、8 年以上 GPGPU/GPU 软件全栈经验、5 年以上架构设计经验、"
+    "量产级架构主导经验、43 岁以内、北京（60-150 万）"
+)
 
 
-def build_task(collect: Path, report: Path, start: int, end: int, skip_pool: bool) -> str:
+def build_task(jd: Path, collect: Path, report: Path, requirements: str,
+               start: int, end: int, skip_pool: bool) -> str:
     pool_block = "" if skip_pool else """4. 先按 pool_quality 手册评估整个池子：池子质量（优/良/中/差）、匹配分布（high/medium/low/total，按 ≥80/60-79/<60）、主要缺口、优势、行动建议、data_valid 校验。
 
 """
-    return f"""老板刚让我在猎聘上采了一批候选人（GPGPU 岗位相关，真实搜索结果，文件 {collect.name}），现在要把这批池子评估清楚。请把下面这条工作一次做完，全程用工具完成：
+    return f"""老板刚让我在猎聘上采了一批候选人（{collect.name} 岗位相关，真实搜索结果，文件 {collect.name}），现在要把这批池子评估清楚。请把下面这条工作一次做完，全程用工具完成：
 
 1. 读取岗位 JD：
-   D:/study/bestagent/bestagent/{JD_PATH.as_posix()}
+   {jd.as_posix()}
 
 2. 读取猎聘采集结果（JSON，候选人数量以文件实际为准，每条含 text 摘要 / res_id_encode / url）：
-   D:/study/bestagent/bestagent/{collect.as_posix()}
+   {collect.as_posix()}
 
 3. 读取你的两个方法论手册（严格按其 JSON 输出格式）：
-   - 池子质量评估手册：D:/study/bestagent/bestagent/data/prompts/pool_quality.txt
-   - 单候选人匹配评估手册：D:/study/bestagent/bestagent/data/prompts/match_candidate.txt
+   - 池子质量评估手册：{PROMPTS.as_posix()}/pool_quality.txt
+   - 单候选人匹配评估手册：{PROMPTS.as_posix()}/match_candidate.txt
 
 {pool_block}5. 再按 match_candidate 手册评估候选人：采集结果的 rows 数组按顺序编号 1..N，**只评估第 {start} 到第 {end} 位**（其余不评）。评估务必紧凑：
    - 每位候选人必须有：candidate_id（按采集顺序）、score（0-100）、verdict（推荐/待定/不推荐）、summary（一句话）
    - 只有 score≥60 或 verdict≠「不推荐」的候选人，才额外给 match_points（≤3 条短句）和 concerns（≤2 条短句）
    - 其余候选人只给 score/verdict/summary 三字段，保持报告精简
-   - 岗位硬性条件：985/211 统招硕士、8 年以上 GPGPU/GPU 软件全栈经验、5 年以上架构设计经验、量产级架构主导经验、43 岁以内、北京（60-150 万）——评分贴合这些条件
+   - 岗位硬性条件（评分严格贴合这些条件）：{requirements}
 
 6. 把完整 JSON 结果写入文件（只含本次评估的候选人{'' if skip_pool else '，以及 pool_quality'}）：
-   D:/study/bestagent/bestagent/{report.as_posix()}
+   {report.as_posix()}
    结构：{{"pool_quality": {{...}}{'' if skip_pool else '（本次包含）'}, "candidates": [{{"candidate_id": 1, "score": 0-100, "verdict": "...", "match_points": [...], "concerns": [...], "summary": "..."}}, ...]}}
 
 7. 最后用「老板，我弄的咋样？」的口吻，给我一段不超过 6 句的中文汇报：本次评估了几位、池子整体质量{'' if skip_pool else '、最值得深挖的 2-3 个人（点名+理由）'}、我的建议。这段汇报就是你的最终回复。"""
@@ -88,10 +95,38 @@ def load_env_file(path: Path) -> dict[str, str]:
     return env
 
 
+def eval_pool(jd: Path, collect: Path, report: Path, requirements: str,
+              session_id: str, env: dict,
+              start: int = 1, end: int = 0, skip_pool: bool = False,
+              max_tokens: int = MAX_TOKENS_EVAL,
+              request_timeout: int = REQUEST_TIMEOUT,
+              workspace: Path = WORKSPACE, session_root: Path = SESSIONS):
+    """池子评估（可独立调用，供 run_pipeline 复用）：SDK agent 读 JD+采集+手册 → 写评估报告 → 返回 run 结果。"""
+    ensure_dirs()
+    end = end or 10 ** 9
+    (workspace / report).parent.mkdir(parents=True, exist_ok=True)
+    with DeepSeekHarness(
+        provider="deepseek-official",
+        model="deepseek-v4-flash",
+        max_tokens=max_tokens,
+        cwd=str(workspace),
+        session_root=str(session_root),
+        cordis=str(CORDIS),
+        launch_args_override=("node", str(RUNTIME_BIN)),
+        env=env,
+        request_timeout_seconds=request_timeout,
+        shutdown_timeout_seconds=10,
+    ) as harness:
+        return harness.run(build_task(jd, collect, report, requirements, start, end, skip_pool),
+                           session_id=session_id)
+
+
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--env-file", type=Path, required=True)
     parser.add_argument("--session-id", default="m2-eval-gpgpu-all-001")
+    parser.add_argument("--jd", type=Path, default=JD_DEFAULT, help="岗位 JD 路径")
+    parser.add_argument("--requirements", default=DEFAULT_REQUIREMENTS, help="岗位硬性条件（评分依据）")
     parser.add_argument("--collect", type=Path, default=COLLECT_PATH)
     parser.add_argument("--report", type=Path, default=REPORT_PATH)
     parser.add_argument("--start", type=int, default=1, help="评估范围起始编号（rows 顺序 1..N）")
@@ -105,33 +140,20 @@ def main() -> None:
         sys.exit(1)
     env["DSH_SYSTEM_PROMPT"] = PERSONA
 
-    session_root = Path(r"D:\study\bestagent\bestagent\.sessions")
-    workspace = Path(r"D:\study\bestagent\bestagent")
-    (workspace / REPORT_PATH).parent.mkdir(parents=True, exist_ok=True)
-    session_root.mkdir(parents=True, exist_ok=True)
+    workspace, session_root = WORKSPACE, SESSIONS
+    ensure_dirs()
 
     print(f"▶ runtime: {RUNTIME_BIN.name}")
     print(f"▶ session: {args.session_id}")
-    print(f"▶ jd     : {JD_PATH}")
+    print(f"▶ jd     : {args.jd}")
     print(f"▶ collect: {args.collect} ({args.collect.stat().st_size} 字节)")
     print(f"▶ report : {args.report}")
     end = args.end or 10 ** 9
     print(f"▶ range  : 第 {args.start} ~ 第 {end} 位" + ("（含池子质量）" if not args.skip_pool else "（仅评估人，跳过池子质量）"))
     print("─" * 60)
 
-    with DeepSeekHarness(
-        provider="deepseek-official",
-        model="deepseek-v4-flash",
-        max_tokens=32768,
-        cwd=str(workspace),
-        session_root=str(session_root),
-        cordis=str(CORDIS),
-        launch_args_override=("node", str(RUNTIME_BIN)),
-        env=env,
-        request_timeout_seconds=1200,
-        shutdown_timeout_seconds=10,
-    ) as harness:
-        result = harness.run(build_task(args.collect, args.report, args.start, end, args.skip_pool), session_id=args.session_id)
+    result = eval_pool(args.jd, args.collect, args.report, args.requirements,
+                       args.session_id, env, start=args.start, end=args.end, skip_pool=args.skip_pool)
 
     print("─" * 60)
     print("✅ final_response:")
