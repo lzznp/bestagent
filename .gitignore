@@ -4,6 +4,9 @@
 __pycache__/
 *.pyc
 
+# 密钥/环境文件
+*.env
+
 # 临时测试账本
 data/usage/_quota_test.json
 data/usage/*.tmp
