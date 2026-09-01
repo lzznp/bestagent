@@ -1,0 +1,118 @@
+# 交接包：猎头 AI 操盘手系统（数字合伙人）
+
+> 生成时间：2026-09-01 晚 ｜ 交接方式：设计讨论 + 验证周 + M2 全链路验证对话 → 新对话
+> 新对话开场顺序：**本文件** → `工作文档\设计方案.md` → `工作文档\SDK 技术评估.md` → `工作文档\对话交接规范.md` → `工作文档\PROGRESS.md` → `工作文档\协作工作流草案.md`（可选）→ `工作文档\授权矩阵.md`（可选）→ 再问环境
+
+## 0. 一句话状态
+
+**数字合伙人已有"手"（猎聘真实采集）、"脑"（岗前分析+池子评估）、"记忆"（SQLite 业务库）**：M1.1 验证周 + M2 全链路（关键字→真实采集→评估→老板汇报→限速→入库）全部跑通，且打通了 Windows 上 agent 执行命令的瓶颈（pwsh 工具）。下一步 = 换岗验证通用性 / M3 界面 / 直写库闭环。
+
+## 1. 背景（重要，读一遍就懂用户）
+
+- 用户 = **非专职程序员**（Python 爱好者），做猎头业务，用 AI 改造工作一年（4 代猎头系统 + 1 个机器人项目）。
+- 一年做了：岗位招聘（本地14B+向量，弃）→ 单机版（DeepSeek API，弃）→ wails 智猎助手（在用，免费产品）→ lietou-agent 多agent（M1-M5 完工，付费 exe）；另有机器人项目（ESP32 固件 + 后台，暂停）。
+- 今年最深的感悟（用户原话）：**AI 加速了"做"，但没有加速"想"**——工具越快越要先想清楚，否则高效地做错（固件项目 MCP 弯路教训）。
+- 用户工作方式反思（lietou-agent P6 记录 + 2026-09-01 讨论）：旧"复制粘贴循环"（PyCharm+网页版+codewhale 侦察）慢且累，容易带偏；新方向 = 人做"定目标/派活/验收/纠错"，agent 做"侦察/实施/测试/汇报"（见《协作工作流草案.md》，**可选非强制**）。
+
+## 2. 关键决策（详见设计方案 §3，15 条）
+
+| # | 决策 | 一句话 |
+|---|---|---|
+| 3 | 技术底座 | **DSH Python SDK**（已验证 Windows 全链路，headless） |
+| 5 | 产品愿景 | 数字合伙人：自主+汇报+信任演进+双向成长 |
+| 7 | 验证策略 | **验证周**：最小实验先行，不做大规划 |
+| 8 | 协作规矩 | ①动手前对齐"目的声明" ②小步验证+回顾 |
+| 11 | 记忆实现 | 三层：SDK JSONL（会话）+ SQLite（业务，复用 wails 表）+ MD（偏好） |
+| 12 | 工作界面 | 文件 Inbox（验证周）→ Streamlit 面板（M2/M3）→ 语音机器人（远期） |
+| 13 | 变现路线 | 后置；倾向"硬件+软件"整机，非纯软件；防复刻靠配方/数据/硬件三层 |
+| 14 | SKILL 范围 | 只提炼方法论，代码资产 90% 原样复用 |
+
+## 3. 已完成的验证（2026-09-01，全部真实跑通）
+
+### M1.1 验证周·最小实验（岗前分析）
+- 真实禾蛙 JD ×2（GPGPU 架构师 17分/优质/接单；教育岗 10分/普通/沟通）→ SDK agent 自主读手册+JD → 评分/4组关键字/报告/老板汇报，判别力成立
+- 资产：`bestagent\m1_run.py`（--jd/--report/--session 参数化）
+
+### M2 链路扩展（采集→评估→汇报→限速→入库）
+- **采集**：`collect_liepin.py`（配方表 execute_spec 路径，自动发现猎聘 tab，多关键字批量+去重，限速集成）——真实搜 GPGPU/技能词，累计采集 293 条、去重 277 人
+- **评估**：`m2_eval_run.py`（SDK agent 读 JD+池子+方法论 → pool_quality + match_candidate 逐人评分；支持 --start/--end/--skip-pool 分批；`merge_report.py` 合并）——30/120/144/29 人池子全评估过
+- **自主闭环**：`m3_auto_run.py`（agent 用 pwsh 自己跑采集脚本→读结果→评估→汇报）一次跑通（搜"海光"29 人，如实报告池子"差"不粉饰）
+- **限速**：`quota.py`（记账+限额+随机延迟；默认 20 搜索/200 提取/天，`data\usage\quota_config.json` 可调）
+- **业务库**：`import_to_db.py` 复用 wails 表（jobs/candidates/match_results/candidate_events/pool_samples）→ `bestagent\data\business.db`（1 岗 + 277 候选人 + 277 评估）
+- **环境突破**：bash 工具 Windows 不可用 → 补装 dsh-tool-pwsh 包 + `minimal-pwsh-nonpty.cordis.yml`（dsh-pwsh-local 非 PTY，兜底 PowerShell 5.1）→ agent 能执行命令了
+
+## 4. 环境备忘 ⚠️ 新对话开局现查，勿信本快照
+
+| 项 | 值 / 查法 |
+|---|---|
+| SDK 客户端 | `C:\Users\84005\miniconda3\envs\lzstudy\python.exe`（conda，已装 pydantic 2.12） |
+| SDK 源码 | `C:\deepseek\deepseek-harness\python\sdk\src`（旧版 0.1.0-rc.8，PYTHONPATH 注入） |
+| dev runtime | `D:\study\bestagent\bestagent\.dsh-staging`（pnpm deploy 闭包，已补 16 插件 + tool-pwsh ×2 包） |
+| 默认 cordis | `C:\deepseek\deepseek-harness\examples\jsonrpc-agent\minimal.cordis.yml`（fs/editor，无需执行命令的任务用） |
+| **pwsh cordis** | `D:\study\bestagent\bestagent\minimal-pwsh-nonpty.cordis.yml`（**需要执行命令的任务必须用它**；系统无 PowerShell 7，PTY 模式会崩 node-pty，勿用 minimal-pwsh.cordis.yml） |
+| ⚠️ 沙箱 | **SDK runtime 跑命令类任务（m3_auto_run.py / probe）必须在 danger-full-access**，否则 node spawn 子进程 EPERM；纯 fs/editor 任务（m1/m2）默认权限即可 |
+| API key | `D:\study\bestagent\参考代码\lietou-agent\browser-agent\.env`（只读，不打印） |
+| 会话持久化 | `D:\study\bestagent\bestagent\.sessions\`（JSONL） |
+| 浏览器桥 | 活体 `D:\study\lietou-agent\browser-agent`，bridge `http://127.0.0.1:8080`（curl /api/health 现查；不在则 `python bridge/server.py` 拉起，Chrome 扩展 + 猎聘登录态需用户在浏览器确认） |
+| 猎聘 tab | `collect_liepin.py` 自动 list_tabs 现查（勿手写死 tab_id） |
+| 业务库 | `D:\study\bestagent\bestagent\data\business.db`（SQLite，wails 表设计） |
+| DSH Web | `http://127.0.0.1:3080`（旧版，勿动；升级决策=暂不升级） |
+| git | `D:\study\bestagent` 已 git init（.dsh-staging/.sessions 已 ignore），基线提交 2026-09-01 |
+
+## 5. 关键教训（新对话别重踩）
+
+1. **动手前先对齐目的声明**——AI 干活快，方向错就白干（用户两次强调）。
+2. **采集必须走配方表 execute_spec**（`collect_liepin.py` 已封装）——用 /api/agent/run 自然语言循环会"条件没设上、直接 extract 页面残留结果"（实测采到青岛无关 40 条）。
+3. **bash 工具在 Windows 不可用**（连 echo hello 都 File not found）；**pwsh 组合**（minimal-pwsh-nonpty.cordis.yml）可用，但 **SDK runtime 需 danger-full-access** 否则 spawn EPERM。
+4. **不要配 terminal-bash + shellDialect: pwsh（PTY 模式）**——系统无 pwsh.exe，node-pty 直接崩（reading 'destroy'）。
+5. **大池子评估分批 ≤72 人/批**（32768 token 上限，120 人已极限）；用 m2_eval_run.py --start/--end + merge_report.py 合并。
+6. **agent 写的 JSON 带 UTF-8 BOM**——读取一律 utf-8-sig。
+7. **公司名做关键字有同名噪音**（"海光"→食品/光电/贸易）；技能关键字（GPGPU/ROCm/CUDA/编译器/Runtime）更准（P6 教训印证）。
+8. **限速默认 20 搜索/200 提取/天**（quota.py），防账号风控；打招呼（50/天）永远留人工闸门。
+9. **新版 SDK 勿用**（master 0.1.2-alpha.2 架构大改 + Windows wheel 未发布），继续旧版 API。
+10. 参考代码 `D:\study\bestagent\参考代码\` 只读素材库（README.md 有索引），活体在 `D:\study\lietou*`。
+
+## 6. 交接说明
+
+- 工作区 `D:\study\bestagent`：
+  - `工作文档/`（7 份：交接规范/设计方案/PROGRESS/SDK 技术评估/协作工作流草案/授权矩阵/本文件）
+  - `bestagent/`（活代码：m1_run/m2_run/m2_eval_run/m3_auto_run/collect_liepin/import_to_db/quota/merge_* /dump_jd/export_pool/explore_* /probe_bash/sdk_verify + minimal-pwsh-nonpty.cordis.yml + data/）
+  - `data/inbox/`（JD 输入：jd_1 GPGPU 岗 / jd_user_001 教育岗 / 车载测试岗）｜ `data/outbox/`（采集+评估报告）｜ `data/prompts/`（方法论 3 份）｜ `data/usage/`（限速账本）｜ `data/business.db`（业务库）
+  - `参考代码/`（素材，只读）
+- **bridge 由会话后台 job 拉起，新对话先 curl http://127.0.0.1:8080/api/health 现查**，不在就重启。
+
+## 7. 新对话如何开始
+
+1. 按开场顺序读文档（见文件头）。
+2. 用 3 句话确认：①项目当前状态 ②本次目标 ③执行计划。**确认后再动手**。
+3. 开场白模板（可直接复制给实施对话）：
+   ```
+   你是本项目的实施工程师（数字合伙人搭建）。
+   先读交接包：D:\study\bestagent\工作文档\HANDOFF.md，按其中"开场顺序"读完相关文档。
+   读完后，用 3 句话向我确认：①项目当前状态 ②本次要完成的目标 ③你的执行计划。
+   确认后再动手。边界：动手前先对齐目的声明；小步验证，做完回顾。
+   ```
+4. 立即可以做的方向（按优先级）：
+   - **换岗试跑**：拿新 JD 走完整链路（岗前分析→collect_liepin→m2_eval_run→import_to_db），验证底座通用性
+   - **M3 界面**：Streamlit 汇报面板（从 business.db 读数据；汇报卡片+确认/纠错按钮 = 信任演进界面）
+   - **闭环直写库**：评估结果直接写 business.db（省掉 import_to_db 一步）
+   - **补采**：技能关键字定向补采目标公司（限速已生效，放心多跑）
+
+---
+
+## 8. 设计补充（2026-08-31 晚 + 09-01，历史保留）
+
+### 8.1 记忆分层方案（决策 11）
+L0 会话记忆（SDK JSONL）→ L1 业务记忆（SQLite，复用 wails 表，**2026-09-01 已落地**）→ L2 偏好记忆（MD，MEMORY/SKILL）→ L3 海量检索（RAG，⛔ 后置）。
+
+### 8.2 工作页面/沟通方式（分阶段）
+验证周文件 Inbox/Outbox（零 UI，已实践）→ M2/M3 Streamlit 面板（汇报卡片+确认/纠错按钮）→ 远期语音机器人。
+
+### 8.3 实体形态构想（远期）
+Wails 重构小智后台 = 大脑+工作台，小智机器人固件 = 纯语音终端（STT/TTS）；验证周只做 SDK agent 本体。
+
+### 8.4 变现与防复刻（决策 13）
+变现后置；三层组合：软件层（🟡 可抄）+ 配方/数据层（🟢 服务器可下发）+ 硬件层（🔴 抄不动，小智整机）；授权复用 wails license 方案。
+
+### 8.5 授权矩阵（决策 10 落地，2026-09-01）
+`工作文档\授权矩阵.md`：可逆动作全自主 / 不可逆动作留闸门（打招呼/下载联系方式/约面试/推荐客户=🔴 待拍板清单；微信电话/谈薪资=🔴 永远人工）；执行层闸门（不挂打招呼工具）+ 输出层闸门（待拍板清单）；汇报粒度=信任刻度；限速已落地（quota.py）。

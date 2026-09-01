@@ -1,0 +1,1058 @@
+{
+ "pool_quality": {
+  "pool_quality": "差",
+  "match_distribution": {
+   "high": 0,
+   "medium": 1,
+   "low": 71,
+   "total": 72
+  },
+  "main_gaps": [
+   "本批72人绝大多数无GPGPU软件全栈经验，集中于嵌入式、Java/后端、算法应用、IC验证、项目管理、商务/产品等无关方向",
+   "具备GPGPU/GPU软件背景者仅约10人（字节异构计算、平头哥、芯瞳/芯云编译器、沐曦/寒武纪、AMD/英伟达等），且均存在学历、年龄或城市硬性缺口",
+   "硬性条件大面积不达标：本科非硕士、硕士非985/211、超43岁、base非北京的现象普遍，无一位完整满足全部硬性条件"
+  ],
+  "strengths": [
+   "出现少量GPGPU技术对口候选人：字节异构计算硬件架构师、平头哥高级技术专家、芯瞳/芯云GPU编译器、沐曦/寒武纪/AMD/英伟达背景",
+   "学历整体较高（硕士/博士占比大且多为统招），有数位985/211统招硕士且年龄在43岁以内",
+   "个别候选人（冷**、林**）具备AMD/英伟达、沐曦等头部GPGPU公司量产级软件研发管理经验，可评估特批"
+  ],
+  "recommendation": "本批供给明显弱于Part1（1-72位），72人中仅胡**（字节异构计算硬件架构师、北京本地）达60分以上，建议优先深入沟通并核实其GPGPU软件全栈与量产架构主导深度；冷**、黄**、梁**、纪**、林**等均存在学历/年龄/城市硬性缺口，需先与客户确认可放宽项再推进；建议定向补采编译器/驱动/Runtime全栈且base北京的候选人，以填补本段有效供给不足。",
+  "data_valid": true,
+  "data_valid_message": ""
+ },
+ "candidates": [
+  {
+   "candidate_id": 1,
+   "score": 30,
+   "verdict": "不推荐",
+   "summary": "赵，30岁硕士西安，CUDA高性能计算仅3年，经验年限与GPGPU软件栈门槛差距过大。"
+  },
+  {
+   "candidate_id": 2,
+   "score": 55,
+   "verdict": "不推荐",
+   "summary": "马，31岁硕士北京，CUDA优化工程师7年，方向偏应用优化且年限不足8年，无架构经验。"
+  },
+  {
+   "candidate_id": 3,
+   "score": 28,
+   "verdict": "不推荐",
+   "summary": "王，28岁硕士长沙，CUDA并行算法2年，经验过浅且非GPGPU全栈。"
+  },
+  {
+   "candidate_id": 4,
+   "score": 30,
+   "verdict": "不推荐",
+   "summary": "刘，28岁本科深圳，CUDA/C++开发4年，本科且方向不符。"
+  },
+  {
+   "candidate_id": 5,
+   "score": 48,
+   "verdict": "不推荐",
+   "summary": "牛，35岁硕士武汉，HPC/CUDA应用开发10年，无GPGPU软件架构经验且base武汉。"
+  },
+  {
+   "candidate_id": 6,
+   "score": 52,
+   "verdict": "不推荐",
+   "summary": "朱，39岁硕士上海，英伟达CUDA自动化测试经理，测试方向非架构设计且base上海。"
+  },
+  {
+   "candidate_id": 7,
+   "score": 35,
+   "verdict": "不推荐",
+   "summary": "李，29岁硕士上海，CUDA/工程师经历4年，经验过浅。"
+  },
+  {
+   "candidate_id": 8,
+   "score": 25,
+   "verdict": "不推荐",
+   "summary": "胡，25岁博士在读北京，在读学生，无相关产业经验。"
+  },
+  {
+   "candidate_id": 9,
+   "score": 35,
+   "verdict": "不推荐",
+   "summary": "秦，33岁硕士重庆，算法工程师5年，方向与GPGPU软件架构不匹配。"
+  },
+  {
+   "candidate_id": 10,
+   "score": 20,
+   "verdict": "不推荐",
+   "summary": "陈，41岁博士深圳，量化交易背景，与GPGPU岗位完全无关。"
+  },
+  {
+   "candidate_id": 11,
+   "score": 20,
+   "verdict": "不推荐",
+   "summary": "田，29岁博士武汉，计算力学应届博士，无相关工作经验。"
+  },
+  {
+   "candidate_id": 12,
+   "score": 25,
+   "verdict": "不推荐",
+   "summary": "龚，32岁博士天津，图像算法研究员，与岗位无关。"
+  },
+  {
+   "candidate_id": 13,
+   "score": 20,
+   "verdict": "不推荐",
+   "summary": "叶，27岁博士在读深圳，航空宇航方向在读，无关。"
+  },
+  {
+   "candidate_id": 14,
+   "score": 40,
+   "verdict": "不推荐",
+   "summary": "朱，44岁本科苏州，HPC技术专家但超龄且本科，不满足硬性条件。"
+  },
+  {
+   "candidate_id": 15,
+   "score": 45,
+   "verdict": "不推荐",
+   "summary": "李，32岁博士北京，算法研究员，无产业GPGPU软件栈经验。"
+  },
+  {
+   "candidate_id": 16,
+   "score": 30,
+   "verdict": "不推荐",
+   "summary": "陈，27岁硕士上海，C++研发2年，经验过浅。"
+  },
+  {
+   "candidate_id": 17,
+   "score": 42,
+   "verdict": "不推荐",
+   "summary": "程，29岁硕士广州，景嘉微高性能计算2年，资历过浅且非架构。"
+  },
+  {
+   "candidate_id": 18,
+   "score": 45,
+   "verdict": "不推荐",
+   "summary": "吴，31岁博士广州，HPC数值计算4年，非GPGPU软件栈方向。"
+  },
+  {
+   "candidate_id": 19,
+   "score": 15,
+   "verdict": "不推荐",
+   "summary": "胡，28岁博士英国，机械工程方向，与岗位完全无关。"
+  },
+  {
+   "candidate_id": 20,
+   "score": 15,
+   "verdict": "不推荐",
+   "summary": "单，26岁博士在读深圳，光学工程，与岗位无关。"
+  },
+  {
+   "candidate_id": 21,
+   "score": 15,
+   "verdict": "不推荐",
+   "summary": "谭，24岁硕士在读淮安，在读学生，无关。"
+  },
+  {
+   "candidate_id": 22,
+   "score": 35,
+   "verdict": "不推荐",
+   "summary": "肖，33岁博士北京，波音模拟仿真研究员3年，非GPGPU方向。"
+  },
+  {
+   "candidate_id": 23,
+   "score": 10,
+   "verdict": "不推荐",
+   "summary": "白，34岁本科韩国，.NET开发，与岗位完全无关。"
+  },
+  {
+   "candidate_id": 24,
+   "score": 25,
+   "verdict": "不推荐",
+   "summary": "赖，34岁本科广东，EDA研发，非GPGPU软件。"
+  },
+  {
+   "candidate_id": 25,
+   "score": 15,
+   "verdict": "不推荐",
+   "summary": "强，27岁博士在读深圳，医学信号方向，无关。"
+  },
+  {
+   "candidate_id": 26,
+   "score": 75,
+   "verdict": "推荐",
+   "match_points": [
+    "摩尔线程成都site软件Leader兼资深GPU计算工程师，GPGPU软件实战强",
+    "电子科大统招硕士、40岁、14年经验，学历年龄符合硬性条件",
+    "有海光（目标公司）经历，软硬件栈对口"
+   ],
+   "concerns": [
+    "目前base成都且求职期望成都，需确认北京迁移意愿",
+    "量产级全栈架构主导经验需面谈核实"
+   ],
+   "summary": "陈，40岁硕士成都，摩尔线程site软件Leader+海光背景，GPGPU软件方向很对口，是值得争取的核心候选人。"
+  },
+  {
+   "candidate_id": 27,
+   "score": 40,
+   "verdict": "不推荐",
+   "summary": "笪，35岁硕士合肥，算法实现工程师，非GPGPU软件架构。"
+  },
+  {
+   "candidate_id": 28,
+   "score": 20,
+   "verdict": "不推荐",
+   "summary": "杨，24岁硕士在读西安，华为AI Infra在读生，经验过浅。"
+  },
+  {
+   "candidate_id": 29,
+   "score": 25,
+   "verdict": "不推荐",
+   "summary": "马，26岁硕士西安，软件工程师1年且硕士非统招，经验过浅。"
+  },
+  {
+   "candidate_id": 30,
+   "score": 15,
+   "verdict": "不推荐",
+   "summary": "夏，24岁硕士在读重庆，在读学生，无关。"
+  },
+  {
+   "candidate_id": 31,
+   "score": 40,
+   "verdict": "不推荐",
+   "summary": "胡，23岁硕士上海，摩尔线程GPU架构工程师仅2个月，资历过浅。"
+  },
+  {
+   "candidate_id": 32,
+   "score": 77,
+   "verdict": "推荐",
+   "match_points": [
+    "中科芯GPGPU UMD driver Leader，驱动层全栈高度对口",
+    "沐曦（目标公司）GPGPU软件专家，量产芯片软件经验",
+    "36岁、10年+、GPGPU软件垂直度在池中最优"
+   ],
+   "concerns": [
+    "硕士为北大非统招，学历不满足统招要求需确认",
+    "base成都，异地迁移意愿需落实"
+   ],
+   "summary": "王，36岁硕士成都，GPGPU驱动Leader+沐曦软件专家，方向最对口，是全池最值得深挖的人选。"
+  },
+  {
+   "candidate_id": 33,
+   "score": 35,
+   "verdict": "不推荐",
+   "summary": "李，48岁本科上海，英特尔GPU优化架构师但超龄且本科，硬性条件不符。"
+  },
+  {
+   "candidate_id": 34,
+   "score": 25,
+   "verdict": "不推荐",
+   "summary": "赵，44岁本科北京，云计算架构背景，超龄且非GPGPU。"
+  },
+  {
+   "candidate_id": 35,
+   "score": 72,
+   "verdict": "推荐",
+   "match_points": [
+    "北京本地，42岁、大连理工统招硕士、16年经验，硬性条件基本达标",
+    "联想GPU架构师+浪潮GPU/MIC高性能应用开发，GPU软件经验扎实",
+    "有英伟达（中国开发者社区）经历，生态认知好"
+   ],
+   "concerns": [
+    "偏GPU应用/HPC，编译器/驱动全栈与量产架构主导证据不足",
+    "求职期望偏后端/管理，岗位意愿需沟通"
+   ],
+   "summary": "卢，42岁硕士北京，联想GPU架构师背景，是北京本地较契合的候选人，可优先约聊核实全栈深度。"
+  },
+  {
+   "candidate_id": 36,
+   "score": 30,
+   "verdict": "不推荐",
+   "summary": "周，23岁本科苏州，GPU架构设计实习，资历过浅。"
+  },
+  {
+   "candidate_id": 37,
+   "score": 25,
+   "verdict": "不推荐",
+   "summary": "屠，42岁硕士上海，云/Java技术总监，与GPGPU无关。"
+  },
+  {
+   "candidate_id": 38,
+   "score": 30,
+   "verdict": "不推荐",
+   "summary": "谢，23岁硕士在读北京，燧原GPU建模实习，在读资历过浅。"
+  },
+  {
+   "candidate_id": 39,
+   "score": 30,
+   "verdict": "不推荐",
+   "summary": "柏，46岁硕士北京，系统工程师背景，超龄且非GPGPU。"
+  },
+  {
+   "candidate_id": 40,
+   "score": 55,
+   "verdict": "不推荐",
+   "summary": "党，49岁硕士上海，ArmChina GPU软件首席架构师，能力顶级但49岁远超43岁年龄上限。"
+  },
+  {
+   "candidate_id": 41,
+   "score": 20,
+   "verdict": "不推荐",
+   "summary": "T，37岁本科北京，云架构师（PaaS/IaaS），与GPGPU无关。"
+  },
+  {
+   "candidate_id": 42,
+   "score": 45,
+   "verdict": "不推荐",
+   "summary": "吴，27岁硕士北京，太初/燧原GPU架构实习生经历，经验过浅。"
+  },
+  {
+   "candidate_id": 43,
+   "score": 45,
+   "verdict": "不推荐",
+   "summary": "祝，42岁本科上海，GPU技术支持/应用工程师，本科且非架构设计。"
+  },
+  {
+   "candidate_id": 44,
+   "score": 58,
+   "verdict": "不推荐",
+   "summary": "吴，32岁硕士上海，壁仞GPU架构构建模6个月，方向偏硬件建模且年限不足。"
+  },
+  {
+   "candidate_id": 45,
+   "score": 62,
+   "verdict": "待定",
+   "match_points": [
+    "摩尔线程（目标公司）架构建模工程师，接触GPU架构设计",
+    "西南交大统招硕士、35岁、11年经验，学历年龄符合"
+   ],
+   "concerns": [
+    "方向偏硬件架构建模而非GPGPU软件全栈",
+    "base上海，需确认北京意愿"
+   ],
+   "summary": "闵，35岁硕士上海，摩尔线程架构建模工程师，方向待确认后可作为次选跟进。"
+  },
+  {
+   "candidate_id": 46,
+   "score": 78,
+   "verdict": "推荐",
+   "match_points": [
+    "威盛资深GPU架构师4年+，GPU架构设计经验硬核",
+    "北京本地、42岁、浙大统招硕士，硬性条件基本满足",
+    "18年经验，媒体计算架构师兼具软件架构能力"
+   ],
+   "concerns": [
+    "GPGPU软件全栈（编译器/驱动/计算库）与量产主导证据偏少，需深挖",
+    "当前职位偏媒体计算，需确认转型意愿"
+   ],
+   "summary": "张，42岁硕士北京，威盛资深GPU架构师背景，是本池综合得分最高且北京本地可落地的首选。"
+  },
+  {
+   "candidate_id": 47,
+   "score": 42,
+   "verdict": "不推荐",
+   "summary": "易，39岁硕士北京，龙芯linux内核工程师，非GPGPU方向。"
+  },
+  {
+   "candidate_id": 48,
+   "score": 68,
+   "verdict": "待定",
+   "match_points": [
+    "某芯片公司高性能计算架构师5年+，GPU集群/互联/软硬件协同架构经验",
+    "安徽大学统招硕士、38岁、13年经验",
+    "技能覆盖NCCL/CUDA/软件架构，与岗位技术面部分重叠"
+   ],
+   "concerns": [
+    "base上海，需确认北京迁移",
+    "非GPGPU全栈，缺编译器/驱动主导证据"
+   ],
+   "summary": "钱，38岁硕士上海，HPC架构师，GPU互联/软硬件协同相关，可作为备选推进。"
+  },
+  {
+   "candidate_id": 49,
+   "score": 20,
+   "verdict": "不推荐",
+   "summary": "汪，37岁本科北京，云解决方案架构师，与GPGPU无关。"
+  },
+  {
+   "candidate_id": 50,
+   "score": 73,
+   "verdict": "推荐",
+   "match_points": [
+    "英伟达GPU图形架构工程师13年+，GPU架构功底极强",
+    "上交统招硕士、37岁，学历年龄达标",
+    "头部芯片公司经验符合优先加分项"
+   ],
+   "concerns": [
+    "方向偏图形架构，GPGPU计算全栈经验需确认",
+    "base上海且求职期望为自动化测试，岗位意愿待沟通"
+   ],
+   "summary": "谢，37岁硕士上海，英伟达GPU图形架构13年，GPU功底扎实，需确认北京意愿与岗位意向。"
+  },
+  {
+   "candidate_id": 51,
+   "score": 15,
+   "verdict": "不推荐",
+   "summary": "何，30岁本科上海，运维方向，与岗位无关。"
+  },
+  {
+   "candidate_id": 52,
+   "score": 74,
+   "verdict": "推荐",
+   "match_points": [
+    "英伟达Tegra/GPU架构师+infrastructure工程师16年，GPU软硬结合经验丰富",
+    "上交统招硕士、42岁，硬性条件符合",
+    "头部芯片量产经验，符合优先加分项"
+   ],
+   "concerns": [
+    "base上海，需确认北京意愿",
+    "近年偏infrastructure，GPGPU软件架构主导需核实"
+   ],
+   "summary": "林，42岁硕士上海，英伟达Tegra/GPU架构背景，GPU软硬协同强，是英伟达系中最值得谈的一位。"
+  },
+  {
+   "candidate_id": 53,
+   "score": 55,
+   "verdict": "不推荐",
+   "summary": "程，39岁本科杭州，华为异构并行/CUDA主任工程师，经验强但本科不满足学历硬性要求。"
+  },
+  {
+   "candidate_id": 54,
+   "score": 20,
+   "verdict": "不推荐",
+   "summary": "康，52岁MBA深圳，GPU架构设计师但超龄且学历不符。"
+  },
+  {
+   "candidate_id": 55,
+   "score": 25,
+   "verdict": "不推荐",
+   "summary": "曾，47岁本科苏州，Linux infra leader，超龄且非GPGPU。"
+  },
+  {
+   "candidate_id": 56,
+   "score": 48,
+   "verdict": "不推荐",
+   "summary": "王，30岁硕士上海，哲库GPU架构+ARM OpenGLES，仅4年经验不足。"
+  },
+  {
+   "candidate_id": 57,
+   "score": 42,
+   "verdict": "不推荐",
+   "summary": "宋，43岁MBA北京，GPU云服务器产品专家，产品岗非架构且学历不符。"
+  },
+  {
+   "candidate_id": 58,
+   "score": 15,
+   "verdict": "不推荐",
+   "summary": "罗，21岁本科广州，GPU架构实习，资历过浅。"
+  },
+  {
+   "candidate_id": 59,
+   "score": 48,
+   "verdict": "不推荐",
+   "summary": "江，28岁硕士上海，壁仞芯片开发4年，经验过浅。"
+  },
+  {
+   "candidate_id": 60,
+   "score": 63,
+   "verdict": "待定",
+   "match_points": [
+    "寒武纪（目标公司）深度学习算法3年+阿里异构计算，GPGPU生态相关",
+    "中科大统招硕士、32岁、7年经验，学历优秀"
+   ],
+   "concerns": [
+    "偏算法/应用层，缺编译器/驱动全栈与架构主导",
+    "目前base安徽，异地意愿待确认"
+   ],
+   "summary": "白，32岁硕士安徽，寒武纪算法+阿里异构计算，生态相关但深度不足，可作储备。"
+  },
+  {
+   "candidate_id": 61,
+   "score": 35,
+   "verdict": "不推荐",
+   "summary": "徐，28岁硕士南通，曙光研发3年，经验过浅。"
+  },
+  {
+   "candidate_id": 62,
+   "score": 30,
+   "verdict": "不推荐",
+   "summary": "潘，49岁硕士江苏，HPC软件架构师，超龄不符。"
+  },
+  {
+   "candidate_id": 63,
+   "score": 55,
+   "verdict": "不推荐",
+   "summary": "余，43岁硕士美国旧金山，曦智科技软件VP，光计算非GPGPU且异地。"
+  },
+  {
+   "candidate_id": 64,
+   "score": 58,
+   "verdict": "不推荐",
+   "summary": "田，31岁硕士北京，商汤异构计算2年，8年经验门槛未达标。"
+  },
+  {
+   "candidate_id": 65,
+   "score": 35,
+   "verdict": "不推荐",
+   "summary": "李，33岁博士深圳，比亚迪算法2年，经验过浅。"
+  },
+  {
+   "candidate_id": 66,
+   "score": 50,
+   "verdict": "不推荐",
+   "summary": "江，30岁硕士上海，商汤异构计算6年，偏应用且年限不足。"
+  },
+  {
+   "candidate_id": 67,
+   "score": 20,
+   "verdict": "不推荐",
+   "summary": "应，31岁博士在读深圳，在读学生，无关。"
+  },
+  {
+   "candidate_id": 68,
+   "score": 25,
+   "verdict": "不推荐",
+   "summary": "曾，28岁硕士上海，仿真算法，与岗位无关。"
+  },
+  {
+   "candidate_id": 69,
+   "score": 56,
+   "verdict": "不推荐",
+   "summary": "李，29岁本科杭州，寒武纪计算库3年+异构计算，经验相关但本科不满足学历硬性要求。"
+  },
+  {
+   "candidate_id": 70,
+   "score": 40,
+   "verdict": "不推荐",
+   "summary": "杜，35岁硕士深圳，EDA首席软件工程师，非GPGPU方向。"
+  },
+  {
+   "candidate_id": 71,
+   "score": 62,
+   "verdict": "待定",
+   "match_points": [
+    "百度百舸异构计算解决方案+智算中心负责人，异构计算认知强",
+    "北京本地、40岁、北交统招硕士、16年经验"
+   ],
+   "concerns": [
+    "偏解决方案/产品，非GPGPU软件研发架构",
+    "技术深度与架构主导意愿需面谈核实"
+   ],
+   "summary": "范，40岁硕士北京，百度百舸异构计算解决方案负责人，北京本地可谈但偏方案侧。"
+  },
+  {
+   "candidate_id": 72,
+   "score": 25,
+   "verdict": "不推荐",
+   "summary": "李，47岁博士深圳，高校教师/算法负责人，超龄不符。"
+  },
+  {
+   "candidate_id": 73,
+   "score": 30,
+   "verdict": "不推荐",
+   "summary": "孔，34岁硕士北京，嵌入式电控系统工程师，无GPGPU软件经验。"
+  },
+  {
+   "candidate_id": 74,
+   "score": 32,
+   "verdict": "不推荐",
+   "summary": "张，37岁硕士上海，通用算法工程师，与GPGPU软件架构无关。"
+  },
+  {
+   "candidate_id": 75,
+   "score": 48,
+   "verdict": "不推荐",
+   "summary": "陈，43岁硕士西安，美团异构计算组系统开发7年，沾边但非GPGPU全栈架构且base西安。"
+  },
+  {
+   "candidate_id": 76,
+   "score": 68,
+   "verdict": "待定",
+   "match_points": [
+    "北京本地37岁，985/211（四川大学）统招硕士，硬性条件基本达标",
+    "字节跳动异构计算硬件架构师8年+百度资深系统工程师4年，GPU/异构计算功底扎实",
+    "12年研发经验，架构师岗位定位接近"
+   ],
+   "concerns": [
+    "方向偏硬件架构，GPGPU软件全栈（编译器/驱动/计算库）证据不足",
+    "无量产级GPGPU软件架构主导经历需核实"
+   ],
+   "summary": "胡，37岁硕士北京，字节异构计算硬件架构师，是本批综合最接近的候选人，建议优先深聊。"
+  },
+  {
+   "candidate_id": 77,
+   "score": 30,
+   "verdict": "不推荐",
+   "summary": "李，30岁硕士广州，以实习经历为主且非GPGPU方向，经验过浅。"
+  },
+  {
+   "candidate_id": 78,
+   "score": 32,
+   "verdict": "不推荐",
+   "summary": "王，29岁硕士深圳，Java后端方向，与GPGPU岗位无关。"
+  },
+  {
+   "candidate_id": 79,
+   "score": 35,
+   "verdict": "不推荐",
+   "summary": "程，28岁硕士北京，阿里云异构计算编译仅实习2个月，Java方向经验过浅。"
+  },
+  {
+   "candidate_id": 80,
+   "score": 45,
+   "verdict": "不推荐",
+   "summary": "小，37岁硕士无锡，异构SoC数字前端架构，偏硬件且非GPGPU软件栈。"
+  },
+  {
+   "candidate_id": 81,
+   "score": 25,
+   "verdict": "不推荐",
+   "summary": "王，30岁硕士石家庄，网络工程师，与岗位无关。"
+  },
+  {
+   "candidate_id": 82,
+   "score": 25,
+   "verdict": "不推荐",
+   "summary": "王，24岁本科杭州，高性能计算3年，本科且资历过浅。"
+  },
+  {
+   "candidate_id": 83,
+   "score": 52,
+   "verdict": "待定",
+   "match_points": [
+    "985/211（湖南大学）统招硕士，35岁，学历年龄达标",
+    "阿里云异构计算5年2个月，异构/GPU计算方向相关"
+   ],
+   "concerns": [
+    "总经验7年不足8年硬性门槛",
+    "无架构主导与量产证据，base上海"
+   ],
+   "summary": "葛，35岁硕士上海，阿里云异构计算5年，方向相关但年限略欠，可作储备跟进。"
+  },
+  {
+   "candidate_id": 84,
+   "score": 55,
+   "verdict": "待定",
+   "match_points": [
+    "浙江大学统招博士，38岁，学术背景优秀",
+    "蚂蚁集团异构计算加速4年2个月，异构计算方向相关"
+   ],
+   "concerns": [
+    "偏加速/隐私计算，GPGPU软件全栈与架构主导证据不足",
+    "base杭州，需确认北京意愿"
+   ],
+   "summary": "邱，38岁博士杭州，蚂蚁异构计算加速4年，技术功底好但方向深度待核，可列为备选。"
+  },
+  {
+   "candidate_id": 85,
+   "score": 42,
+   "verdict": "不推荐",
+   "summary": "吴，29岁本科深圳，荣耀异构计算4年，本科不满足学历硬性要求。"
+  },
+  {
+   "candidate_id": 86,
+   "score": 15,
+   "verdict": "不推荐",
+   "summary": "郭，39岁硕士北京，DBA/ORACLE方向，与岗位完全无关。"
+  },
+  {
+   "candidate_id": 87,
+   "score": 48,
+   "verdict": "不推荐",
+   "summary": "王，34岁硕士深圳，AR/激光雷达异构算法，偏算法应用且base深圳。"
+  },
+  {
+   "candidate_id": 88,
+   "score": 30,
+   "verdict": "不推荐",
+   "summary": "某，26岁本科北京，格灵深瞳异构计算2年，本科且资历过浅。"
+  },
+  {
+   "candidate_id": 89,
+   "score": 15,
+   "verdict": "不推荐",
+   "summary": "杜，39岁博士上海，NLP/高校研究方向，与岗位完全无关。"
+  },
+  {
+   "candidate_id": 90,
+   "score": 45,
+   "verdict": "不推荐",
+   "summary": "王，39岁硕士上海，AI芯片/CPU验证Leader，验证方向非GPGPU软件架构。"
+  },
+  {
+   "candidate_id": 91,
+   "score": 15,
+   "verdict": "不推荐",
+   "summary": "李，44岁硕士上海，芯片公司CEO，管理岗超龄且非技术方向。"
+  },
+  {
+   "candidate_id": 92,
+   "score": 20,
+   "verdict": "不推荐",
+   "summary": "陆，44岁硕士深圳，芯片产品/市场总监，产品岗非软件架构且超龄。"
+  },
+  {
+   "candidate_id": 93,
+   "score": 38,
+   "verdict": "不推荐",
+   "summary": "汪，36岁本科无锡，AI芯片嵌入式软件工程师，本科且无架构主导。"
+  },
+  {
+   "candidate_id": 94,
+   "score": 48,
+   "verdict": "不推荐",
+   "summary": "时，42岁硕士西安，云天励飞AI芯片处理器模拟软件开发，非GPGPU全栈且base西安。"
+  },
+  {
+   "candidate_id": 95,
+   "score": 20,
+   "verdict": "不推荐",
+   "summary": "李，48岁MBA上海，英伟达/思科BD商务，非技术岗且超龄。"
+  },
+  {
+   "candidate_id": 96,
+   "score": 15,
+   "verdict": "不推荐",
+   "summary": "牛，33岁硕士上海，投资经理，与岗位完全无关。"
+  },
+  {
+   "candidate_id": 97,
+   "score": 30,
+   "verdict": "不推荐",
+   "summary": "张，39岁硕士北京，AI芯片公司项目经理，管理岗非GPGPU技术。"
+  },
+  {
+   "candidate_id": 98,
+   "score": 25,
+   "verdict": "不推荐",
+   "summary": "田，37岁博士重庆，光子AI芯片项目经理，光芯片方向非GPGPU软件。"
+  },
+  {
+   "candidate_id": 99,
+   "score": 25,
+   "verdict": "不推荐",
+   "summary": "孙，38岁本科深圳，AI芯片产品/市场经理，非技术岗。"
+  },
+  {
+   "candidate_id": 100,
+   "score": 28,
+   "verdict": "不推荐",
+   "summary": "陈，36岁博士上海，华为项目经理，管理岗且非GPGPU方向。"
+  },
+  {
+   "candidate_id": 101,
+   "score": 30,
+   "verdict": "不推荐",
+   "summary": "曾，34岁硕士成都，SOC验证工程师，验证方向非GPGPU软件。"
+  },
+  {
+   "candidate_id": 102,
+   "score": 52,
+   "verdict": "待定",
+   "match_points": [
+    "19年经验，某AI芯片公司主任软件工程师，驱动/内核/虚拟化/bring-up软件栈方向",
+    "同济大学统招硕士，985/211学历达标"
+   ],
+   "concerns": [
+    "44岁超43岁年龄硬性上限",
+    "无明确GPGPU量产架构主导证据，base上海"
+   ],
+   "summary": "刘，44岁硕士上海，AI芯片主任软件工程师，软件栈相关但超龄，可酌情核实。"
+  },
+  {
+   "candidate_id": 103,
+   "score": 25,
+   "verdict": "不推荐",
+   "summary": "孙，36岁本科杭州，语音算法负责人，非GPGPU方向。"
+  },
+  {
+   "candidate_id": 104,
+   "score": 25,
+   "verdict": "不推荐",
+   "summary": "朱，44岁MBA北京，AI硬件产品VP，产品岗且超龄学历不符。"
+  },
+  {
+   "candidate_id": 105,
+   "score": 15,
+   "verdict": "不推荐",
+   "summary": "李，36岁硕士北京，热设计/散热工程师，与岗位完全无关。"
+  },
+  {
+   "candidate_id": 106,
+   "score": 40,
+   "verdict": "不推荐",
+   "summary": "王，35岁本科上海，芯片项目经理/嵌入式，本科且无GPGPU软件架构。"
+  },
+  {
+   "candidate_id": 107,
+   "score": 28,
+   "verdict": "不推荐",
+   "summary": "杨，43岁硕士北京，高级项目经理，管理岗非GPGPU技术。"
+  },
+  {
+   "candidate_id": 108,
+   "score": 45,
+   "verdict": "不推荐",
+   "summary": "吴，36岁本科北京，AI芯片架构师/IC设计，偏硬件设计且本科。"
+  },
+  {
+   "candidate_id": 109,
+   "score": 10,
+   "verdict": "不推荐",
+   "summary": "曹，26岁硕士美国，金融/咨询方向，与岗位完全无关。"
+  },
+  {
+   "candidate_id": 110,
+   "score": 55,
+   "verdict": "待定",
+   "match_points": [
+    "平头哥半导体高级技术专家5年2个月，覆盖计算库/芯片软件/云计算，GPGPU生态相关",
+    "浙江大学985本科，37岁，14年经验"
+   ],
+   "concerns": [
+    "本科非硕士，不满足985/211统招硕士硬性要求",
+    "base杭州，需确认北京意愿"
+   ],
+   "summary": "黄，37岁本科杭州，平头哥高级技术专家，技术对路但学历不达标，可评估是否放宽。"
+  },
+  {
+   "candidate_id": 111,
+   "score": 30,
+   "verdict": "不推荐",
+   "summary": "朱，45岁硕士杭州，软件质量/测试总监，QA方向非架构且超龄。"
+  },
+  {
+   "candidate_id": 112,
+   "score": 28,
+   "verdict": "不推荐",
+   "summary": "刘，39岁硕士北京，三星项目总监，管理岗非GPGPU技术。"
+  },
+  {
+   "candidate_id": 113,
+   "score": 15,
+   "verdict": "不推荐",
+   "summary": "龚，40岁MBA上海，销售经理，与岗位完全无关。"
+  },
+  {
+   "candidate_id": 114,
+   "score": 30,
+   "verdict": "不推荐",
+   "summary": "王，30岁硕士上海，数字电路设计，硬件方向非GPGPU软件。"
+  },
+  {
+   "candidate_id": 115,
+   "score": 30,
+   "verdict": "不推荐",
+   "summary": "蔡，26岁本科杭州，AI芯片建模2年，本科且资历过浅。"
+  },
+  {
+   "candidate_id": 116,
+   "score": 20,
+   "verdict": "不推荐",
+   "summary": "桑，26岁博士在读珠海，在读学生，无产业经验。"
+  },
+  {
+   "candidate_id": 117,
+   "score": 55,
+   "verdict": "待定",
+   "match_points": [
+    "芯瞳半导体（目标公司）编译器开发HIP/ROCm方向，GPGPU软件栈对口",
+    "39岁、13年经验，编译器/嵌入式方向技术扎实"
+   ],
+   "concerns": [
+    "兰州理工硕士非985/211，学历硬性不满足",
+    "base西安且角色为工程师，无架构主导证据"
+   ],
+   "summary": "梁，39岁硕士西安，芯瞳HIP/ROCm编译器背景，技术对口但学历/base不符，可作技术型备选。"
+  },
+  {
+   "candidate_id": 118,
+   "score": 20,
+   "verdict": "不推荐",
+   "summary": "于，33岁本科南京，AMD ROCm大客户销售，商务岗非技术。"
+  },
+  {
+   "candidate_id": 119,
+   "score": 35,
+   "verdict": "不推荐",
+   "summary": "张，43岁硕士江苏，AMD ROCm生态总监，商务/生态岗非软件研发。"
+  },
+  {
+   "candidate_id": 120,
+   "score": 35,
+   "verdict": "不推荐",
+   "summary": "张，26岁本科南京，AMD ROCm AI技术工程师1年，本科且资历过浅。"
+  },
+  {
+   "candidate_id": 121,
+   "score": 40,
+   "verdict": "不推荐",
+   "summary": "张，42岁硕士上海，DELL/EMC存储软件架构，非GPGPU方向。"
+  },
+  {
+   "candidate_id": 122,
+   "score": 30,
+   "verdict": "不推荐",
+   "summary": "梅，42岁本科无锡，CTO/技术总监，无GPGPU软件背景。"
+  },
+  {
+   "candidate_id": 123,
+   "score": 20,
+   "verdict": "不推荐",
+   "summary": "步，36岁硕士上海，项目经理/敏捷教练，与岗位无关。"
+  },
+  {
+   "candidate_id": 124,
+   "score": 48,
+   "verdict": "不推荐",
+   "summary": "赵，42岁硕士北京，虚拟化架构师，方向沾边但硕士非统招且无GPGPU全栈证据。"
+  },
+  {
+   "candidate_id": 125,
+   "score": 58,
+   "verdict": "待定",
+   "match_points": [
+    "AMD超威+英伟达中国研发副总监近9年，GPU软件研发管理经验顶级",
+    "上海交大统招本科，GPU量产软硬件功底强"
+   ],
+   "concerns": [
+    "45岁超43岁年龄硬性上限",
+    "本科非硕士，且base上海"
+   ],
+   "summary": "冷，45岁本科上海，AMD/英伟达研发副总监，GPU背景最强但年龄学历双重不达标，仅可评估特批。"
+  },
+  {
+   "candidate_id": 126,
+   "score": 50,
+   "verdict": "待定",
+   "match_points": [
+    "上海交大统招硕士，40岁，学历年龄达标",
+    "AI算力/智能芯片技术专家18年经验"
+   ],
+   "concerns": [
+    "无明确GPGPU软件全栈与量产架构主导证据",
+    "base上海，需确认北京意愿"
+   ],
+   "summary": "龚，40岁硕士上海，智能算力/AI芯片技术专家，资历深但方向深度待核，可作备选。"
+  },
+  {
+   "candidate_id": 127,
+   "score": 10,
+   "verdict": "不推荐",
+   "summary": "钟，21岁本科在读深圳，金融工程，与岗位完全无关。"
+  },
+  {
+   "candidate_id": 128,
+   "score": 48,
+   "verdict": "不推荐",
+   "summary": "张，33岁硕士上海，AMD系统设计/IC测试，偏测试且硕士在读未完成。"
+  },
+  {
+   "candidate_id": 129,
+   "score": 35,
+   "verdict": "不推荐",
+   "summary": "张，42岁本科北京，通用软件架构师（存储/平台），非GPGPU方向。"
+  },
+  {
+   "candidate_id": 130,
+   "score": 40,
+   "verdict": "不推荐",
+   "summary": "刘，26岁本科郑州，中科曙光编译器开发3年，方向沾边但本科且资历过浅。"
+  },
+  {
+   "candidate_id": 131,
+   "score": 20,
+   "verdict": "不推荐",
+   "summary": "杨，29岁本科北京，后端Java开发，与岗位无关。"
+  },
+  {
+   "candidate_id": 132,
+   "score": 28,
+   "verdict": "不推荐",
+   "summary": "陈，30岁本科深圳，大模型/AIGC算法，非GPGPU软件栈。"
+  },
+  {
+   "candidate_id": 133,
+   "score": 30,
+   "verdict": "不推荐",
+   "summary": "徐，42岁本科上海，AI算法工程师，应用算法非GPGPU软件架构。"
+  },
+  {
+   "candidate_id": 134,
+   "score": 5,
+   "verdict": "不推荐",
+   "summary": "刘，33岁本科常州，工程造价，与岗位完全无关。"
+  },
+  {
+   "candidate_id": 135,
+   "score": 30,
+   "verdict": "不推荐",
+   "summary": "常，25岁硕士在读北京，在读学生，无产业经验。"
+  },
+  {
+   "candidate_id": 136,
+   "score": 20,
+   "verdict": "不推荐",
+   "summary": "李，42岁本科天津，RedHat解决方案工程师，非GPGPU方向。"
+  },
+  {
+   "candidate_id": 137,
+   "score": 55,
+   "verdict": "待定",
+   "match_points": [
+    "芯云半导体GPU研发（编译器方向）2年10个月，GPU编译器技术对口",
+    "南京大学985本科+Iowa州立统招硕士，37岁14年经验"
+   ],
+   "concerns": [
+    "硕士为海外院校非985/211，学历硬性存疑",
+    "base西安，无架构主导证据"
+   ],
+   "summary": "纪，37岁硕士西安，GPU编译器研发背景，技术对口但学历/base需核实，可作技术型备选。"
+  },
+  {
+   "candidate_id": 138,
+   "score": 25,
+   "verdict": "不推荐",
+   "summary": "何，39岁本科上海，Java/AIoT架构师，非GPGPU方向。"
+  },
+  {
+   "candidate_id": 139,
+   "score": 40,
+   "verdict": "不推荐",
+   "summary": "王，38岁硕士上海，算法仿真框架负责人，仿真方向非GPGPU软件。"
+  },
+  {
+   "candidate_id": 140,
+   "score": 35,
+   "verdict": "不推荐",
+   "summary": "张，46岁硕士上海，汽车软件总监，超龄且非GPGPU方向。"
+  },
+  {
+   "candidate_id": 141,
+   "score": 48,
+   "verdict": "不推荐",
+   "summary": "吴，35岁本科西安，寒武纪算法库+芯云编译器，方向相关但本科不满足学历硬性要求。"
+  },
+  {
+   "candidate_id": 142,
+   "score": 50,
+   "verdict": "待定",
+   "match_points": [
+    "沐曦（目标公司）软件专家2年+后摩智能资深软件工程师，MLIR/编译/LLM部署优化，GPGPU软件对口",
+    "南京理工大学211统招本科，24年经验技术功底深"
+   ],
+   "concerns": [
+    "46岁超43岁年龄硬性上限",
+    "本科非硕士，且base南京"
+   ],
+   "summary": "林，46岁本科南京，沐曦软件专家背景，GPGPU软件方向对口但年龄学历不达标，可评估特批。"
+  },
+  {
+   "candidate_id": 143,
+   "score": 38,
+   "verdict": "不推荐",
+   "summary": "苏，29岁硕士上海，AMD C/C++开发2年，资历过浅。"
+  },
+  {
+   "candidate_id": 144,
+   "score": 35,
+   "verdict": "不推荐",
+   "summary": "H，46岁硕士上海，阿里达摩院AI专家，超龄且偏AI应用非GPGPU软件。"
+  }
+ ]
+}

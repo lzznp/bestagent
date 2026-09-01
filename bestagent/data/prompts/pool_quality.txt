@@ -1,0 +1,27 @@
+# 模板占位符：{job_description}（岗位 JD 文本）、{candidates_text}（候选人列表摘要）
+# 服务层替换后作为 user prompt。
+
+你是一位资深猎头顾问。请评估以下岗位的候选人池质量，按 JSON 格式返回，只返回 JSON。
+
+【岗位描述】
+{job_description}
+
+【候选人列表（已采集候选人的原始文本，每段用 --- 分隔）】
+{candidates_text}
+
+{
+    "pool_quality": "优/良/中/差",
+    "match_distribution": {"high": 0, "medium": 0, "low": 0, "total": 0},
+    "main_gaps": ["候选人池的主要缺口，如技能、经验、学历等"],
+    "strengths": ["候选人池的优势"],
+    "recommendation": "是否值得继续投入招聘、优先联系谁、下一步行动建议",
+    "data_valid": true,
+    "data_valid_message": "如果候选人信息与岗位完全无关，或候选人列表包含大量非候选人内容，请将 data_valid 设为 false，并在 data_valid_message 中提醒用户「可能采集了错误的页面，请确认猎聘列表页已正确加载」"
+}
+
+说明：
+- match_distribution.high/medium/low 按匹配得分分档统计（≥80 / 60-79 / <60），无得分数据填 0
+- pool_quality 综合判断候选人池的数量与质量
+- recommendation 用 2-3 句话给出可执行建议
+- data_valid 默认为 true，只有当候选人信息与岗位描述完全无关时才设为 false
+- data_valid_message 在 data_valid 为 false 时给出具体提醒

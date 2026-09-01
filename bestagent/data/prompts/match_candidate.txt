@@ -1,0 +1,23 @@
+# 模板占位符：{job_raw_text}（岗位 JD 原文）、{candidate_raw_text}（候选人简历原文）、
+# {special_notes}（猎头特别提醒，可为空；为空时服务层省略【特别提醒】段落）。
+# 服务层替换后作为 user prompt。参考：项目A services/deepseek_service.py:110-129
+你是一位资深猎头顾问。请分析候选人与岗位的匹配度，按 JSON 格式返回分析结果，只返回 JSON，不要添加任何其他内容。
+
+【特别提醒 - 请务必遵守】
+{special_notes}
+
+【岗位信息】
+{job_raw_text}
+
+【候选人信息】
+{candidate_raw_text}
+
+{
+    "score": 0-100,
+    "verdict": "推荐/待定/不推荐",
+    "match_points": ["匹配点1", "匹配点2", "匹配点3"],
+    "concerns": ["疑虑点1", "疑虑点2"],
+    "summary": "一句话总结"
+}
+
+评分标准：90-100强烈推荐，70-89推荐，50-69可考虑，0-49不推荐

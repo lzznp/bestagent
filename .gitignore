@@ -1,0 +1,9 @@
+# 大目录/运行时，不提交
+.dsh-staging/
+.sessions/
+__pycache__/
+*.pyc
+
+# 临时测试账本
+data/usage/_quota_test.json
+data/usage/*.tmp

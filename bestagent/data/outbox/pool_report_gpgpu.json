@@ -1,0 +1,263 @@
+{
+  "pool_quality": {
+    "pool_quality": "中",
+    "match_distribution": {"high": 0, "medium": 7, "low": 23, "total": 30},
+    "main_gaps": [
+      "无一人完全满足985/211统招硕士+8年GPGPU软件全栈+5年架构主导+量产经验+北京的全部硬性条件，high档为0",
+      "学历硬伤普遍：多为本科、非985/211或非统招硕士，严格卡硕士学历后候选人大幅缩水",
+      "多数候选人为验证/测试/数字设计/CModel等方向，非GPGPU软件全栈研发",
+      "少数资历到位者超龄（44-46岁）或角色偏执行（Staff/工程师），缺量产级架构主导证据",
+      "工作地集中在成都/上海/深圳，北京本地候选人极少，跨城意愿不明"
+    ],
+    "strengths": [
+      "30人中有约7人具备GPGPU软件相关背景（驱动/编译器/软件/架构），可作为中位池深挖",
+      "覆盖了海光、摩尔线程、壁仞、登临、沐曦、象帝先、曦望、中科芯等目标公司人才",
+      "陈**在学历（电子科大统招硕士）、年限（14年）、GPU软件栈（海光+摩尔线程）上最接近岗位要求"
+    ],
+    "recommendation": "池子值得继续投入但hard-match薄弱，建议优先联系陈**核实量产架构主导经历与北京意愿，同步评估北京本地GPGPU架构VP董**的学历破格空间，以及壁仞Staff李**的架构角色真实性；同时应针对华为昇腾/寒武纪/海光等目标公司补充定向寻访8年以上软件架构师，提高北京及可接受北京relocate的筛选权重。",
+    "data_valid": true,
+    "data_valid_message": ""
+  },
+  "candidates": [
+    {
+      "candidate_id": 1,
+      "score": 60,
+      "verdict": "待定",
+      "match_points": ["中科芯GPGPU UMD driver Leader，驱动栈方向对口", "10年工作经验、36岁", "北京大学计算机应用硕士"],
+      "concerns": ["硕士非统招，不满足985/211统招要求", "base成都，与北京岗位不符", "未见5年以上架构主导/量产经验"],
+      "summary": "GPGPU驱动Leader背景扎实，但非统招学历与城市不符，只能作中位备选。"
+    },
+    {
+      "candidate_id": 2,
+      "score": 63,
+      "verdict": "待定",
+      "match_points": ["Intel GPGPU产品总监，20年行业资历", "42岁在年龄上限内，硕士学历"],
+      "concerns": ["岗位偏产品而非软件架构研发", "浙江工业大学非985/211", "base上海，求职意向为产品总监"],
+      "summary": "Intel GPGPU产品背景亮眼，但方向偏产品、学历非211，与软件架构岗存在偏差。"
+    },
+    {
+      "candidate_id": 3,
+      "score": 78,
+      "verdict": "推荐",
+      "match_points": ["电子科技大学985/211统招硕士，40岁、14年经验", "海光+摩尔线程GPU软件背景，任成都site软件leader", "具备GPU软件栈与团队管理经验"],
+      "concerns": ["base成都，岗位要求北京", "量产级架构主导设计经验未见明确"],
+      "summary": "学历、年限、GPU软件背景俱佳，是池中最贴近岗位者，需确认量产主导与北京意愿。"
+    },
+    {
+      "candidate_id": 4,
+      "score": 30,
+      "verdict": "不推荐",
+      "match_points": ["GPGPU AI编译器（CUDA/LLVM/TVM）方向相关"],
+      "concerns": ["本科非985/211，仅5年经验远低于8年要求", "无架构设计/量产经验"],
+      "summary": "年轻编译器工程师，经验与学历均不达硬性门槛。"
+    },
+    {
+      "candidate_id": 5,
+      "score": 48,
+      "verdict": "不推荐",
+      "match_points": ["东北大学985/211统招硕士", "LLVM编译器/体系结构方向相关"],
+      "concerns": ["仅7年经验且非GPGPU软件全栈", "求职期望偏AI infra/深度学习，非软件架构师"],
+      "summary": "编译器方向对口但经验年限与岗位深度不足。"
+    },
+    {
+      "candidate_id": 6,
+      "score": 68,
+      "verdict": "待定",
+      "match_points": ["华中科技大学985/211统招硕士，19年经验", "壁仞GPGPU Staff Software Engineer，领域契合"],
+      "concerns": ["44岁超出43岁推荐上限", "Staff工程师角色，未见架构主导/量产经验", "base上海"],
+      "summary": "GPGPU资深工程师背景强，但超龄且角色偏执行，需核实架构主导经历。"
+    },
+    {
+      "candidate_id": 7,
+      "score": 5,
+      "verdict": "不推荐",
+      "match_points": ["在GPGPU上市企业任职，行业相关"],
+      "concerns": ["人力资源岗位，与软件架构完全无关", "管理学博士，非CS相关专业"],
+      "summary": "HR背景，与GPGPU软件架构岗完全不对口。"
+    },
+    {
+      "candidate_id": 8,
+      "score": 20,
+      "verdict": "不推荐",
+      "match_points": ["GPGPU/GPU公司IC验证经验"],
+      "concerns": ["验证方向非软件全栈", "46岁超龄，无软件架构经验"],
+      "summary": "IC验证工程师，方向与年限均不符。"
+    },
+    {
+      "candidate_id": 9,
+      "score": 45,
+      "verdict": "不推荐",
+      "match_points": ["电子科技大学985/211统招硕士", "登临/亿铸GPGPU CModel开发经验"],
+      "concerns": ["仅6年经验，不足8年", "CModel仿真建模非全栈软件架构"],
+      "summary": "GPGPU建模开发背景，经验年限和架构深度不足。"
+    },
+    {
+      "candidate_id": 10,
+      "score": 25,
+      "verdict": "不推荐",
+      "match_points": ["base北京", "壁仞GPGPU核验证经验，上科大硕士"],
+      "concerns": ["仅3年经验，验证方向非软件栈", "上海科技大学非985/211"],
+      "summary": "年轻验证工程师，经验年限与方向均不符。"
+    },
+    {
+      "candidate_id": 11,
+      "score": 10,
+      "verdict": "不推荐",
+      "match_points": ["GPGPU设计方向相关，电子科大硕士在读"],
+      "concerns": ["尚未毕业，无全职年限", "数字前端设计非软件栈"],
+      "summary": "在读学生，远不符合岗位资历要求。"
+    },
+    {
+      "candidate_id": 12,
+      "score": 20,
+      "verdict": "不推荐",
+      "match_points": ["AMD/壁仞GPGPU验证背景"],
+      "concerns": ["本科学历非985/211", "SLT测试验证方向，非软件架构"],
+      "summary": "GPGPU测试验证背景，学历与方向均不达标。"
+    },
+    {
+      "candidate_id": 13,
+      "score": 10,
+      "verdict": "不推荐",
+      "match_points": ["国防科技大学硕士在读，IC验证方向"],
+      "concerns": ["在读实习生，无经验积累", "验证方向非软件栈"],
+      "summary": "在读验证实习生，资历与岗位差距悬殊。"
+    },
+    {
+      "candidate_id": 14,
+      "score": 20,
+      "verdict": "不推荐",
+      "match_points": ["壁仞GPGPU算子开发经验"],
+      "concerns": ["本科非硕士，仅4年经验", "算子开发非全栈架构"],
+      "summary": "初级算子工程师，学历与经验均不达标。"
+    },
+    {
+      "candidate_id": 15,
+      "score": 68,
+      "verdict": "待定",
+      "match_points": ["中国科学院大学硕士，9年经验", "有国产GPGPU芯片公司架构师经历", "现任首席软件工程师，具备架构能力"],
+      "concerns": ["求职期望转向投行业务，岗位意向不符", "GPGPU架构经验仅约2年", "base深圳"],
+      "summary": "有GPGPU架构+首席软件工程师双背景，但转型意向与架构深度需确认。"
+    },
+    {
+      "candidate_id": 16,
+      "score": 10,
+      "verdict": "不推荐",
+      "match_points": ["在某GPGPU公司任专利工程师，行业相关"],
+      "concerns": ["知识产权方向与软件架构完全无关", "法律专业背景"],
+      "summary": "专利工程师，方向完全不对口。"
+    },
+    {
+      "candidate_id": 17,
+      "score": 66,
+      "verdict": "待定",
+      "match_points": ["base北京，41岁", "某GPGPU公司VP/架构师6年+，19年经验", "具备架构设计与团队管理能力"],
+      "concerns": ["本科学历，不满足硕士硬性要求", "中国地质大学(北京)虽为211，但学历层次不符"],
+      "summary": "北京本地GPGPU架构VP，能力匹配但卡在硕士学历硬门槛。"
+    },
+    {
+      "candidate_id": 18,
+      "score": 55,
+      "verdict": "待定",
+      "match_points": ["吉林大学985/211统招硕士", "红山微电子GPGPU软件项目管理经验"],
+      "concerns": ["45岁超龄", "偏项目管理非架构设计，且处职业调整期", "base深圳"],
+      "summary": "GPGPU软件PM背景，超龄且角色偏管理。"
+    },
+    {
+      "candidate_id": 19,
+      "score": 30,
+      "verdict": "不推荐",
+      "match_points": ["沐曦GPGPU用户层驱动开发经验"],
+      "concerns": ["本科学历非硕士，仅5年经验", "驱动开发非架构主导"],
+      "summary": "GPGPU驱动工程师，经验与学历不足。"
+    },
+    {
+      "candidate_id": 20,
+      "score": 5,
+      "verdict": "不推荐",
+      "match_points": ["曾在GPGPU芯片公司实习"],
+      "concerns": ["HR实习，与岗位完全无关", "法学本科应届生"],
+      "summary": "HR背景，与岗位完全无关。"
+    },
+    {
+      "candidate_id": 21,
+      "score": 20,
+      "verdict": "不推荐",
+      "match_points": ["GPGPU/GPU公司IC验证经验"],
+      "concerns": ["验证方向非软件栈", "46岁超龄"],
+      "summary": "IC验证背景，方向与年龄均不符。"
+    },
+    {
+      "candidate_id": 22,
+      "score": 10,
+      "verdict": "不推荐",
+      "match_points": ["上海交大硕士在读，IC方向", "华为/无问芯穹IC验证实习"],
+      "concerns": ["在读实习生，无经验", "验证方向非软件架构"],
+      "summary": "交大在读验证实习生，资历远不达标。"
+    },
+    {
+      "candidate_id": 23,
+      "score": 55,
+      "verdict": "待定",
+      "match_points": ["壁仞GPGPU软件工程师5年+，HPC/NCCL/OpenCL背景", "21年软件经验，北邮统招本科"],
+      "concerns": ["本科学历不满足硕士要求", "45岁超龄，T6非架构主导", "base上海"],
+      "summary": "GPGPU软件背景扎实，但本科+超龄+非架构角色。"
+    },
+    {
+      "candidate_id": 24,
+      "score": 56,
+      "verdict": "待定",
+      "match_points": ["ARM/壁仞/微软全栈软件背景，23年经验", "东南大学统招本科（985/211）"],
+      "concerns": ["本科学历不满足硕士硬性要求", "45岁超龄", "壁仞经历偏staff软件工程师非架构主导"],
+      "summary": "国际大厂全栈软件履历优秀，但学历与年龄不符。"
+    },
+    {
+      "candidate_id": 25,
+      "score": 20,
+      "verdict": "不推荐",
+      "match_points": ["景嘉微HPC/CUDA方向，硕士学历"],
+      "concerns": ["仅2年经验，远不足8年", "广州大学非985/211"],
+      "summary": "初级HPC工程师，经验年限严重不足。"
+    },
+    {
+      "candidate_id": 26,
+      "score": 65,
+      "verdict": "待定",
+      "match_points": ["同济大学985/211本科+海外硕士，12年经验", "登临GPGPU c++软件/ESL建模经验", "33岁，具备架构相关经验"],
+      "concerns": ["岗位偏c++/ESL建模，量产架构主导不明确", "base成都"],
+      "summary": "GPGPU软件建模背景不错、学历达标，但架构主导深度待验证。"
+    },
+    {
+      "candidate_id": 27,
+      "score": 10,
+      "verdict": "不推荐",
+      "match_points": ["中微电等芯片公司产品市场经历，行业相关"],
+      "concerns": ["产品/市场方向，与软件架构完全无关", "本科学历非985/211"],
+      "summary": "产品市场背景，与技术架构岗无关。"
+    },
+    {
+      "candidate_id": 28,
+      "score": 5,
+      "verdict": "不推荐",
+      "match_points": ["嵌入式/软件组长经验"],
+      "concerns": ["与GPGPU完全无关", "本科非985/211"],
+      "summary": "嵌入式开发背景，与GPGPU岗位无关。"
+    },
+    {
+      "candidate_id": 29,
+      "score": 5,
+      "verdict": "不推荐",
+      "match_points": ["base北京"],
+      "concerns": ["金融投资背景，与岗位完全无关", "仅2年经验"],
+      "summary": "投资背景，完全不对口。"
+    },
+    {
+      "candidate_id": 30,
+      "score": 15,
+      "verdict": "不推荐",
+      "match_points": ["C++/Linux软件工程师11年经验"],
+      "concerns": ["非GPGPU方向", "本科学历非硕士", "base上海"],
+      "summary": "通用C++软件背景，与GPGPU架构岗位无关。"
+    }
+  ]
+}

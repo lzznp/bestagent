@@ -1,0 +1,824 @@
+{
+  "pool_quality": {
+    "pool_quality": "良",
+    "match_distribution": {"high": 0, "medium": 22, "low": 98, "total": 120},
+    "main_gaps": [
+      "无一人完全满足985/211统招硕士+8年GPGPU软件全栈+5年架构主导+量产级经验+北京+43岁以内的全部硬性条件，high档仍为0",
+      "学历硬伤普遍：大量候选人为本科、非985/211或非统招硕士，严格卡硕士后候选人大幅缩水",
+      "多数GPGPU相关候选人为驱动/编译器单模块工程师，缺全栈架构主导与量产级交付证据",
+      "头部架构师多超龄或学历不达标（如Arm首席架构师49岁、Intel SW经理49岁、Ampere首席47岁、英伟达架构Leader43岁本科）",
+      "北京本地强背景者稀缺，优质候选多集中在成都/上海/深圳/西安"
+    ],
+    "strengths": [
+      "120人大池，GPGPU/GPU软件相关候选人达30+，覆盖编译器、驱动、Runtime、HPC、算子、建模等方向",
+      "目标公司覆盖广：摩尔线程、壁仞、沐曦、象帝先、登临、海光、芯瞳、砺算、兆芯、格兰菲、联发科、英伟达、Intel、AMD、Arm、寒武纪、华为海思等",
+      "涌现数名接近岗位的候选人：陈**(78)、张**(75)、卢**(74)、林**(72)，其中卢**、张**在北京本地",
+      "相比上一版30人池，中位匹配由7人增至22人，北京本地候选人也明显增多"
+    ],
+    "recommendation": "池子值得继续投入：建议第一时间核实陈**(3)的量产级架构主导经历与北京意愿；北京本地优先深挖张**(43)、卢**(36)，可破格评估其GPU架构深度与量产证据，并同步核实董**(17)学历破格空间、英伟达杨**(46)的硕士学历可能；同时针对华为昇腾/寒武纪/海光定向补采8年+全栈软件架构师，提高北京及可relocate权重，中位驱动/编译器人选留作备选梯队。",
+    "data_valid": true,
+    "data_valid_message": ""
+  },
+  "candidates": [
+    {
+      "candidate_id": 1,
+      "score": 60,
+      "verdict": "待定",
+      "match_points": ["中科芯GPGPU UMD driver Leader，驱动栈方向对口", "10年+工作经验、36岁", "沐曦GPGPU软件专家经历"],
+      "concerns": ["北京大学硕士非统招，不满足985/211统招要求", "base成都，且未见架构主导/量产经验"],
+      "summary": "GPGPU驱动Leader背景扎实，但非统招学历与城市不符，作中位备选。"
+    },
+    {
+      "candidate_id": 2,
+      "score": 63,
+      "verdict": "待定",
+      "match_points": ["Intel GPGPU产品总监，20年行业资历", "42岁在年龄上限内、硕士学历"],
+      "concerns": ["岗位偏产品而非软件架构研发", "浙江工业大学非985/211，base上海"],
+      "summary": "Intel GPGPU产品背景亮眼，但方向偏产品、学历非211，与软件架构岗存在偏差。"
+    },
+    {
+      "candidate_id": 3,
+      "score": 78,
+      "verdict": "推荐",
+      "match_points": ["电子科技大学985/211统招硕士，40岁、14年经验", "海光+摩尔线程GPU软件背景，任成都site软件leader", "具备GPU软件栈与团队管理经验"],
+      "concerns": ["base成都，岗位要求北京", "量产级架构主导设计经验未见明确"],
+      "summary": "学历、年限、GPU软件背景俱佳，是池中最贴近岗位者，需确认量产主导与北京意愿。"
+    },
+    {
+      "candidate_id": 4,
+      "score": 30,
+      "verdict": "不推荐",
+      "summary": "年轻AI编译器工程师，经验与学历均不达硬性门槛。"
+    },
+    {
+      "candidate_id": 5,
+      "score": 48,
+      "verdict": "不推荐",
+      "summary": "编译器方向对口但经验年限与岗位深度不足。"
+    },
+    {
+      "candidate_id": 6,
+      "score": 68,
+      "verdict": "待定",
+      "match_points": ["华中科技大学985/211统招硕士，19年经验", "壁仞GPGPU Staff Software Engineer，领域契合"],
+      "concerns": ["44岁超出43岁推荐上限", "Staff角色，未见架构主导/量产经验，base上海"],
+      "summary": "GPGPU资深工程师背景强，但超龄且角色偏执行，需核实架构主导经历。"
+    },
+    {
+      "candidate_id": 7,
+      "score": 5,
+      "verdict": "不推荐",
+      "summary": "HRBP背景，与GPGPU软件架构岗完全不对口。"
+    },
+    {
+      "candidate_id": 8,
+      "score": 20,
+      "verdict": "不推荐",
+      "summary": "IC验证工程师，方向与年限均不符。"
+    },
+    {
+      "candidate_id": 9,
+      "score": 45,
+      "verdict": "不推荐",
+      "summary": "GPGPU建模开发背景，经验年限和架构深度不足。"
+    },
+    {
+      "candidate_id": 10,
+      "score": 25,
+      "verdict": "不推荐",
+      "summary": "年轻验证工程师，经验年限与方向均不符。"
+    },
+    {
+      "candidate_id": 11,
+      "score": 10,
+      "verdict": "不推荐",
+      "summary": "在读学生，远不符合岗位资历要求。"
+    },
+    {
+      "candidate_id": 12,
+      "score": 20,
+      "verdict": "不推荐",
+      "summary": "GPGPU测试验证背景，学历与方向均不达标。"
+    },
+    {
+      "candidate_id": 13,
+      "score": 10,
+      "verdict": "不推荐",
+      "summary": "在读验证实习生，资历与岗位差距悬殊。"
+    },
+    {
+      "candidate_id": 14,
+      "score": 20,
+      "verdict": "不推荐",
+      "summary": "初级算子工程师，学历与经验均不达标。"
+    },
+    {
+      "candidate_id": 15,
+      "score": 68,
+      "verdict": "待定",
+      "match_points": ["中国科学院大学硕士，9年经验", "有国产GPGPU芯片公司架构师经历", "现任首席软件工程师，具备架构能力"],
+      "concerns": ["求职期望转向投行，岗位意向不符", "GPGPU架构经验仅约2年，base深圳"],
+      "summary": "有GPGPU架构+首席软件工程师双背景，但转型意向与架构深度需确认。"
+    },
+    {
+      "candidate_id": 16,
+      "score": 10,
+      "verdict": "不推荐",
+      "summary": "专利工程师，方向完全不对口。"
+    },
+    {
+      "candidate_id": 17,
+      "score": 66,
+      "verdict": "待定",
+      "match_points": ["base北京，41岁", "某GPGPU公司VP/架构师6年+，19年经验", "具备架构设计与团队管理能力"],
+      "concerns": ["本科学历，不满足硕士硬性要求", "中国地质大学(北京)虽211，但学历层次不符"],
+      "summary": "北京本地GPGPU架构VP，能力匹配但卡在硕士学历硬门槛。"
+    },
+    {
+      "candidate_id": 18,
+      "score": 55,
+      "verdict": "待定",
+      "match_points": ["吉林大学985/211统招硕士", "红山微电子GPGPU软件项目管理经验"],
+      "concerns": ["45岁超龄", "偏项目管理非架构设计，且处职业调整期，base深圳"],
+      "summary": "GPGPU软件PM背景，超龄且角色偏管理。"
+    },
+    {
+      "candidate_id": 19,
+      "score": 30,
+      "verdict": "不推荐",
+      "summary": "GPGPU驱动工程师，经验与学历不足。"
+    },
+    {
+      "candidate_id": 20,
+      "score": 5,
+      "verdict": "不推荐",
+      "summary": "HR背景，与岗位完全无关。"
+    },
+    {
+      "candidate_id": 21,
+      "score": 20,
+      "verdict": "不推荐",
+      "summary": "IC验证背景，方向与年龄均不符。"
+    },
+    {
+      "candidate_id": 22,
+      "score": 10,
+      "verdict": "不推荐",
+      "summary": "交大在读验证实习生，资历远不达标。"
+    },
+    {
+      "candidate_id": 23,
+      "score": 55,
+      "verdict": "待定",
+      "match_points": ["壁仞GPGPU软件工程师5年+，HPC/NCCL/OpenCL背景", "21年软件经验，北邮统招本科"],
+      "concerns": ["本科学历不满足硕士要求", "45岁超龄，T6非架构主导，base上海"],
+      "summary": "GPGPU软件背景扎实，但本科+超龄+非架构角色。"
+    },
+    {
+      "candidate_id": 24,
+      "score": 56,
+      "verdict": "待定",
+      "match_points": ["ARM/壁仞/微软全栈软件背景，23年经验", "东南大学统招本科（985/211）"],
+      "concerns": ["本科学历不满足硕士硬性要求", "45岁超龄，壁仞经历偏staff工程师非架构主导"],
+      "summary": "国际大厂全栈软件履历优秀，但学历与年龄不符。"
+    },
+    {
+      "candidate_id": 25,
+      "score": 20,
+      "verdict": "不推荐",
+      "summary": "初级HPC工程师，经验年限严重不足。"
+    },
+    {
+      "candidate_id": 26,
+      "score": 65,
+      "verdict": "待定",
+      "match_points": ["同济大学985/211本科+海外硕士，12年经验", "登临GPGPU c++软件/ESL建模经验", "33岁，具备架构相关经验"],
+      "concerns": ["岗位偏c++/ESL建模，量产架构主导不明确", "base成都"],
+      "summary": "GPGPU软件建模背景不错、学历达标，但架构主导深度待验证。"
+    },
+    {
+      "candidate_id": 27,
+      "score": 10,
+      "verdict": "不推荐",
+      "summary": "产品市场背景，与技术架构岗无关。"
+    },
+    {
+      "candidate_id": 28,
+      "score": 5,
+      "verdict": "不推荐",
+      "summary": "嵌入式开发背景，与GPGPU岗位无关。"
+    },
+    {
+      "candidate_id": 29,
+      "score": 5,
+      "verdict": "不推荐",
+      "summary": "投资背景，完全不对口。"
+    },
+    {
+      "candidate_id": 30,
+      "score": 15,
+      "verdict": "不推荐",
+      "summary": "通用C++软件背景，与GPGPU架构岗位无关。"
+    },
+    {
+      "candidate_id": 31,
+      "score": 55,
+      "verdict": "待定",
+      "match_points": ["英特尔亚太GPU优化架构师，GPU方向对口", "复旦大学985/211统招本科"],
+      "concerns": ["48岁严重超龄", "本科学历不满足硕士硬性要求"],
+      "summary": "GPU优化架构师资历深，但年龄与学历双重不达标。"
+    },
+    {
+      "candidate_id": 32,
+      "score": 60,
+      "verdict": "待定",
+      "match_points": ["ArmChina GPU软件首席架构师，架构资历顶级", "硕士学历、芯片行业背景"],
+      "concerns": ["49岁严重超龄（>43）", "硕士非统招，base上海"],
+      "summary": "GPU软件首席架构师头衔亮眼，但严重超龄且学历存疑，仅作破格评估。"
+    },
+    {
+      "candidate_id": 33,
+      "score": 20,
+      "verdict": "不推荐",
+      "summary": "剑桥硕士应届GPU架构新人，资历远不达8年架构师要求。"
+    },
+    {
+      "candidate_id": 34,
+      "score": 5,
+      "verdict": "不推荐",
+      "summary": "产品运营背景，与软件架构岗无关。"
+    },
+    {
+      "candidate_id": 35,
+      "score": 30,
+      "verdict": "不推荐",
+      "summary": "SOC低功耗硬件架构背景，非GPGPU软件栈。"
+    },
+    {
+      "candidate_id": 36,
+      "score": 74,
+      "verdict": "推荐",
+      "match_points": ["base北京，42岁在年龄上限内", "大连理工大学985/211统招硕士，16年经验", "联想GPU架构师+浪潮HPC GPU/MIC软件开发背景"],
+      "concerns": ["GPGPU软件全栈/量产级架构主导证据不足", "有6个月英伟达开发者社区经理经历，方向需确认"],
+      "summary": "北京本地、学历年龄达标、GPU/HPC背景均衡，是池中最值得推进的候选人之一。"
+    },
+    {
+      "candidate_id": 37,
+      "score": 15,
+      "verdict": "不推荐",
+      "summary": "云架构背景非GPGPU，且超龄、学历非统招。"
+    },
+    {
+      "candidate_id": 38,
+      "score": 10,
+      "verdict": "不推荐",
+      "summary": "项目管理背景，与技术架构岗无关。"
+    },
+    {
+      "candidate_id": 39,
+      "score": 25,
+      "verdict": "不推荐",
+      "summary": "IC数字电路设计背景，非GPGPU软件栈。"
+    },
+    {
+      "candidate_id": 40,
+      "score": 5,
+      "verdict": "不推荐",
+      "summary": "战略投资背景，与岗位完全无关。"
+    },
+    {
+      "candidate_id": 41,
+      "score": 66,
+      "verdict": "待定",
+      "match_points": ["上海兆芯架构工程师10年9个月，GPU/CUDA/OpenCL方向", "38岁，硕士学历"],
+      "concerns": ["上海理工大学非985/211", "base上海，未见架构主导/量产证据"],
+      "summary": "兆芯GPU架构/软件背景对口，但学历院校与架构深度需核实。"
+    },
+    {
+      "candidate_id": 42,
+      "score": 5,
+      "verdict": "不推荐",
+      "summary": "HR招聘背景，与岗位无关。"
+    },
+    {
+      "candidate_id": 43,
+      "score": 75,
+      "verdict": "推荐",
+      "match_points": ["base北京，42岁", "浙江大学985/211统招硕士，18年经验", "威盛资深GPU架构师4年+爱奇艺媒体计算架构师"],
+      "concerns": ["GPU架构经验距今较久（威盛时代），当前偏媒体计算", "量产级GPGPU软件栈主导证据不足"],
+      "summary": "北京+浙大硕士+GPU架构背景，是池中最贴近岗位的候选人之一，建议优先深挖。"
+    },
+    {
+      "candidate_id": 44,
+      "score": 5,
+      "verdict": "不推荐",
+      "summary": "HR招聘背景，与岗位无关。"
+    },
+    {
+      "candidate_id": 45,
+      "score": 5,
+      "verdict": "不推荐",
+      "summary": "HR经理背景，与岗位无关。"
+    },
+    {
+      "candidate_id": 46,
+      "score": 58,
+      "verdict": "待定",
+      "match_points": ["英伟达架构师Leader 14年+，全球顶级GPU平台", "43岁恰在年龄上限内，同济985/211本科"],
+      "concerns": ["本科学历不满足硕士硬性要求", "方向偏嵌入式/系统架构，非GPGPU软件全栈"],
+      "summary": "英伟达架构Leader资历强，但学历与软件栈方向存在硬伤。"
+    },
+    {
+      "candidate_id": 47,
+      "score": 25,
+      "verdict": "不推荐",
+      "summary": "通用软件架构背景非GPGPU，且44岁超龄。"
+    },
+    {
+      "candidate_id": 48,
+      "score": 10,
+      "verdict": "不推荐",
+      "summary": "AI基础设施架构但学历非统招、方向非GPGPU。"
+    },
+    {
+      "candidate_id": 49,
+      "score": 72,
+      "verdict": "待定",
+      "match_points": ["上海交通大学985/211统招硕士，16年经验", "英伟达Tegra/GPU架构师+infrastructure工程师10年", "42岁在年龄上限内"],
+      "concerns": ["当前角色偏infrastructure工程师，架构主导需确认", "base上海，量产级GPGPU软件栈证据不足"],
+      "summary": "英伟达+交大背景扎实，年龄学历达标，是值得破格深挖的高潜候选人。"
+    },
+    {
+      "candidate_id": 50,
+      "score": 5,
+      "verdict": "不推荐",
+      "summary": "网络测试工程师，与GPGPU岗位无关。"
+    },
+    {
+      "candidate_id": 51,
+      "score": 20,
+      "verdict": "不推荐",
+      "summary": "52岁严重超龄，GPU硬件架构非软件栈。"
+    },
+    {
+      "candidate_id": 52,
+      "score": 5,
+      "verdict": "不推荐",
+      "summary": "猎头背景，与岗位无关。"
+    },
+    {
+      "candidate_id": 53,
+      "score": 5,
+      "verdict": "不推荐",
+      "summary": "HRD背景，与岗位无关。"
+    },
+    {
+      "candidate_id": 54,
+      "score": 5,
+      "verdict": "不推荐",
+      "summary": "HR高级经理背景，与岗位无关。"
+    },
+    {
+      "candidate_id": 55,
+      "score": 5,
+      "verdict": "不推荐",
+      "summary": "HR总监背景且大专学历，与岗位无关。"
+    },
+    {
+      "candidate_id": 56,
+      "score": 5,
+      "verdict": "不推荐",
+      "summary": "猎头背景，与岗位无关。"
+    },
+    {
+      "candidate_id": 57,
+      "score": 5,
+      "verdict": "不推荐",
+      "summary": "猎头背景，与岗位无关。"
+    },
+    {
+      "candidate_id": 58,
+      "score": 3,
+      "verdict": "不推荐",
+      "summary": "运维总监背景且大专学历，与岗位无关。"
+    },
+    {
+      "candidate_id": 59,
+      "score": 5,
+      "verdict": "不推荐",
+      "summary": "HR招聘背景，与岗位无关。"
+    },
+    {
+      "candidate_id": 60,
+      "score": 5,
+      "verdict": "不推荐",
+      "summary": "HRVP背景，与岗位无关。"
+    },
+    {
+      "candidate_id": 61,
+      "score": 35,
+      "verdict": "不推荐",
+      "summary": "年轻GPU编译器工程师，仅3年经验远不足8年。"
+    },
+    {
+      "candidate_id": 62,
+      "score": 60,
+      "verdict": "待定",
+      "match_points": ["资深GPU编译器工程师4年8个月，Arm/华为背景", "19年软件经验，41岁", "天津大学985/211统招本科"],
+      "concerns": ["本科学历不满足硕士硬性要求", "编译器单项为主，非GPGPU全栈架构主导"],
+      "summary": "GPU编译器专家、年龄合适，但学历与全栈架构深度有缺口。"
+    },
+    {
+      "candidate_id": 63,
+      "score": 62,
+      "verdict": "待定",
+      "match_points": ["摩尔线程高级GPU编译器工程师5年+华为编译器3年，编译器专精", "中国科学技术大学985/211统招本科"],
+      "concerns": ["本科非硕士", "30岁资历偏浅，非架构主导"],
+      "summary": "GPU编译器经验扎实且出身名校，但学历与资历深度不足。"
+    },
+    {
+      "candidate_id": 64,
+      "score": 55,
+      "verdict": "待定",
+      "match_points": ["芯云GPU研发工程师（编译器方向），南京大学985/211本科+海外硕士", "37岁、14年经验"],
+      "concerns": ["GPU编译器经验仅约3年", "base西安，未见架构主导/量产经验"],
+      "summary": "编译器背景+名校学历，但GPU经验年限与架构深度有限。"
+    },
+    {
+      "candidate_id": 65,
+      "score": 58,
+      "verdict": "待定",
+      "match_points": ["浙江大学985/211统招硕士，8年经验", "登临GPU LLVM编译器+理想AI芯片编译器"],
+      "concerns": ["GPGPU相关经验约2年，深度不足", "32岁偏年轻，非架构主导"],
+      "summary": "名校硕士+GPU编译器方向对口，但经验深度与资历未达架构师门槛。"
+    },
+    {
+      "candidate_id": 66,
+      "score": 50,
+      "verdict": "待定",
+      "match_points": ["南京大学985/211本科+海外硕士", "芯云GPU编译器工程师（渲染方向）"],
+      "concerns": ["仅6年工作经验，不足8年", "base朔州，方向偏渲染编译器"],
+      "summary": "学历背景好但GPU编译经验与年限不足。"
+    },
+    {
+      "candidate_id": 67,
+      "score": 30,
+      "verdict": "不推荐",
+      "summary": "仅4年经验，GPU编译器经历短，资历不足。"
+    },
+    {
+      "candidate_id": 68,
+      "score": 15,
+      "verdict": "不推荐",
+      "summary": "初级编译器工程师，1年经验远不达要求。"
+    },
+    {
+      "candidate_id": 69,
+      "score": 20,
+      "verdict": "不推荐",
+      "summary": "年轻编译器工程师，经验不足且GPGPU经历极短。"
+    },
+    {
+      "candidate_id": 70,
+      "score": 60,
+      "verdict": "待定",
+      "match_points": ["中科院自动化所硕士+华中科技大学985/211本科", "AI编译器开发4年6个月+技术总监6年", "39岁、15年经验"],
+      "concerns": ["AI编译器非GPGPU/GPU软件栈", "base无锡"],
+      "summary": "AI编译器+技术总监背景，架构管理能力可平移，但方向非GPGPU需评估。"
+    },
+    {
+      "candidate_id": 71,
+      "score": 50,
+      "verdict": "待定",
+      "match_points": ["电子科技大学985/211统招硕士", "AI高性能计算3年+通信软件9年"],
+      "concerns": ["非GPGPU软件栈方向", "base青岛，无架构主导证据"],
+      "summary": "学历达标、有AI HPC背景，但非GPGPU软件栈，匹配度一般。"
+    },
+    {
+      "candidate_id": 72,
+      "score": 30,
+      "verdict": "不推荐",
+      "summary": "通用编译器工程师，3年经验、非GPGPU方向。"
+    },
+    {
+      "candidate_id": 73,
+      "score": 55,
+      "verdict": "待定",
+      "match_points": ["国防科技大学985/211博士统招，41岁", "CTO/技术总监，HPC/异构计算+天河超算背景"],
+      "concerns": ["方向偏金融科技/通用HPC，非GPGPU软件栈", "base上海，无GPGPU架构主导证据"],
+      "summary": "博士CTO背景亮眼，但非GPGPU方向，架构经验可平移性待评估。"
+    },
+    {
+      "candidate_id": 74,
+      "score": 15,
+      "verdict": "不推荐",
+      "summary": "AI算法/后端背景，非GPGPU软件栈。"
+    },
+    {
+      "candidate_id": 75,
+      "score": 5,
+      "verdict": "不推荐",
+      "summary": "全栈工程师且47岁超龄，与GPGPU无关。"
+    },
+    {
+      "candidate_id": 76,
+      "score": 45,
+      "verdict": "不推荐",
+      "summary": "算子库/软件开发背景零散，非GPGPU软件全栈。"
+    },
+    {
+      "candidate_id": 77,
+      "score": 20,
+      "verdict": "不推荐",
+      "summary": "45岁超龄且本科非硕士，方向为通用软件。"
+    },
+    {
+      "candidate_id": 78,
+      "score": 30,
+      "verdict": "不推荐",
+      "summary": "中科大硕士在读级资历，仅2年经验远不足8年。"
+    },
+    {
+      "candidate_id": 79,
+      "score": 42,
+      "verdict": "不推荐",
+      "summary": "49岁严重超龄，Intel软件经理方向非GPGPU明确。"
+    },
+    {
+      "candidate_id": 80,
+      "score": 5,
+      "verdict": "不推荐",
+      "summary": "HR招聘背景，与岗位无关。"
+    },
+    {
+      "candidate_id": 81,
+      "score": 5,
+      "verdict": "不推荐",
+      "summary": "猎头背景，与岗位无关。"
+    },
+    {
+      "candidate_id": 82,
+      "score": 30,
+      "verdict": "不推荐",
+      "summary": "44岁超龄，Intel通信软件方向非GPGPU。"
+    },
+    {
+      "candidate_id": 83,
+      "score": 40,
+      "verdict": "不推荐",
+      "summary": "47岁超龄，ARM server软件方向非GPGPU。"
+    },
+    {
+      "candidate_id": 84,
+      "score": 20,
+      "verdict": "不推荐",
+      "summary": "28岁、金融交易所架构背景，非GPGPU。"
+    },
+    {
+      "candidate_id": 85,
+      "score": 58,
+      "verdict": "待定",
+      "match_points": ["芯瞳半导体编译器（HIP/ROCm方向）+AI编译器", "西北农林985/211本科+硕士，39岁、13年经验"],
+      "concerns": ["硕士院校兰州理工非985/211", "GPU编译器经验约3年，非全栈架构"],
+      "summary": "HIP/ROCm编译器方向对口，但学历层级与架构深度不足。"
+    },
+    {
+      "candidate_id": 86,
+      "score": 10,
+      "verdict": "不推荐",
+      "summary": "加拿大本科+2年经验，资历远不足。"
+    },
+    {
+      "candidate_id": 87,
+      "score": 58,
+      "verdict": "待定",
+      "match_points": ["西安芯瞳GPU编译器开发5年+寒武纪编译器", "13年经验，36岁"],
+      "concerns": ["本科非985/211（西安邮电）", "base西安，非架构主导"],
+      "summary": "GPU编译器经验扎实，但学历与架构层级不符。"
+    },
+    {
+      "candidate_id": 88,
+      "score": 50,
+      "verdict": "待定",
+      "match_points": ["电子科技大学985/211统招硕士，12年经验", "海思半导体嵌入式软件12年"],
+      "concerns": ["嵌入式软件非GPGPU软件栈", "求职期望偏数字前端，方向不符"],
+      "summary": "名校硕士+芯片公司经验，但方向非GPGPU软件栈。"
+    },
+    {
+      "candidate_id": 89,
+      "score": 40,
+      "verdict": "不推荐",
+      "summary": "砺算软件开发背景但本科非硕士，方向偏通用。"
+    },
+    {
+      "candidate_id": 90,
+      "score": 50,
+      "verdict": "待定",
+      "match_points": ["芯瞳GPU着色器编译+联想AI编译器", "32岁、硕士学历"],
+      "concerns": ["仅6年经验，GPU经验约2年", "硕士院校非985/211"],
+      "summary": "GPU编译器方向相关，但年限与学历不达硬性门槛。"
+    },
+    {
+      "candidate_id": 91,
+      "score": 65,
+      "verdict": "待定",
+      "match_points": ["联发科GPU驱动主管21年，驱动资历深厚", "中国科学技术大学985/211统招本科，43岁"],
+      "concerns": ["本科学历不满足硕士硬性要求", "base合肥，偏消费类GPU驱动非GPGPU计算栈"],
+      "summary": "GPU驱动主管资历顶级、年龄达标，卡在硕士学历与GPGPU方向。"
+    },
+    {
+      "candidate_id": 92,
+      "score": 35,
+      "verdict": "不推荐",
+      "summary": "46岁超龄，GPU驱动背景时间短且方向偏图形。"
+    },
+    {
+      "candidate_id": 93,
+      "score": 40,
+      "verdict": "不推荐",
+      "summary": "仅5年经验，GPU驱动2年，资历不足。"
+    },
+    {
+      "candidate_id": 94,
+      "score": 25,
+      "verdict": "不推荐",
+      "summary": "BSP驱动背景非GPGPU，本科非985/211。"
+    },
+    {
+      "candidate_id": 95,
+      "score": 68,
+      "verdict": "待定",
+      "match_points": ["格兰菲GPU Linux驱动开发5年6个月+兆芯软件开发5年", "天津大学985/211统招硕士，37岁"],
+      "concerns": ["角色偏驱动开发工程师，非架构主导", "base上海，量产级架构证据不足"],
+      "summary": "学历、年龄、GPU驱动背景俱佳，是值得推进的中位候选。"
+    },
+    {
+      "candidate_id": 96,
+      "score": 20,
+      "verdict": "不推荐",
+      "summary": "固件/无线/后台背景，与GPGPU无关。"
+    },
+    {
+      "candidate_id": 97,
+      "score": 68,
+      "verdict": "待定",
+      "match_points": ["重庆大学985/211统招硕士，14年经验", "海光系统主管+象帝先OpenGL用户态驱动+紫光展锐多媒体", "GPU/GPU相关软件栈经验丰富"],
+      "concerns": ["用户态驱动为主，非全栈架构主导", "base成都，量产级主导证据不足"],
+      "summary": "海光/象帝先GPU软件背景+名校硕士，池中优质候选，需核实架构主导。"
+    },
+    {
+      "candidate_id": 98,
+      "score": 66,
+      "verdict": "待定",
+      "match_points": ["电子科技大学985/211统招硕士，10年经验", "象帝先GPU驱动开发5年+展讯软件"],
+      "concerns": ["角色偏驱动开发，非架构主导", "base成都"],
+      "summary": "GPU驱动5年+名校硕士，方向对口但架构主导待验证。"
+    },
+    {
+      "candidate_id": 99,
+      "score": 68,
+      "verdict": "待定",
+      "match_points": ["格兰菲GPU驱动开发5年11个月+兆芯软件研发", "华中科技大学985/211统招硕士，36岁"],
+      "concerns": ["驱动工程师角色，非架构主导", "base上海，量产级证据不足"],
+      "summary": "学历、年龄、GPU驱动背景俱佳，同余**并列池中优质候选。"
+    },
+    {
+      "candidate_id": 100,
+      "score": 60,
+      "verdict": "待定",
+      "match_points": ["华为海思高级驱动工程师7年", "大连理工大学985/211统招硕士，41岁、15年经验"],
+      "concerns": ["驱动方向是否GPGPU软件栈未明确", "base南京"],
+      "summary": "名校硕士+华为海思驱动背景，方向需进一步确认。"
+    },
+    {
+      "candidate_id": 101,
+      "score": 35,
+      "verdict": "不推荐",
+      "summary": "仅3年经验且硕士为土木专业，GPU驱动资历浅。"
+    },
+    {
+      "candidate_id": 102,
+      "score": 45,
+      "verdict": "不推荐",
+      "summary": "6年经验不足8年，驱动方向非GPGPU软件全栈。"
+    },
+    {
+      "candidate_id": 103,
+      "score": 55,
+      "verdict": "待定",
+      "match_points": ["鼎道智芯GPU Software Engineer+玄戒GPU驱动", "华东师范大学985/211统招硕士，35岁"],
+      "concerns": ["GPU软件经验约3年，不足8年", "base西安"],
+      "summary": "名校硕士+GPU软件背景，但经验年限不足。"
+    },
+    {
+      "candidate_id": 104,
+      "score": 45,
+      "verdict": "不推荐",
+      "summary": "仅6年经验，GPU驱动4年，资历不足。"
+    },
+    {
+      "candidate_id": 105,
+      "score": 55,
+      "verdict": "待定",
+      "match_points": ["凌久微GPU驱动开发3年+努比亚驱动高级工程师", "38岁、12年经验、硕士"],
+      "concerns": ["硕士院校西北师范非985/211", "GPU驱动经验仅3年，非全栈架构"],
+      "summary": "GPU驱动经验有限，学历与架构深度不达硬性门槛。"
+    },
+    {
+      "candidate_id": 106,
+      "score": 25,
+      "verdict": "不推荐",
+      "summary": "嵌入式背景非GPU，本科非硕士。"
+    },
+    {
+      "candidate_id": 107,
+      "score": 40,
+      "verdict": "不推荐",
+      "summary": "仅3年经验，GPU计算驱动资历浅。"
+    },
+    {
+      "candidate_id": 108,
+      "score": 45,
+      "verdict": "不推荐",
+      "summary": "GPU公司应用/技术支持背景，非架构研发。"
+    },
+    {
+      "candidate_id": 109,
+      "score": 40,
+      "verdict": "不推荐",
+      "summary": "仅4年经验，GPU驱动资历不足。"
+    },
+    {
+      "candidate_id": 110,
+      "score": 25,
+      "verdict": "不推荐",
+      "summary": "45岁超龄，嵌入式/驱动方向非GPGPU。"
+    },
+    {
+      "candidate_id": 111,
+      "score": 62,
+      "verdict": "待定",
+      "match_points": ["英特尔GPU驱动软件工程师7年", "合肥工业大学211统招硕士，31岁"],
+      "concerns": ["仅7年经验略不足8年", "驱动工程师角色，非架构主导，base上海"],
+      "summary": "Intel GPU驱动+211硕士，年轻有潜力但年限与架构不足。"
+    },
+    {
+      "candidate_id": 112,
+      "score": 45,
+      "verdict": "不推荐",
+      "summary": "linux内核/驱动方向非GPU，方向不符。"
+    },
+    {
+      "candidate_id": 113,
+      "score": 25,
+      "verdict": "不推荐",
+      "summary": "仅2年经验，本科非硕士。"
+    },
+    {
+      "candidate_id": 114,
+      "score": 15,
+      "verdict": "不推荐",
+      "summary": "大专学历，驱动方向非GPGPU。"
+    },
+    {
+      "candidate_id": 115,
+      "score": 25,
+      "verdict": "不推荐",
+      "summary": "仅3年经验，GPU驱动经历仅9个月。"
+    },
+    {
+      "candidate_id": 116,
+      "score": 25,
+      "verdict": "不推荐",
+      "summary": "46岁超龄，手机驱动背景非GPGPU。"
+    },
+    {
+      "candidate_id": 117,
+      "score": 50,
+      "verdict": "待定",
+      "match_points": ["base北京", "象帝先高级GPU驱动工程师+壁仞GPU驱动，GPU驱动5年+"],
+      "concerns": ["44岁超龄", "本科非985/211（内蒙古师范大学）"],
+      "summary": "北京本地GPU驱动经验，但超龄且学历不达标。"
+    },
+    {
+      "candidate_id": 118,
+      "score": 50,
+      "verdict": "待定",
+      "match_points": ["base北京，39岁", "电子科技大学985/211统招硕士，14年经验"],
+      "concerns": ["龙芯linux内核方向，非GPGPU软件栈", "无GPU架构经验"],
+      "summary": "北京+名校硕士，但方向为CPU内核非GPGPU。"
+    },
+    {
+      "candidate_id": 119,
+      "score": 40,
+      "verdict": "不推荐",
+      "summary": "GPU KMD驱动3年10个月但仅7年经验、本科非985/211。"
+    },
+    {
+      "candidate_id": 120,
+      "score": 15,
+      "verdict": "不推荐",
+      "summary": "BSP驱动背景非GPU，本科非985/211。"
+    }
+  ]
+}

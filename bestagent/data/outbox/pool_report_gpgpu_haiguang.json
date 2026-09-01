@@ -1,0 +1,264 @@
+﻿{
+  "pool_quality": {
+    "pool_quality": "差",
+    "match_distribution": {"high": 0, "medium": 1, "low": 28, "total": 29},
+    "main_gaps": [
+      "关键字「海光」命中大量同名公司噪音（海光食品/海光芯创/光潾网络/新能源等）及销售、市场、运营等职能岗，与GPGPU软件无关",
+      "海光体系内候选人多为数字电路设计、物理设计、验证、封装、工艺、BD/销售等硬件或职能方向，几乎没有GPGPU软件全栈架构背景",
+      "无一人满足核心门槛：8年+ GPGPU/GPU软件全栈研发、5年+架构设计/技术负责人、量产级主导设计经验",
+      "学历硬门槛（985/211统招硕士）多数不满足，另有2人（45岁、48岁）超过43岁年龄上限"
+    ],
+    "strengths": [
+      "有1位高相关候选人陈**：摩尔线程（目标公司#5）成都site软件leader、资深GPU计算工程师，现任职海光，40岁/电子科技大学统招硕士，符合年龄学历门槛",
+      "海光、摩尔线程等目标公司背景候选人真实存在于池中，说明目标公司人才可被触达",
+      "姚**（海光芯片系统优化、大模型推理性能优化方向，博士）等年轻候选人可作为长期储备"
+    ],
+    "recommendation": "本池与GPGPU软件高级架构师岗位匹配度低，建议仅重点深挖陈**（摩尔线程GPU软件leader背景，核实编译器/驱动/Runtime全栈经历与北京意向），其余低相关候选人不建议投入；下一步建议换用「GPGPU」「GPU驱动」「ROCm」「CUDA」「编译器」「Runtime」等技能关键字定向搜索海光/寒武纪/沐曦/摩尔线程等目标公司，并补充人才库主动寻访。",
+    "data_valid": true,
+    "data_valid_message": ""
+  },
+  "candidates": [
+    {
+      "candidate_id": 1,
+      "score": 40,
+      "verdict": "不推荐",
+      "match_points": ["海光芯片系统优化工程师，方向涉及大模型推理性能优化，与AI加速沾边"],
+      "concerns": ["博士毕业仅约1年（2026.04入职海光），定位初级，与8年+架构师要求差距过大"],
+      "summary": "方向沾边但资历过浅，暂不推荐，可作长期储备。"
+    },
+    {
+      "candidate_id": 2,
+      "score": 10,
+      "verdict": "不推荐",
+      "match_points": [],
+      "concerns": ["新能源/电力行业站长，与芯片、软件均无关"],
+      "summary": "与岗位完全无关。"
+    },
+    {
+      "candidate_id": 3,
+      "score": 10,
+      "verdict": "不推荐",
+      "match_points": ["半导体行业工艺方向"],
+      "concerns": ["大专学历、半导体工艺方向、1年经验，学历与方向均不符"],
+      "summary": "学历与方向均不符。"
+    },
+    {
+      "candidate_id": 4,
+      "score": 15,
+      "verdict": "不推荐",
+      "match_points": ["海光体系接口工程师，硕士学历"],
+      "concerns": ["45岁超过43岁年龄上限；接口/器件方向非GPGPU软件"],
+      "summary": "超龄且方向不符。"
+    },
+    {
+      "candidate_id": 5,
+      "score": 5,
+      "verdict": "不推荐",
+      "match_points": [],
+      "concerns": ["外贸业务经理，日语专业，与岗位无关"],
+      "summary": "与岗位无关。"
+    },
+    {
+      "candidate_id": 6,
+      "score": 20,
+      "verdict": "不推荐",
+      "match_points": ["海光体系、统招博士学历、技能含Python/ML"],
+      "concerns": ["物理设计（数字后端）方向、工作仅1年、求职数字后端，非GPGPU软件"],
+      "summary": "学历好但方向与深度均不符。"
+    },
+    {
+      "candidate_id": 7,
+      "score": 20,
+      "verdict": "不推荐",
+      "match_points": ["海光数字电路设计工程师"],
+      "concerns": ["硬件RTL设计方向、材料学硕士，非GPGPU软件栈"],
+      "summary": "硬件设计方向不符。"
+    },
+    {
+      "candidate_id": 8,
+      "score": 5,
+      "verdict": "不推荐",
+      "match_points": [],
+      "concerns": ["客户成功/广告传媒行业，与岗位无关"],
+      "summary": "与岗位无关。"
+    },
+    {
+      "candidate_id": 9,
+      "score": 25,
+      "verdict": "不推荐",
+      "match_points": ["海光芯片设计Staff、10年经验、统招硕士（北航）"],
+      "concerns": ["模拟芯片设计方向，非GPGPU软件全栈架构"],
+      "summary": "资历达标但方向不符。"
+    },
+    {
+      "candidate_id": 10,
+      "score": 20,
+      "verdict": "不推荐",
+      "match_points": ["海光数字电路设计5年+"],
+      "concerns": ["名片简历信息不全、硬件设计方向，无法评估架构经验"],
+      "summary": "硬件方向且信息不足。"
+    },
+    {
+      "candidate_id": 11,
+      "score": 5,
+      "verdict": "不推荐",
+      "match_points": [],
+      "concerns": ["深圳市海光电子模具工程师，与岗位无关"],
+      "summary": "与岗位无关。"
+    },
+    {
+      "candidate_id": 12,
+      "score": 15,
+      "verdict": "不推荐",
+      "match_points": ["半导体行业研发岗位"],
+      "concerns": ["硅光研发（光通信）方向、2年经验，非GPGPU软件"],
+      "summary": "光通信方向不符。"
+    },
+    {
+      "candidate_id": 13,
+      "score": 10,
+      "verdict": "不推荐",
+      "match_points": ["海光BD经历"],
+      "concerns": ["销售职能、非统招本科，与研发岗位不符"],
+      "summary": "职能方向不符。"
+    },
+    {
+      "candidate_id": 14,
+      "score": 10,
+      "verdict": "不推荐",
+      "match_points": ["海光生态合作总监经历"],
+      "concerns": ["销售/生态职能，非研发岗位"],
+      "summary": "职能不符。"
+    },
+    {
+      "candidate_id": 15,
+      "score": 20,
+      "verdict": "不推荐",
+      "match_points": ["海光数字IC设计、统招硕士（华南理工）"],
+      "concerns": ["硬件IC设计方向、仅3年经验，远低于架构师要求"],
+      "summary": "硬件方向且资历不足。"
+    },
+    {
+      "candidate_id": 16,
+      "score": 35,
+      "verdict": "不推荐",
+      "match_points": ["海光软件开发高级工程师、C++、统招硕士（东南大学集成电路）"],
+      "concerns": ["仅3年经验、定位IC辅助代码开发/流程自动化，与8年+全栈架构差距大"],
+      "summary": "软件方向沾边但资历与深度不足。"
+    },
+    {
+      "candidate_id": 17,
+      "score": 30,
+      "verdict": "不推荐",
+      "match_points": ["国科大统招硕士、技能含C++/python/pytorch/triton"],
+      "concerns": ["岗位为数字电路设计（硬件）、3年经验、求职数字前端，非GPGPU软件架构"],
+      "summary": "技能沾边但岗位为硬件设计，不符。"
+    },
+    {
+      "candidate_id": 18,
+      "score": 5,
+      "verdict": "不推荐",
+      "match_points": [],
+      "concerns": ["跨境运营岗位，与岗位无关"],
+      "summary": "与岗位无关。"
+    },
+    {
+      "candidate_id": 19,
+      "score": 5,
+      "verdict": "不推荐",
+      "match_points": [],
+      "concerns": ["海光商务扩展BD，销售职能、非统招学历"],
+      "summary": "与岗位无关。"
+    },
+    {
+      "candidate_id": 20,
+      "score": 15,
+      "verdict": "不推荐",
+      "match_points": ["海光体系、半导体工艺经历"],
+      "concerns": ["3D封装工艺方向、本科，非软件岗位"],
+      "summary": "封装方向不符。"
+    },
+    {
+      "candidate_id": 21,
+      "score": 25,
+      "verdict": "不推荐",
+      "match_points": ["海光数字芯片设计8年+、统招硕士（西电）"],
+      "concerns": ["数字芯片设计为硬件RTL方向，非GPGPU软件全栈架构"],
+      "summary": "硬件设计方向不符。"
+    },
+    {
+      "candidate_id": 22,
+      "score": 10,
+      "verdict": "不推荐",
+      "match_points": ["半导体测试岗位"],
+      "concerns": ["测试工程师、非统招本科，方向与学历均不符"],
+      "summary": "方向与学历不符。"
+    },
+    {
+      "candidate_id": 23,
+      "score": 68,
+      "verdict": "可考虑",
+      "match_points": [
+        "40岁/电子科技大学（985/211）统招硕士，符合年龄与学历硬门槛",
+        "摩尔线程（目标公司#5）成都site软件leader、资深GPU计算工程师，2年6个月GPU计算软件经验",
+        "现海光工程师2年10个月，目标公司背景连续；求职期望架构师、有团队管理经验",
+        "Linux/C语言/图像处理/大数据背景，具备软件leader与团队管理经历"
+      ],
+      "concerns": [
+        "GPGPU软件相关年限约5年，未达8年+；架构/技术负责人经验约2.5年，距5年要求有差距",
+        "技术栈偏GPU计算/性能优化，未见编译器(LLVM)、Runtime、驱动、ROCm/CUDA计算库等全栈架构证据",
+        "求职期望城市为成都，与岗位北京不符，需确认异地意向",
+        "教育背景为信号与信息处理，非计算机/软件工程专业"
+      ],
+      "summary": "全池唯一接近岗位的候选人：摩尔线程+海光的GPU软件leader背景贴合目标公司画像，但年限与全栈架构深度仍有缺口，建议优先深挖核实编译器/驱动/Runtime经历与北京意向。"
+    },
+    {
+      "candidate_id": 24,
+      "score": 5,
+      "verdict": "不推荐",
+      "match_points": [],
+      "concerns": ["食品行业化验员，与岗位无关"],
+      "summary": "与岗位无关。"
+    },
+    {
+      "candidate_id": 25,
+      "score": 5,
+      "verdict": "不推荐",
+      "match_points": [],
+      "concerns": ["客户成功经理，与岗位无关"],
+      "summary": "与岗位无关。"
+    },
+    {
+      "candidate_id": 26,
+      "score": 10,
+      "verdict": "不推荐",
+      "match_points": ["海光市场高级经理、兆芯市场总监经历"],
+      "concerns": ["48岁超龄；市场职能非研发"],
+      "summary": "超龄且职能不符。"
+    },
+    {
+      "candidate_id": 27,
+      "score": 15,
+      "verdict": "不推荐",
+      "match_points": ["海光封装工程师经历"],
+      "concerns": ["封装方向、机械工程本科，非软件岗位"],
+      "summary": "封装方向不符。"
+    },
+    {
+      "candidate_id": 28,
+      "score": 5,
+      "verdict": "不推荐",
+      "match_points": [],
+      "concerns": ["样品员岗位，与岗位无关"],
+      "summary": "与岗位无关。"
+    },
+    {
+      "candidate_id": 29,
+      "score": 30,
+      "verdict": "不推荐",
+      "match_points": ["海光CPU验证、西工大（985/211）本科、技能含verilog/sv/uvm/risc-v"],
+      "concerns": ["验证方向非软件架构、仅26岁资历浅，与GPGPU软件全栈要求不符"],
+      "summary": "验证方向不符。"
+    }
+  ]
+}
