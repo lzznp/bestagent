@@ -1,11 +1,12 @@
 # 交接包：猎头 AI 操盘手系统（数字合伙人）
 
 > 生成时间：2026-09-01 晚 ｜ 交接方式：设计讨论 + 验证周 + M2 全链路验证对话 → 新对话
+> 更新时间：2026-09-01 深夜（框架整合 v1.0 完成后更新，见 §0/§3 新增小节）
 > 新对话开场顺序：**本文件** → `工作文档\设计方案.md` → `工作文档\SDK 技术评估.md` → `工作文档\对话交接规范.md` → `工作文档\PROGRESS.md` → `工作文档\协作工作流草案.md`（可选）→ `工作文档\授权矩阵.md`（可选）→ 再问环境
 
 ## 0. 一句话状态
 
-**数字合伙人已有"手"（猎聘真实采集）、"脑"（岗前分析+池子评估）、"记忆"（SQLite 业务库）**：M1.1 验证周 + M2 全链路（关键字→真实采集→评估→老板汇报→限速→入库）全部跑通，且打通了 Windows 上 agent 执行命令的瓶颈（pwsh 工具）。下一步 = 换岗验证通用性 / M3 界面 / 直写库闭环。
+**数字合伙人已从"验证脚本集"整合为 v1.0 框架**：统一入口 `run_pipeline.py`（贴 JD → 岗前分析→采集→评估→**直写 business.db**→老板汇报 一条命令跑完）+ 集中配置 `framework_config.py`（换电脑只改一处）；换岗试跑（中国移动 NLP 应届博士岗）全链路验证通过（分析 16 分优质/建议沟通，条件筛选首次生效，捞到真实 C9 博士）。业务库 1 岗（GPGPU）+ 2 岗（NLP）307 候选人/307 评估。下一步 = M3 界面 / agent 自主动态优化 / 补采 / 换电脑试跑。
 
 ## 1. 背景（重要，读一遍就懂用户）
 
@@ -41,6 +42,14 @@
 - **业务库**：`import_to_db.py` 复用 wails 表（jobs/candidates/match_results/candidate_events/pool_samples）→ `bestagent\data\business.db`（1 岗 + 277 候选人 + 277 评估）
 - **环境突破**：bash 工具 Windows 不可用 → 补装 dsh-tool-pwsh 包 + `minimal-pwsh-nonpty.cordis.yml`（dsh-pwsh-local 非 PTY，兜底 PowerShell 5.1）→ agent 能执行命令了
 
+### 框架整合 v1.0（2026-09-01 深夜，详见 PROGRESS.md 对应小节）
+
+- **统一入口**：`run_pipeline.py` —— `python run_pipeline.py --jd data/inbox/xxx.txt --env-file .env` 全链路（①岗前分析 ②采集 ③评估自动分批≤72/批+自动合并 ④**直写 business.db** → 老板汇报）；`--step analyze|collect|eval|import` 单步、`--keywords/--conds/--requirements` 覆盖、`--skip-collect`、`--dry-run`
+- **集中配置**：`framework_config.py` —— 所有路径相对定位或环境变量覆盖（DSP_WORKSPACE / DSH_ROOT / BROWSER_AGENT_PATH / DSP_MODEL / BRIDGE_URL），含 `check_env()` 自检、`load_env_file()`；**换电脑只改这里**
+- **模块函数化（保留独立运行）**：m1_run.analyze_job / m2_eval_run.eval_pool / collect_liepin.collect / import_to_db.write_to_db
+- **换岗试跑验证 ✅（北极星）**：新 JD「AI应用开发工程师（NLP）·中国移动」（应届博士/C9/QS50/≤30岁/北京）全链路通过——分析 16 分优质/建议沟通（判别力成立）；**条件筛选首次真实生效**（education=博士/博士后 + years=应届生 + city_current=北京，30/30 命中 2026-2027 毕业窗口，对比 GPGPU 轮整页端走）；评估池子「中」4高/4中/22低，捞出中科院林**/清华张**/北大吴** 真实 C9 博士；直写库 +30 → 库共 307/307
+- **院校 C9/QS50 猎聘无筛选项**（school 组只有 211/985/双一流/海外留学）→ 只能后置评估过滤（预期内）；活跃度筛选对"应届生"岗有悖论（应届普遍不活跃，别设）
+
 ## 4. 环境备忘 ⚠️ 新对话开局现查，勿信本快照
 
 | 项 | 值 / 查法 |
@@ -57,6 +66,7 @@
 | 猎聘 tab | `collect_liepin.py` 自动 list_tabs 现查（勿手写死 tab_id） |
 | 业务库 | `D:\study\bestagent\bestagent\data\business.db`（SQLite，wails 表设计） |
 | DSH Web | `http://127.0.0.1:3080`（旧版，勿动；升级决策=暂不升级） |
+| 框架配置 | `bestagent\framework_config.py`（所有路径集中；环境变量 DSP_WORKSPACE/DSH_ROOT/BROWSER_AGENT_PATH/BRIDGE_URL/DSP_MODEL 覆盖；自检：`python -c "import framework_config; print(framework_config.check_env())"`） |
 | git | `D:\study\bestagent` 已 git init（.dsh-staging/.sessions 已 ignore），基线提交 2026-09-01 |
 
 ## 5. 关键教训（新对话别重踩）
@@ -71,12 +81,14 @@
 8. **限速默认 20 搜索/200 提取/天**（quota.py），防账号风控；打招呼（50/天）永远留人工闸门。
 9. **新版 SDK 勿用**（master 0.1.2-alpha.2 架构大改 + Windows wheel 未发布），继续旧版 API。
 10. 参考代码 `D:\study\bestagent\参考代码\` 只读素材库（README.md 有索引），活体在 `D:\study\lietou*`。
+11. **条件筛选配方组已验证可用**（education=博士/博士后、years=应届生、city_current=北京…）——新 JD 采集务必用，前置过滤比后置评估省 token 提准；⚠️ 院校 C9/QS50 猎聘筛不掉（school 只有 211/985/双一流/海外留学）；⚠️ 活跃度对应届岗别设（应届普遍不活跃会筛空）。
+12. **run_pipeline --step 要重复 flag**（`--step eval --step import`，不能 `--step eval import`）；`--skip-collect` 复用采集时文件名必须匹配（collected_<jd 文件名>.json）。
 
 ## 6. 交接说明
 
 - 工作区 `D:\study\bestagent`：
   - `工作文档/`（7 份：交接规范/设计方案/PROGRESS/SDK 技术评估/协作工作流草案/授权矩阵/本文件）
-  - `bestagent/`（活代码：m1_run/m2_run/m2_eval_run/m3_auto_run/collect_liepin/import_to_db/quota/merge_* /dump_jd/export_pool/explore_* /probe_bash/sdk_verify + minimal-pwsh-nonpty.cordis.yml + data/）
+  - `bestagent/`（活代码：**run_pipeline.py 统一入口 / framework_config.py 集中配置** / m1_run/m2_run/m2_eval_run/m3_auto_run/collect_liepin/import_to_db/quota/merge_* /dump_jd/export_pool/explore_* /probe_bash/sdk_verify + minimal-pwsh-nonpty.cordis.yml + data/）
   - `data/inbox/`（JD 输入：jd_1 GPGPU 岗 / jd_user_001 教育岗 / 车载测试岗）｜ `data/outbox/`（采集+评估报告）｜ `data/prompts/`（方法论 3 份）｜ `data/usage/`（限速账本）｜ `data/business.db`（业务库）
   - `参考代码/`（素材，只读）
 - **bridge 由会话后台 job 拉起，新对话先 curl http://127.0.0.1:8080/api/health 现查**，不在就重启。
@@ -92,11 +104,12 @@
    读完后，用 3 句话向我确认：①项目当前状态 ②本次要完成的目标 ③你的执行计划。
    确认后再动手。边界：动手前先对齐目的声明；小步验证，做完回顾。
    ```
-4. 立即可以做的方向（按优先级）：
-   - **换岗试跑**：拿新 JD 走完整链路（岗前分析→collect_liepin→m2_eval_run→import_to_db），验证底座通用性
-   - **M3 界面**：Streamlit 汇报面板（从 business.db 读数据；汇报卡片+确认/纠错按钮 = 信任演进界面）
-   - **闭环直写库**：评估结果直接写 business.db（省掉 import_to_db 一步）
-   - **补采**：技能关键字定向补采目标公司（限速已生效，放心多跑）
+4. 立即可以做的方向（按优先级，2026-09-01 深夜更新；换岗试跑+闭环直写库已 ✅）：
+   - **M3 界面**：Streamlit 汇报面板（读 business.db 307 条；汇报卡片+确认/纠错按钮 = 信任演进界面）
+   - **agent 自主动态优化**：agent 看评估结果 → 自己决定加/改条件 → 重采（多轮寻优闭环；工具已齐：pwsh + 配方表 + run_pipeline 参数化）
+   - **补采**：技能关键字定向补采（NLP 岗 agent 建议 Agent/智能体/MCP 补一轮；限速已生效放心跑）
+   - **换电脑试跑**（验收方式，不急）：框架已配置化，装环境+拷代码即可
+   - 新 JD 直接用：`python run_pipeline.py --jd data/inbox/<新JD>.txt --env-file <path/.env>`（默认全链路）
 
 ---
 
