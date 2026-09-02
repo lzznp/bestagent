@@ -10,3 +10,6 @@ __pycache__/
 # 临时测试账本
 data/usage/_quota_test.json
 data/usage/*.tmp
+
+# IDE 本地配置
+.idea/
