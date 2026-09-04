@@ -289,16 +289,26 @@ def ensure_rules() -> None:
 # ═══════════════════════ 任务构建（发令内容）══════════════════════
 
 def build_free_task(job: dict, user_msg: str) -> str:
-    """自由讨论/追问：注入状态卡 + 能力边界，先读文件再开口（禁 bash、读不到不许编）。"""
+    """自由讨论/追问：注入状态卡 + 能力边界 + 完整路径，先读文件再开口（禁 bash、禁列盘、读不到不许编）。
+
+    ⚠️ 2026-09-04 v1.6.2 修复：此前本函数写好却未接线，自由聊天把老板原始消息直接发给 agent，
+    persona 承诺“路径每条消息都给”是假的 → agent 反复列盘找 jd.txt → “找不到岗位文件”。
+    现由 render_main 对每条自由消息调用本函数，路径逐条写死。
+    """
     jd_p = _job_dir(job) / "jd.txt"
     reports_dir = (_job_dir(job) / "reports").as_posix()
+    latest = next((a for a in list_artifacts(job["job_code"])
+                   if a.name.startswith("analyze_") and a.suffix == ".json"), None)
+    analyze_hint = (latest.as_posix() if latest
+                    else f"{reports_dir}（当前没有 analyze_*.json，就如实说岗前分析还没做，不用去找别的）")
     return (
         f"{state_block(job)}\n{CAPABILITIES}\n"
-        "【必须先读再答】岗位文件的完整路径已在上面【岗位状态卡】里给出——**直接用文件工具读那个路径**，"
-        "不要列目录、不要遍历磁盘、不要探测猜测路径（Windows 下列盘根目录会因系统占用文件报错，属正常）。\n"
+        "【必须先读再答】你要读的文件完整绝对路径已在上方状态卡和下面 1) 2) 里**逐条写死**——"
+        "**直接用文件工具读那个路径**，不要列目录、不要遍历磁盘、不要探测或猜测任何其他路径"
+        "（Windows 下列盘根目录会因系统占用文件报错，属正常现象，不代表文件不存在）。\n"
         "回答任何关于本岗的问题前，用**文件工具**（禁止用 bash/命令行）读：\n"
         f"  1) {jd_p.as_posix()}（JD，非空则不许要求老板粘贴）\n"
-        f"  2) {reports_dir} 里最新的 analyze_*.json（如有，是已有的岗前分析结论）\n"
+        f"  2) {analyze_hint}\n"
         "读完再作答，并可以引用文件内容。文件工具真实报错时，把报错原文原样贴给老板并说明读不了哪一步；"
         "只要文件工具成功返回过内容，就不得声称“读不到/目录没挂载/被锁”。\n"
         f"【老板消息】{user_msg}\n"
@@ -569,8 +579,10 @@ def render_main(cfg: dict) -> None:
     prompt = st.chat_input("跟小猎说话：发指令 / 追问 / 讨论；也可以直接粘贴 JD 原文…")
 
     to_send = None
+    agent_prompt = None
     action_kind = None
     if task:
+        agent_prompt = task
         to_send, action_kind = task, ("analyze" if task.startswith("老板要你执行【步骤①") else "report")
     elif prompt:
         # 若输入疑似整段 JD 且 jd.txt 为空 → 顺手存档为岗位 JD
@@ -578,12 +590,15 @@ def render_main(cfg: dict) -> None:
             (_job_dir(job) / "jd.txt").write_text(prompt, encoding="utf-8")
             save_state(job["job_code"], jd_provided=True)
         to_send, action_kind = prompt, "chat"
+        # v1.6.2 修复：自由聊天/追问必须走 build_free_task，注入状态卡+完整路径+能力边界+硬指令，
+        # 否则 agent 收不到岗位路径、反复“找不到岗位文件”（历史 bug：build_free_task 定义了没接线）
+        agent_prompt = build_free_task(job, prompt)
 
     if to_send:
         append_msg(job["job_code"], "user", to_send)
         try:
             with st.status("小猎工作中（阻塞式，长任务请耐心等待）…", expanded=False) as status:
-                reply, new_files = run_assistant(job, to_send, cfg["env_path"], stub=cfg["stub"])
+                reply, new_files = run_assistant(job, agent_prompt, cfg["env_path"], stub=cfg["stub"])
                 status.update(label="小猎完成", state="complete")
         except Exception as e:
             reply = f"⚠️ 执行出错：{e}\n\n（若是 .env/API 问题请检查侧栏运行设置；界面自测请开「假执行」）"
