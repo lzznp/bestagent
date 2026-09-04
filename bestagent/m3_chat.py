@@ -1,6 +1,20 @@
 # -*- coding: utf-8 -*-
 """M3 界面 v1.6：对话式汇报面板（DSH Web 迷你版 · 分步骤测试用）
 
+v1.6.4 变更（2026-09-04，② 探索采集接入面板）：
+1. 执行通道按任务切换 cordis：纯文件任务（①/自由对话/导出）用 CORDIS_MINIMAL，
+   「② 采集执行」用 CORDIS_PWSH（带 pwsh 工具，可跑 collect_liepin.py 配方表脚本）
+2. ② 探索采集 = 两步走（步骤制 + 授权确认）：
+   发令（点按钮或聊天说“去猎聘跑一轮”）→ 第一步 agent 读 JD+analyze 拆关键字/条件，
+   写 collect_plan_*.json 计划文件并请老板确认（不真跑、不耗额度）→ 老板确认（如“按计划跑”）
+   → 第二步 agent 用 pwsh 跑 collect_liepin.py（真实猎聘采集）→ 读结果汇报命中/质量
+3. 聊天意图识别：含“猎聘/采集/跑一轮/搜候选人…”→ 走 ② 两步；讨论性问句（怎么/为什么/？）不触发
+4. 能力边界更新：已接入 = 文件读写 + 探索采集（配方表驱动）；未接入 = ③ 池子评估等
+   —— 采集纪律：禁止自然语言驱动浏览器（教训 #2），禁止改脚本，先确认再执行
+
+v1.6.3 变更（2026-09-04，根因修复）：
+自由聊天必须走 build_free_task 注入状态卡+完整路径（此前写好未接线，agent 反复“找不到岗位文件”）
+
 v1.6 变更（2026-09-04 老板实测后反馈，逐条落实）：
 1. 去掉侧栏手动「当前测试步骤」选择器 —— 改为岗位自动进度（只读，从 state/产物推断）
 2. 动作按钮行由岗位状态自动算出（贴 JD→亮「开始岗位分析」；分析完→亮 重跑/导出汇报，
@@ -32,7 +46,7 @@ import streamlit as st
 
 try:  # 集中配置
     from framework_config import WORKSPACE, SESSIONS, PROMPTS
-    from framework_config import DSH_ROOT, RUNTIME_BIN, CORDIS_MINIMAL, REQUEST_TIMEOUT
+    from framework_config import DSH_ROOT, RUNTIME_BIN, CORDIS_MINIMAL, CORDIS_PWSH, REQUEST_TIMEOUT
 except Exception:
     WORKSPACE = Path(__file__).resolve().parent
     SESSIONS = WORKSPACE / ".sessions"
@@ -41,6 +55,7 @@ except Exception:
     RUNTIME_BIN = WORKSPACE / ".dsh-staging" / "node_modules" / "@deepseek-ai" / \
         "dsh-sdk-jsonrpc-demo" / "lib" / "packaged-bin.js"
     CORDIS_MINIMAL = DSH_ROOT / "examples" / "jsonrpc-agent" / "minimal.cordis.yml"
+    CORDIS_PWSH = WORKSPACE / "minimal-pwsh-nonpty.cordis.yml"
     REQUEST_TIMEOUT = 1200
 
 CHAT_DIR = WORKSPACE / "data" / "chat"
@@ -61,10 +76,13 @@ STEP_NAME = {s["no"]: s["name"] for s in STEPS}
 
 # 当前已接/未接能力（诚实边界，每次发令都提醒 agent）
 CAPABILITIES = (
-    "【能力边界·必须诚实】本会话当前：已接入 = 文件读写（读 JD/手册/报告、写 JSON 报告与 HTML 过程文档）；"
-    "未接入 = 猎聘/浏览器采集、候选人池评估、外部搜索、打招呼等任何对外动作。"
-    "老板要求未接入能力时，必须如实说明「这一步我还没接 XX 能力」，并给替代建议（例如：采集/评估可让老板"
-    "在 PyCharm 用 run_pipeline 后台跑，结果文件会出现在工作目录），严禁找其他借口、严禁假装执行。"
+    "【能力边界·必须诚实】本会话当前：已接入 = ①文件读写（读 JD/手册/报告、写 JSON 报告与 HTML 过程文档）"
+    "＋②探索采集（真实猎聘，走配方表脚本 collect_liepin.py，由 pwsh 工具执行；采集前必须先向老板展示"
+    "关键字/条件并获确认，老板已明确说\"直接跑/按计划\"除外）；"
+    "未接入 = ③ 候选人池评估/逐人评分、外部搜索、打招呼、浏览器自由操作等任何其他对外动作。"
+    "老板要求未接入能力时，必须如实说明「这一步我还没接 XX 能力」，并给替代建议"
+    "（例如：池子评估可让老板在 PyCharm 用 run_pipeline 后台跑，结果文件会出现在工作目录），"
+    "严禁找其他借口、严禁假装执行。"
 )
 
 PERSONA = (
@@ -76,12 +94,17 @@ PERSONA = (
     "开口/动手前先读该岗的 jd.txt 与已有报告，禁止向老板索要已经存在的信息。"
     "当老板要求执行某步骤时，把工作过程写成中文 HTML 过程文档保存到该岗 reports 目录，"
     "方便老板事后查看（他不想盯着屏幕）。"
-    "【工具纪律·务必遵守】本环境 bash/命令行工具不可用（Windows），读文件/列目录/写文件"
-    "一律用文件工具（fs/str_replace_editor）。岗位文件的完整绝对路径会**在每条消息里直接给出**："
+    "【工具纪律·务必遵守】本环境 bash 工具不可用（Windows），读文件/列目录/写文件"
+    "一律用文件工具（fs/str_replace_editor）；只有【② 采集执行】时用 pwsh 工具运行 collect_liepin.py "
+    "（Windows 下可用，每次调用是新进程）。岗位文件的完整绝对路径会**在每条消息里直接给出**："
     "直接用文件工具读该路径即可，**禁止去列目录/遍历磁盘找文件**（Windows 下列盘根目录会因"
     "DumpStack 等系统占用文件报错，这是正常现象，不代表文件不存在）。"
     "若文件工具已成功返回内容，就正常使用，不得声称“文件读不到/目录没挂载/被锁住”；"
     "只有按给定路径读取真实报错时才可请老板协助，且必须把报错原文贴给老板，禁止臆测原因。"
+    "【② 采集纪律·务必遵守】采集=在真实猎聘上搜索（耗当日限速额度），禁止用自然语言让浏览器"
+    "自己操作猎聘页面（条件会设不上），**只准用 pwsh 运行配方表脚本 collect_liepin.py**；"
+    "采集前先读 analyze 报告取 search_keywords、按 JD 硬性条件给 --conds 建议，把计划写进 "
+    "collect_plan_*.json 并请老板确认后才执行；执行完如实汇报命中条数/质量，不许粉饰，报错贴原文。"
 )
 
 # ═══════════════════════ 纯数据层 ═══════════════════════
@@ -173,7 +196,7 @@ def _job_dir(job: dict) -> Path:
 def load_state(job_code: str) -> dict:
     p = job_dir(job_code) / "state.json"
     st_def = {"job_code": job_code, "jd_provided": False, "step1_analyzed": False,
-              "last_action": None, "updated_at": None}
+              "step2_collected": False, "last_action": None, "updated_at": None}
     if p.exists():
         try:
             st_def.update(json.loads(p.read_text(encoding="utf-8")))
@@ -185,6 +208,8 @@ def load_state(job_code: str) -> dict:
         st_def["jd_provided"] = True
     if any(p.name.startswith("analyze_") for p in list_artifacts(job_code)):
         st_def["step1_analyzed"] = True
+    if any(p.name.startswith("collected_") for p in list_artifacts(job_code)):
+        st_def["step2_collected"] = True
     return st_def
 
 
@@ -356,6 +381,89 @@ def build_report_task(job: dict) -> str:
 {CAPABILITIES}"""
 
 
+# ── 步骤② 探索采集（两步走：先出计划请确认 → 确认后用 pwsh 跑配方表采集）──
+
+COLLECT_WORDS = ("猎聘", "采集", "搜候选人", "搜一轮", "跑一轮", "搜人", "捞人", "搜索")
+COLLECT_CONFIRM_WORDS = ("按计划", "直接跑", "执行采集", "开始采集", "确认跑", "按这个跑")
+
+
+def latest_report(job: dict, prefix: str, suffix: str = ".json") -> Path | None:
+    """reports 目录里最新一个 prefix 开头、suffix 结尾的文件（list_artifacts 已按 mtime 降序）。"""
+    for a in list_artifacts(job["job_code"]):
+        if a.name.startswith(prefix) and a.suffix == suffix:
+            return a
+    return None
+
+
+def latest_collect_plan(job: dict) -> Path | None:
+    return latest_report(job, "collect_plan_", ".json")
+
+
+def detect_collect_intent(msg: str, job: dict) -> str:
+    """识别②采集发令。返回 "plan"（发令，先出计划）/ "run"（老板确认计划，执行）/ ""（普通对话）。
+
+    保守规则：讨论/提问（含“怎么/为什么/？”）不触发；执行必须有已落盘的 collect_plan_*.json，
+    且老板消息带采集词或明确确认词——避免“确认”二字误触其它话题。
+    """
+    m = msg.strip()
+    has_collect_word = any(w in m for w in COLLECT_WORDS)
+    has_confirm_word = any(w in m for w in COLLECT_CONFIRM_WORDS)
+    is_question = ("怎么" in m or "为什么" in m or "是啥" in m or "是什么" in m
+                   or m.endswith("？") or m.endswith("?") or m.endswith("吗"))
+    if has_confirm_word and latest_collect_plan(job) is not None and not is_question:
+        return "run"
+    if has_collect_word and not is_question:
+        return "plan"
+    return ""
+
+
+def build_step2_plan_task(job: dict) -> str:
+    """② 探索采集·第一步：读 JD + analyze → 拆关键字/条件 → 写计划文件 → 请老板确认（不真跑）。"""
+    jd = (_job_dir(job) / "jd.txt").as_posix()
+    reports_dir = (_job_dir(job) / "reports").as_posix()
+    analyze = latest_report(job, "analyze_", ".json")
+    analyze_hint = analyze.as_posix() if analyze else f"{reports_dir}（暂无 analyze_*.json——还没做①岗前分析）"
+    ts = datetime.now().strftime("%Y%m%d-%H%M%S")
+    plan_file = f"{reports_dir}/collect_plan_{ts}.json"
+    method = (PROMPTS / "analyze_job.txt").as_posix()
+    return f"""老板要你执行【步骤② 探索采集·第一步：出计划】。请全程用文件工具完成，**这一步不真跑采集、不耗额度**：
+1. 读岗位 JD：{jd}
+2. 读最新岗前分析报告：{analyze_hint}
+   —— 从报告的 search_keywords 里挑 2~4 个最可能命中目标候选人的关键字（参考其精确/职能/竞品/技能分组；
+   若报告没有关键字，按方法论 {method} 的思路从 JD 拆）。
+3. 按 JD 硬性条件给出猎聘筛选条件建议（配方组 group_id=value，可空，如 education=博士/博士后、
+   city_current=杭州、years=应届生…；注意：院校 C9/QS50 猎聘筛不掉，年限对资深岗可能无对应选项，别硬凑）。
+4. 把计划写成 JSON 文件：{plan_file}
+   格式：{{"keywords": [关键字...], "conds": ["group_id=value"...], "reasons": "为何这样选（2~3 句）",
+          "note": "口径提醒（如年限矛盾先核实）", "created_at": "..."}}
+5. 用「老板，采集计划好了」口吻回复 ≤6 句：列出关键字与条件、为什么这样选、预估代价
+   （每个关键字=1 次猎聘搜索，今日额度有限）、以及**请老板确认**（老板回复“按计划跑/直接跑”才会执行）。
+{CAPABILITIES}"""
+
+
+def build_step2_run_task(job: dict, plan_file: Path) -> str:
+    """② 探索采集·第二步：老板已确认 → 读计划 → 用 pwsh 跑 collect_liepin.py → 读结果汇报。"""
+    plan_abs = plan_file.as_posix()
+    reports_dir = (_job_dir(job) / "reports").as_posix()
+    ts = datetime.now().strftime("%Y%m%d-%H%M%S")
+    out_file = f"{reports_dir}/collected_{ts}.json"
+    py = sys.executable.replace("\\", "/")  # 面板自身解释器（lzstudy），换机器自动跟随
+    return f"""老板已确认【步骤② 探索采集】计划。请执行真实采集（会耗当日猎聘搜索额度）：
+1. 先用文件工具读计划文件：{plan_abs}
+   —— 取它的 keywords 与 conds；若读不到该文件，如实说明并请老板重新发令（“去猎聘跑一轮”）。
+2. 用 **pwsh 工具**（不是 bash）在当前工作目录（bestagent，collect_liepin.py 所在目录）运行采集脚本，
+   每个关键字一个 --keyword、每个条件一个 --conds，输出到本岗 reports：
+   {py} collect_liepin.py --keyword "关键字1" --keyword "关键字2" --conds city_current=杭州 --out "{out_file}"
+   —— 命令里的关键字/条件必须来自计划文件；条件没有就不加 --conds。
+   —— 脚本会自动发现猎聘 tab、逐个关键字导航+清空条件+配方表执行+提取、合并去重、限额与延迟。
+3. 命令跑完后，用文件工具读结果：{out_file}
+   格式 {{"keywords":..., "conds":..., "count": 去重后总人数, "rows": [...]}}。
+4. 如实汇报（≤8 句）：每个关键字命中情况、去重后总人数、相关性初判（哪些像目标候选人，点名 top 几位）、
+   是否建议补关键字/加条件（如命中差）——**不要自动重跑**，等老板指示；报错就把报错原文贴给老板。
+5. 回复里给出结果文件路径。
+{CAPABILITIES}"""
+
+
 # ═══════════════════════ 执行通道 ═══════════════════════
 
 def _env_from_file(env_path: Path) -> dict:
@@ -373,7 +481,9 @@ def _env_from_file(env_path: Path) -> dict:
 
 
 def run_assistant(job: dict, prompt: str, env_path: Path, stub: bool = False,
-                  max_tokens: int = 8192) -> tuple[str, list[Path]]:
+                  max_tokens: int = 8192, cordis: Path | None = None) -> tuple[str, list[Path]]:
+    """跑一次真 agent（阻塞式）。cordis 按任务切换：默认纯文件（CORDIS_MINIMAL）；
+    「② 采集执行」传 CORDIS_PWSH（带 pwsh 工具跑配方表脚本）。"""
     if stub:
         time.sleep(0.2)
         return (f"（假执行·界面自测）收到指令：{prompt[:60]}…\n"
@@ -397,7 +507,7 @@ def run_assistant(job: dict, prompt: str, env_path: Path, stub: bool = False,
         max_tokens=max_tokens,
         cwd=str(WORKSPACE),
         session_root=str(SESSIONS),
-        cordis=str(CORDIS_MINIMAL),
+        cordis=str(cordis or CORDIS_MINIMAL),
         launch_args_override=("node", str(RUNTIME_BIN)),
         env=env,
         request_timeout_seconds=REQUEST_TIMEOUT,
@@ -500,16 +610,19 @@ def render_progress_line(job: dict) -> None:
     stt = load_state(job["job_code"])
     jd_ok = stt.get("jd_provided")
     a1 = stt.get("step1_analyzed")
+    c2 = stt.get("step2_collected")
     jd_chip = "📥 JD 已收" if jd_ok else "📥 等 JD"
     a1_chip = "✅ ① 岗前分析完成" if a1 else "⬜ ① 岗前分析未做"
-    st.markdown(f"**流程进度**：{jd_chip}　→　{a1_chip}　→　🔒 ② 探索采集（未接入）　→　🔒 ③ 池子评估（未接入）")
+    c2_chip = "✅ ② 已采集一轮" if c2 else "② 探索采集（可点按钮发令）"
+    st.markdown(f"**流程进度**：{jd_chip}　→　{a1_chip}　→　{c2_chip}　→　🔒 ③ 池子评估（未接入）")
     hint = []
     if not jd_ok:
         hint.append("先上传/粘贴 JD（新建岗位时），或直接在下方输入框把 JD 原文发来。")
     elif not a1:
         hint.append("点下方「🚀 开始岗位分析」跑第一步。")
     else:
-        hint.append("①分析已出：可确认/追问/纠错，或点「重跑/导出汇报」；②采集请用 run_pipeline 后台跑（面板未接入）。")
+        hint.append("①分析已出：可确认/追问/纠错，或点「重跑/导出汇报」；"
+                    "②探索采集已接入：点按钮或直接说“去猎聘跑一轮”（先出计划你确认后再真跑）。")
     st.caption("　".join(hint))
 
 
@@ -532,9 +645,10 @@ def render_action_row(job: dict) -> str | None:
                  disabled=len(arts) == 0,
                  help="读已有分析产物，整理成一份给人看的 HTML 汇报（按需点）"):
         task = build_report_task(job)
-    if c3.button("🔒 ② 探索采集", key="act_collect", use_container_width=True, disabled=True,
-                 help="未接入：需要 pwsh+浏览器工具。现可用 run_pipeline 后台跑（bestagent\\ 下 python run_pipeline.py --jd …）"):
-        pass
+    if c3.button("② 探索采集", key="act_collect", use_container_width=True,
+                 disabled=not stt.get("step1_analyzed"),
+                 help="已接入：第一步先出计划（关键字/条件请你确认，不耗额度）→ 你回复“按计划跑”才真跑猎聘采集"):
+        task = build_step2_plan_task(job)
     if c4.button("🔒 ③ 池子评估", key="act_eval", use_container_width=True, disabled=True,
                  help="未接入：评估需要接池子数据与评估方法论，后续版本接"):
         pass
@@ -578,27 +692,51 @@ def render_main(cfg: dict) -> None:
     task = render_action_row(job)
     prompt = st.chat_input("跟小猎说话：发指令 / 追问 / 讨论；也可以直接粘贴 JD 原文…")
 
+    def kind_of_task(t: str) -> str:
+        if t.startswith("老板要你执行【步骤①"):
+            return "analyze"
+        if t.startswith("老板要你执行【步骤②"):
+            return "collect_plan"
+        if t.startswith("老板已确认【步骤②"):
+            return "collect_run"
+        return "report"
+
     to_send = None
     agent_prompt = None
     action_kind = None
     if task:
+        action_kind = kind_of_task(task)
         agent_prompt = task
-        to_send, action_kind = task, ("analyze" if task.startswith("老板要你执行【步骤①") else "report")
+        to_send = task
     elif prompt:
         # 若输入疑似整段 JD 且 jd.txt 为空 → 顺手存档为岗位 JD
         if not load_state(job["job_code"]).get("jd_provided") and len(prompt) > 200 and ("职位" in prompt or "岗位" in prompt):
             (_job_dir(job) / "jd.txt").write_text(prompt, encoding="utf-8")
             save_state(job["job_code"], jd_provided=True)
-        to_send, action_kind = prompt, "chat"
-        # v1.6.2 修复：自由聊天/追问必须走 build_free_task，注入状态卡+完整路径+能力边界+硬指令，
-        # 否则 agent 收不到岗位路径、反复“找不到岗位文件”（历史 bug：build_free_task 定义了没接线）
-        agent_prompt = build_free_task(job, prompt)
+        to_send = prompt
+        # v1.6.3 修复：自由聊天必须走 build_free_task，注入状态卡+完整路径+能力边界+硬指令
+        # （历史 bug：build_free_task 定义了没接线，agent 反复“找不到岗位文件”）
+        # v1.6.4：先识别 ② 采集发令（去猎聘/采集/跑一轮…）→ 走“出计划→确认→执行”两步；讨论性问句不触发
+        if load_state(job["job_code"]).get("step1_analyzed"):
+            coll = detect_collect_intent(prompt, job)
+        else:
+            coll = ""
+        if coll == "plan":
+            action_kind, agent_prompt = "collect_plan", build_step2_plan_task(job)
+        elif coll == "run":
+            plan_f = latest_collect_plan(job)
+            action_kind = "collect_run"
+            agent_prompt = build_step2_run_task(job, plan_f) if plan_f else build_free_task(job, prompt)
+        else:
+            action_kind, agent_prompt = "chat", build_free_task(job, prompt)
 
     if to_send:
         append_msg(job["job_code"], "user", to_send)
         try:
             with st.status("小猎工作中（阻塞式，长任务请耐心等待）…", expanded=False) as status:
-                reply, new_files = run_assistant(job, agent_prompt, cfg["env_path"], stub=cfg["stub"])
+                cordis = CORDIS_PWSH if action_kind == "collect_run" else None
+                reply, new_files = run_assistant(job, agent_prompt, cfg["env_path"],
+                                                 stub=cfg["stub"], cordis=cordis)
                 status.update(label="小猎完成", state="complete")
         except Exception as e:
             reply = f"⚠️ 执行出错：{e}\n\n（若是 .env/API 问题请检查侧栏运行设置；界面自测请开「假执行」）"
@@ -606,18 +744,23 @@ def render_main(cfg: dict) -> None:
         append_msg(job["job_code"], "assistant", reply,
                    artifacts=[p.name for p in new_files])
         # 更新状态卡
-        upd = {"last_action": {"analyze": "岗位分析", "report": "导出汇报", "chat": "自由对话"}[action_kind]}
+        label_map = {"analyze": "岗位分析", "report": "导出汇报", "chat": "自由对话",
+                     "collect_plan": "②采集·出计划", "collect_run": "②采集·执行"}
+        upd = {"last_action": label_map.get(action_kind, action_kind)}
         if action_kind == "analyze":
             upd["step1_analyzed"] = True
+        if action_kind == "collect_run":
+            upd["step2_collected"] = bool(any(p.name.startswith("collected_")
+                                              for p in list_artifacts(job["job_code"])))
         save_state(job["job_code"], **upd)
         st.rerun()
 
 
 def main() -> None:
-    st.set_page_config(page_title="数字合伙人 · 对话汇报（v1.6）", page_icon="🗣", layout="wide")
+    st.set_page_config(page_title="数字合伙人 · 对话汇报（v1.6.4）", page_icon="🗣", layout="wide")
     st.markdown("# 🗣 数字合伙人 · 对话式汇报")
-    st.caption("v1.6｜ 一岗一会话｜ 状态卡自动记忆｜ 过程自动落 HTML｜ 纠错成长账："
-               "`data/growth/records.jsonl` + `data/prompts/rules.md`")
+    st.caption("v1.6.4｜ 一岗一会话｜ 状态卡自动记忆｜ 过程自动落 HTML｜ ①②已接入（分析/探索采集），③评估未接入｜ "
+               "纠错成长账：`data/growth/records.jsonl` + `data/prompts/rules.md`")
     ensure_rules()
     cfg = render_sidebar()
     render_main(cfg)
