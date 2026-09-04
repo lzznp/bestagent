@@ -13,3 +13,6 @@ data/usage/*.tmp
 
 # IDE 本地配置
 .idea/
+
+# 素材库内他人遗留的未跟踪红队文件（勿入库）
+参考代码/recruitment-wails/.redteam/

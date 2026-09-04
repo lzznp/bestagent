@@ -1,18 +1,23 @@
 # -*- coding: utf-8 -*-
-"""M3 界面 v1.5：对话式汇报面板（DSH Web 迷你版 · 分步骤测试用）
+"""M3 界面 v1.6：对话式汇报面板（DSH Web 迷你版 · 分步骤测试用）
 
-背景（2026-09-02 老板拍板，见 PROGRESS「M3 界面 v2 设计讨论」挂起记录）：
-- 形态 = 像 DSH Web 一样"对话为主"：一个输入框（+JD 上传口）+ 回复/日志区
-- 一个岗位 = 一个对话会话（SDK JSONL 会话 + 本机 transcript 双持久化）
-- 执行 = B 档：真 agent 会话（复用 m1_run 已验证的 DeepSeekHarness 管路，persona=小猎）；
-  阻塞式（发令→等它干完→回话），过程可见性靠"助理写 HTML 过程文档"（不追求实时流）
-- 测试节奏 = 一步一回合：① 岗前分析 → ② 采集 → ③ 池子评估 → ④ 汇报（逐步来，先测①）
-- 成长数据 = 纠错按 岗位→步骤 记入 data/growth/records.jsonl（原始账）+ 消化成规则进
-  data/prompts/rules.md（助理每次干活会读，下次自动生效）
+v1.6 变更（2026-09-04 老板实测后反馈，逐条落实）：
+1. 去掉侧栏手动「当前测试步骤」选择器 —— 改为岗位自动进度（只读，从 state/产物推断）
+2. 动作按钮行由岗位状态自动算出（贴 JD→亮「开始岗位分析」；分析完→亮 重跑/导出汇报，
+   ②采集/③评估 未接入则灰色+原因），按钮 = 把固定话术代打发送；聊天框照旧自由输入
+3. 每岗加 state.json 状态卡，每次发令注入提示，并硬指令「先读 jd.txt / 已有报告再开口，
+   禁止向老板要已存在的信息」（不赌 SDK 会话记忆——实测每轮失忆，见 PROGRESS v1.5 记录）
+4. 能力边界诚实化：提示里写明已接/未接能力（只接文件读写；采集/评估未接入），
+   被要求未接入能力时必须如实说明并给替代（run_pipeline），严禁找借口或假装执行
+5. 过程记录自动落：步骤按钮执行即自动要求 agent 写 HTML 过程文档（不用老板开口）；
+   「导出 HTML 汇报」独立按钮按需点（读已有产物整理成汇报 HTML）
 
-运行（PyCharm 终端，解释器选 lzstudy，在 bestagent\\ 目录）：
-  streamlit run m3_chat.py
-界面自测（不调 API）：侧栏"运行设置"→ 执行模式选「假执行(界面自测)」，或启动前设环境变量 M3CHAT_STUB=1
+v1.5 设计基础（仍有效）：形态 = DSH Web 对话样板（输入框 + JD 上传 + 回复/日志区）；
+一岗一会话；执行 = B 档真 agent（DeepSeekHarness，persona=小猎，阻塞式）；
+成长数据 = data/growth/records.jsonl（原始账）+ data/prompts/rules.md（消化规则库）。
+
+运行（PyCharm 终端，解释器 lzstudy，bestagent\\ 目录）：streamlit run m3_chat.py
+界面自测（不调 API）：侧栏「运行设置」→ 假执行，或设环境变量 M3CHAT_STUB=1
 """
 from __future__ import annotations
 
@@ -25,47 +30,55 @@ from pathlib import Path
 
 import streamlit as st
 
-try:  # 集中配置：换电脑只改 framework_config.py / 环境变量
-    from framework_config import WORKSPACE, SESSIONS, PROMPTS, OUTBOX
+try:  # 集中配置
+    from framework_config import WORKSPACE, SESSIONS, PROMPTS
     from framework_config import DSH_ROOT, RUNTIME_BIN, CORDIS_MINIMAL, REQUEST_TIMEOUT
 except Exception:
     WORKSPACE = Path(__file__).resolve().parent
     SESSIONS = WORKSPACE / ".sessions"
     PROMPTS = WORKSPACE / "data" / "prompts"
-    OUTBOX = WORKSPACE / "data" / "outbox"
     DSH_ROOT = Path(r"C:\deepseek\deepseek-harness")
     RUNTIME_BIN = WORKSPACE / ".dsh-staging" / "node_modules" / "@deepseek-ai" / \
         "dsh-sdk-jsonrpc-demo" / "lib" / "packaged-bin.js"
     CORDIS_MINIMAL = DSH_ROOT / "examples" / "jsonrpc-agent" / "minimal.cordis.yml"
     REQUEST_TIMEOUT = 1200
 
-# ── 数据目录 ──────────────────────────────────────────────────────
-CHAT_DIR = WORKSPACE / "data" / "chat"       # 每岗位一个子目录（会话资料）
-GROWTH_DIR = WORKSPACE / "data" / "growth"   # 纠错成长账
+CHAT_DIR = WORKSPACE / "data" / "chat"
+GROWTH_DIR = WORKSPACE / "data" / "growth"
 RECORDS = GROWTH_DIR / "records.jsonl"
 RULES = PROMPTS / "rules.md"
 DEFAULT_ENV = WORKSPACE.parent / "参考代码" / "lietou-agent" / "browser-agent" / ".env"
 
-# 默认 env 文件（老板可侧栏覆盖）
+# 步骤清单（业务汇报断点；0=自由讨论，仅用于纠错记录时标注）
 STEPS = [
-    {"no": 1, "name": "① 岗位分析", "tag": "岗前分析：读JD→接单判断→拆搜索条件→初判池子→做/放弃"},
-    {"no": 2, "name": "② 采集", "tag": "采集：转猎聘关键字/条件→配方表采集→去重入库"},
-    {"no": 3, "name": "③ 池子评估", "tag": "评估：池子评级+逐人评分→推荐清单"},
-    {"no": 4, "name": "④ 汇报", "tag": "汇报：过程文档/结论 HTML→老板审阅"},
+    {"no": 1, "name": "岗位分析", "tag": "读JD→接单判断→拆搜索条件→探索采集→池子初判→做/放弃"},
+    {"no": 2, "name": "采集", "tag": "转关键字→配方表采集→去重"},
+    {"no": 3, "name": "池子评估", "tag": "池子评级+逐人评分→推荐清单"},
+    {"no": 4, "name": "汇报", "tag": "过程记录/HTML 汇报→老板审阅"},
     {"no": 0, "name": "自由讨论", "tag": "不限定步骤：讨论/追问/纠错/别的"},
 ]
+STEP_NAME = {s["no"]: s["name"] for s in STEPS}
+
+# 当前已接/未接能力（诚实边界，每次发令都提醒 agent）
+CAPABILITIES = (
+    "【能力边界·必须诚实】本会话当前：已接入 = 文件读写（读 JD/手册/报告、写 JSON 报告与 HTML 过程文档）；"
+    "未接入 = 猎聘/浏览器采集、候选人池评估、外部搜索、打招呼等任何对外动作。"
+    "老板要求未接入能力时，必须如实说明「这一步我还没接 XX 能力」，并给替代建议（例如：采集/评估可让老板"
+    "在 PyCharm 用 run_pipeline 后台跑，结果文件会出现在工作目录），严禁找其他借口、严禁假装执行。"
+)
 
 PERSONA = (
     "你是猎头数字合伙人「小猎」，一位资深猎头助理，替老板（一位猎头顾问）跑岗前分析、"
-    "转搜索关键字、采集评估、写报告、做汇报。做事原则：先思考再动手；信息不足时明确提问；"
+    "转搜索关键字、写报告、做汇报。做事原则：先思考再动手；信息不足时明确提问；"
     "输出务必严格按方法论手册的格式，不擅自改动；涉及性别/年龄/婚育等违法歧视要求要提示并忽略；"
     "干完活主动向老板汇报（“老板，我弄的咋样？”的口吻）。"
-    "老板在界面上用聊天跟你对话：一条岗位=一个会话，你们分步骤一起干活；"
-    "当老板要求“生成 HTML 过程文档”或执行某步骤时，把你的工作过程（读了什么、怎么判断、做了什么动作）"
-    "写成一份中文 HTML 过程文档保存到指定路径，方便老板查看你的工作过程。"
+    "老板在界面上用聊天跟你对话：一条岗位=一个会话。岗位上下文一律以文件为准："
+    "开口/动手前先读该岗的 jd.txt 与已有报告，禁止向老板索要已经存在的信息。"
+    "当老板要求执行某步骤时，把工作过程写成中文 HTML 过程文档保存到该岗 reports 目录，"
+    "方便老板事后查看（他不想盯着屏幕）。"
 )
 
-# ═══════════════════════ 纯数据层（可独立测试）══════════════════════
+# ═══════════════════════ 纯数据层 ═══════════════════════
 
 def now_str() -> str:
     return datetime.now().strftime("%Y-%m-%d %H:%M:%S")
@@ -76,33 +89,28 @@ def job_dir(job_code: str) -> Path:
 
 
 def list_jobs() -> list[dict]:
-    """按创建时间倒序列出现有岗位会话。"""
     jobs = []
     if CHAT_DIR.exists():
         for d in sorted(CHAT_DIR.iterdir()):
             if not d.is_dir():
                 continue
-            meta_p = d / "meta.json"
             meta = {}
-            if meta_p.exists():
+            mp = d / "meta.json"
+            if mp.exists():
                 try:
-                    meta = json.loads(meta_p.read_text(encoding="utf-8"))
+                    meta = json.loads(mp.read_text(encoding="utf-8"))
                 except Exception:
                     meta = {}
-            jobs.append({
-                "job_code": meta.get("job_code", d.name),
-                "title": meta.get("title", ""),
-                "created_at": meta.get("created_at", ""),
-                "session_id": meta.get("session_id", f"m3chat-{d.name}"),
-                "dir": d,
-            })
+            jobs.append({"job_code": meta.get("job_code", d.name),
+                         "title": meta.get("title", ""),
+                         "created_at": meta.get("created_at", ""),
+                         "session_id": meta.get("session_id", f"m3chat-{d.name}"),
+                         "dir": d})
     jobs.sort(key=lambda x: x["created_at"], reverse=True)
     return jobs
 
 
-def create_job(title: str = "", jd_text: str = "", jd_bytes: bytes | None = None,
-               jd_name: str = "") -> dict:
-    """新建岗位会话：目录 + meta.json + jd.txt（粘贴或上传）+ 空 transcript。"""
+def create_job(title: str = "", jd_text: str = "", jd_bytes: bytes | None = None) -> dict:
     CHAT_DIR.mkdir(parents=True, exist_ok=True)
     ts = datetime.now().strftime("%Y%m%d-%H%M%S")
     job_code = f"J-CHAT-{ts}"
@@ -117,6 +125,8 @@ def create_job(title: str = "", jd_text: str = "", jd_bytes: bytes | None = None
     else:
         (d / "jd.txt").write_text(jd_text or "", encoding="utf-8")
     (d / "transcript.json").write_text(json.dumps([], ensure_ascii=False), encoding="utf-8")
+    save_state(job_code, jd_provided=bool(jd_bytes is not None or jd_text.strip()),
+               step1_analyzed=False, last_action="新建岗位", job_title=meta["title"])
     return meta
 
 
@@ -139,7 +149,6 @@ def append_msg(job_code: str, role: str, content: str, artifacts: list[str] | No
 
 
 def list_artifacts(job_code: str) -> list[Path]:
-    """该岗产物（reports 目录：HTML 过程文档/JSON 报告等），新的在前。"""
     d = job_dir(job_code) / "reports"
     if not d.exists():
         return []
@@ -148,21 +157,63 @@ def list_artifacts(job_code: str) -> list[Path]:
     return files
 
 
+def _job_dir(job: dict) -> Path:
+    d = job.get("dir")
+    return Path(d) if d else job_dir(job["job_code"])
+
+
+# ── 岗位状态卡 state.json（不赌 SDK 会话记忆；每次发令注入提示）──
+
+def load_state(job_code: str) -> dict:
+    p = job_dir(job_code) / "state.json"
+    st_def = {"job_code": job_code, "jd_provided": False, "step1_analyzed": False,
+              "last_action": None, "updated_at": None}
+    if p.exists():
+        try:
+            st_def.update(json.loads(p.read_text(encoding="utf-8")))
+        except Exception:
+            pass
+    # 兼容旧岗位（无 state.json）：从文件反推
+    jd_p = job_dir(job_code) / "jd.txt"
+    if jd_p.exists() and jd_p.stat().st_size > 0:
+        st_def["jd_provided"] = True
+    if any(p.name.startswith("analyze_") for p in list_artifacts(job_code)):
+        st_def["step1_analyzed"] = True
+    return st_def
+
+
+def save_state(job_code: str, **updates) -> None:
+    st_ = load_state(job_code)
+    st_.update(updates)
+    st_["updated_at"] = now_str()
+    (job_dir(job_code) / "state.json").write_text(
+        json.dumps(st_, ensure_ascii=False, indent=2), encoding="utf-8")
+
+
+def state_block(job: dict) -> str:
+    """状态卡文本：注入每条 prompt，让 agent 无论有没有会话记忆都掌握岗位现状。"""
+    st_ = load_state(job["job_code"])
+    jd_p = _job_dir(job) / "jd.txt"
+    arts = list_artifacts(job["job_code"])
+    jd_status = "已提供" if (st_.get("jd_provided") and jd_p.exists()) else "为空/未提供"
+    return (
+        f"【岗位状态卡】{job.get('title','')}（{job['job_code']}）\n"
+        f"- 岗位 JD 文件：{jd_p.as_posix()}（{jd_status}。已提供则开口前必须先读它）\n"
+        f"- ① 岗前分析：{'已完成' if st_.get('step1_analyzed') else '未做'}"
+        f"（最近一次动作：{st_.get('last_action') or '无'}）\n"
+        f"- 现有产物 {len(arts)} 个（如需参考请读 reports 目录，最新的在前）\n"
+        f"- 成长规则库：{RULES.as_posix()}（执行业务步骤前先读对应小节并遵守）\n"
+    )
+
+
 # ── 成长账（records.jsonl + rules.md）──────────────────────────────
 
 def append_record(job: dict, step_no: int, note: str, tags: str = "") -> dict:
-    """记一笔纠错/成长（原始账，只增不改；状态=待消化，供日后提炼规则/定放手阈值）。"""
     GROWTH_DIR.mkdir(parents=True, exist_ok=True)
-    rec = {
-        "ts": now_str(),
-        "job_code": job["job_code"],
-        "job_title": job.get("title", ""),
-        "step": step_no,
-        "step_name": next((s["name"] for s in STEPS if s["no"] == step_no), str(step_no)),
-        "note": note.strip(),
-        "tags": [t.strip() for t in tags.split(",") if t.strip()],
-        "status": "待消化",
-    }
+    rec = {"ts": now_str(), "job_code": job["job_code"], "job_title": job.get("title", ""),
+           "step": step_no, "step_name": STEP_NAME.get(step_no, str(step_no)),
+           "note": note.strip(), "tags": [t.strip() for t in tags.split(",") if t.strip()],
+           "status": "待消化"}
     with RECORDS.open("a", encoding="utf-8") as f:
         f.write(json.dumps(rec, ensure_ascii=False) + "\n")
     return rec
@@ -189,7 +240,6 @@ def list_records(job_code: str | None = None, pending_only: bool = False) -> lis
 
 
 def mark_records_digested(job_code: str) -> int:
-    """把某岗 待消化 记录标记为 已消化（本地小文件，整体重写）。"""
     if not RECORDS.exists():
         return 0
     lines = RECORDS.read_text(encoding="utf-8").splitlines()
@@ -213,7 +263,6 @@ def mark_records_digested(job_code: str) -> int:
 
 
 def ensure_rules() -> None:
-    """rules.md 不存在则建骨架（成长规则库：纠错消化后按步骤分节沉淀，助理干活前读）。"""
     if RULES.exists():
         return
     PROMPTS.mkdir(parents=True, exist_ok=True)
@@ -231,7 +280,59 @@ def ensure_rules() -> None:
     )
 
 
-# ═══════════════════════ 执行通道（B 档真 agent / STUB）══════════════════════
+# ═══════════════════════ 任务构建（发令内容）══════════════════════
+
+def build_free_task(job: dict, user_msg: str) -> str:
+    """自由讨论/追问：注入状态卡 + 能力边界，agent 先读文件再开口。"""
+    return (
+        f"{state_block(job)}\n{CAPABILITIES}\n"
+        "规矩：老板消息里没有的岗位信息，一律先从上面文件读；读不到再问老板要。\n"
+        f"【老板消息】{user_msg}\n"
+        "请以「小猎」身份回复。若老板要求执行某一步骤并出 HTML 过程文档，把工作过程写成中文 HTML "
+        "保存到该岗 reports 目录（文件名自定，带上步骤与时间），回复里给出文件路径。"
+    )
+
+
+def build_step1_task(job: dict) -> str:
+    """步骤① 岗前分析（含关键字实验 + HTML 过程文档）——v1.5/v1.6 唯一已接入的执行步骤。"""
+    jd = (_job_dir(job) / "jd.txt").as_posix()
+    reports_dir = (_job_dir(job) / "reports").as_posix()
+    ts = datetime.now().strftime("%Y%m%d-%H%M%S")
+    report_json = f"{reports_dir}/analyze_{ts}.json"
+    report_html = f"{reports_dir}/analyze_{ts}_过程.html"
+    method = (PROMPTS / "analyze_job.txt").as_posix()
+    rules_hint = (f"先读成长规则库 {RULES.as_posix()}，遵守其中「① 岗位分析」及流程小节的相关规则。\n"
+                  ) if RULES.exists() else ""
+    return f"""老板要你执行【步骤① 岗前分析】。请全程用文件工具完成：
+1. 【必须】先读岗位 JD 文件：{jd}
+   —— 只要该文件非空，就不许向老板索要 JD 或要求他粘贴；JD 为空才提示老板提供。
+2. 读你的岗前分析方法论手册（严格按它的 JSON 输出格式，不增不减字段）：{method}
+3. 按手册完成岗前分析：提取岗位信息、判断进展、逐项评分（佣金/HC数量/新鲜度/上游靠谱度/匹配难度 各0-5）、
+   算总分与等级、写清风险清单与建议、判定「接单/沟通/放弃」，并生成 4 组猎聘搜索关键字。
+4. {rules_hint}
+5. 把完整 JSON 结果写入：{report_json}
+6. 把本次工作过程写成中文 HTML 过程文档（读了什么、关键判断、逐项评分依据、关键字实验过程、结论与风险），
+   保存到：{report_html}
+7. 最后用「老板，我弄的咋样？」口吻给我一段 ≤8 句的中文汇报：干了什么、这份 JD 值不值得接、
+   我的建议、下一步。回复里给出上面两个文件的路径。
+{CAPABILITIES}"""
+
+
+def build_report_task(job: dict) -> str:
+    """按需「导出 HTML 汇报」：读该岗已有产物，整理成一份给人看的汇报 HTML。"""
+    reports_dir = (_job_dir(job) / "reports").as_posix()
+    ts = datetime.now().strftime("%Y%m%d-%H%M%S")
+    out = f"{reports_dir}/汇报_{ts}.html"
+    return f"""老板要一份该岗的【HTML 汇报】（给人看，不是过程流水）。
+1. 先读该岗 reports 目录里最新的 analyze_*.json（岗前分析结果）；如没有就如实说还没做分析。
+2. 整理成一份干净的中文 HTML（岗位概况/总分评级/接单判断/风险要点/4 组搜索关键字/下一步建议），
+   适合直接发 PM 或存档。
+3. 保存到：{out}
+4. 用「老板，汇报好了」口吻给我 ≤5 句摘要，附文件路径。
+{CAPABILITIES}"""
+
+
+# ═══════════════════════ 执行通道 ═══════════════════════
 
 def _env_from_file(env_path: Path) -> dict:
     env: dict[str, str] = {}
@@ -247,61 +348,12 @@ def _env_from_file(env_path: Path) -> dict:
     return env
 
 
-def _job_dir(job: dict) -> Path:
-    """job 可能来自 list_jobs（带 dir）或 create_job（meta 无 dir），统一取目录。"""
-    d = job.get("dir")
-    return Path(d) if d else job_dir(job["job_code"])
-
-
-def build_free_task(job: dict, user_msg: str) -> str:
-    """自由讨论/追问：给助理当前岗位上下文，让它读文件工具自己看。"""
-    jd_path = (_job_dir(job) / "jd.txt").as_posix()
-    rules_hint = ("在动手执行任何业务步骤前，先读成长规则库并遵守其中与本步骤相关的规则：\n"
-                  f"  {RULES.as_posix()}\n") if RULES.exists() else ""
-    return (
-        f"【当前岗位会话】{job.get('title','')}（{job['job_code']}）\n"
-        f"【岗位 JD 文件】{jd_path}（如需要请用文件工具读取；若该文件为空，提示老板先提供 JD）\n"
-        f"{rules_hint}"
-        f"【老板消息】{user_msg}\n"
-        "请以「小猎」身份回复。若老板要求执行某一步骤并生成 HTML 过程文档，请把工作过程写成中文 HTML "
-        "保存到该岗 reports 目录（路径请向老板确认后写入），并在回复里附上文件路径。"
-    )
-
-
-def build_step1_task(job: dict, analyze_method: Path | None = None) -> str:
-    """步骤① 岗前分析标准任务（类似 m1_run，另加 HTML 过程文档 + 规则库）。"""
-    jd = (_job_dir(job) / "jd.txt").as_posix()
-    reports_dir = (_job_dir(job) / "reports").as_posix()
-    ts = datetime.now().strftime("%Y%m%d-%H%M%S")
-    report_json = f"{reports_dir}/analyze_{ts}.json"
-    report_html = f"{reports_dir}/analyze_{ts}_过程.html"
-    method = (analyze_method or PROMPTS / "analyze_job.txt").as_posix()
-    rules_hint = (f"先读成长规则库 {RULES.as_posix()}，遵守其中「① 岗位分析」及流程小节的相关规则。\n"
-                  ) if RULES.exists() else ""
-    return f"""老板要你执行【步骤① 岗前分析】。请全程用工具完成，不要让他手动粘贴：
-
-1. 读你的岗前分析方法论手册（必须严格按它的 JSON 输出格式，不增不减字段）：
-   {method}
-2. 读岗位 JD 文件：{jd}
-3. 按手册完成岗前分析：提取岗位信息、判断进展、逐项评分（佣金/HC数量/新鲜度/上游靠谱度/匹配难度 各0-5）、
-   算总分与等级、写清风险清单与建议、判定「接单/沟通/放弃」，并生成 4 组猎聘搜索关键字。
-4. {rules_hint}
-5. 把完整 JSON 结果写入：{report_json}
-6. 把本次工作过程写成一份中文 HTML 过程文档（标题、做了什么判断、评分依据、关键字实验过程、
-   结论与建议、风险），保存到：{report_html}
-7. 最后用「老板，我弄的咋样？」口吻给我一段 ≤8 句的中文汇报：干了什么、这份 JD 值不值得接、
-   我的建议、下一步。回复里给出上面两个文件的路径。"""
-
-
 def run_assistant(job: dict, prompt: str, env_path: Path, stub: bool = False,
                   max_tokens: int = 8192) -> tuple[str, list[Path]]:
-    """执行通道：B 档真 agent（复用 m1_run 已验证的 DeepSeekHarness）；
-    stub=True 时不调 API（界面自测用）。返回 (回复文本, 新产物文件列表)。"""
     if stub:
         time.sleep(0.2)
         return (f"（假执行·界面自测）收到指令：{prompt[:60]}…\n"
                 "正式使用时请把执行模式切回「真执行」并配置 .env。"), []
-    # 懒加载 SDK（仅真执行时）
     sys.path.insert(0, str(DSH_ROOT / "python" / "sdk" / "src"))
     sys.path.insert(0, str(DSH_ROOT / "python" / "sdk-runtime" / "src"))
     from deepseek_harness import DeepSeekHarness  # noqa: E402
@@ -336,10 +388,9 @@ def run_assistant(job: dict, prompt: str, env_path: Path, stub: bool = False,
     return reply, new_files
 
 
-# ═══════════════════════ UI 组装 ═══════════════════════
+# ═══════════════════════ UI ═══════════════════════
 
 def render_sidebar() -> dict:
-    """侧栏：岗位会话选择/新建、当前测试步骤、运行设置、纠错成长账。"""
     with st.sidebar:
         st.markdown("## 🎯 岗位会话")
         jobs = list_jobs()
@@ -354,11 +405,10 @@ def render_sidebar() -> dict:
             title = st.text_input("岗位标题（可空）", key="nj_title",
                                   placeholder="如：中国移动 NLP 应届博士岗")
             jd_up = st.file_uploader("上传 JD（.txt）", type=["txt"], key="nj_up")
-            jd_paste = st.text_area("或直接粘贴 JD 原文", key="nj_paste", height=140)
+            jd_paste = st.text_area("或直接粘贴 JD 原文（推荐贴完整页面快照）", key="nj_paste", height=160)
             if st.button("创建并进入该岗", key="nj_btn", use_container_width=True):
                 if jd_up is not None:
-                    jd_bytes = jd_up.getvalue()
-                    new_job = create_job(title, jd_bytes=jd_bytes, jd_name=jd_up.name)
+                    new_job = create_job(title, jd_bytes=jd_up.getvalue())
                 elif jd_paste.strip():
                     new_job = create_job(title, jd_text=jd_paste)
                 else:
@@ -368,37 +418,39 @@ def render_sidebar() -> dict:
                 st.rerun()
 
         st.divider()
-        step_name_map = {s["no"]: s["name"] for s in STEPS}
-        step_no = st.radio("当前测试步骤", [s["no"] for s in STEPS],
-                           format_func=lambda n: step_name_map[n],
-                           index=0, key="cur_step")
-        cur_step = next(s for s in STEPS if s["no"] == step_no)
-        st.caption(cur_step["tag"])
-
-        st.divider()
         with st.expander("⚙️ 运行设置"):
             stub = st.checkbox("假执行（界面自测，不调 API）",
                                value=os.environ.get("M3CHAT_STUB") == "1", key="stub_mode")
             env_path = st.text_input(".env 路径", value=str(DEFAULT_ENV), key="env_path")
-            st.caption("真执行需要 .env 里有 DEEPSEEK_API_KEY；阻塞式，长任务请耐心等待或点页面右上角 Stop。")
+            st.caption("真执行阻塞式：发令后耐心等待（页面右上角可 Stop）。")
 
         st.divider()
         with st.expander("📒 纠错成长账（原始账）"):
-            total = len(list_records())
-            st.caption(f"全部记录 {total} 条（data/growth/records.jsonl，只增不改）。"
-                       "消化成规则后写入 data/prompts/rules.md，下次干活自动生效。")
+            st.caption(f"累计 {len(list_records())} 条 → data/growth/records.jsonl；"
+                       "消化成规则写 data/prompts/rules.md，下次干活自动生效。")
+            # 步骤下拉：默认按当前岗状态给建议（①分析已完成→默认①；否则自由讨论）
+            cur_job_code = st.session_state.get("job_pick_chat") or (jobs[0]["job_code"] if jobs else None)
+            default_no = 1
+            if cur_job_code:
+                stt = load_state(cur_job_code)
+                default_no = 1 if stt.get("step1_analyzed") else 0
+            rec_step = st.selectbox("这笔纠错属于哪一步？",
+                                    [s["no"] for s in STEPS],
+                                    format_func=lambda n: STEP_NAME[n],
+                                    index=next(i for i, s in enumerate(STEPS) if s["no"] == default_no),
+                                    key="rec_step")
             note = st.text_area("记一笔：助理哪里不对 / 应该怎样", key="rec_note", height=90)
             tags = st.text_input("主题标签（逗号分隔）", key="rec_tags",
-                                 placeholder="如：评分口径,关键字选词,汇报形态")
+                                 placeholder="如：评分口径,关键字选词,诚实边界")
             if st.button("✍️ 记录纠错（成长数据）", key="rec_btn", use_container_width=True):
                 if not note.strip():
                     st.warning("批注为空，未记录。")
                 else:
-                    job = next((j for j in jobs if j["job_code"] == st.session_state.get("job_pick_chat")), None)
+                    job = next((j for j in jobs if j["job_code"] == cur_job_code), None)
                     if job is None:
                         st.warning("请先选择岗位会话。")
                     else:
-                        append_record(job, cur_step["no"], note, tags)
+                        append_record(job, rec_step, note, tags)
                         st.success("已记入成长账（待消化）。")
                         st.rerun()
             recents = list_records()[-5:][::-1]
@@ -406,7 +458,63 @@ def render_sidebar() -> dict:
                 st.markdown("**最近记录**")
                 for r in recents:
                     st.caption(f"· [{r['step_name']}] {r['note'][:36]}{'…' if len(r['note']) > 36 else ''} ({r['ts'][5:16]})")
-        return {"jobs": jobs, "step": cur_step, "stub": stub, "env_path": Path(env_path)}
+
+        st.divider()
+        with st.expander("📖 怎么用（1 分钟）"):
+            st.markdown(
+                "- **建岗**：新建岗位时贴 JD（完整页面快照最稳）→ 选它进入对话\n"
+                "- **干活**：点上方动作按钮（系统按岗位状态自动亮/灰）或直接打字发令\n"
+                "- **看过程**：每步执行自动落 HTML 过程文档，展开「工作产物」查看，不用盯屏\n"
+                "- **纠错**：侧栏记一笔 → 成长账；消化成规则后可让助理写进 rules.md\n"
+                "- **能力边界**：②采集/③评估按钮未接入（灰+原因）；自由聊天里也会如实说明")
+
+    return {"jobs": jobs, "stub": stub, "env_path": Path(env_path)}
+
+
+def render_progress_line(job: dict) -> None:
+    """岗位自动进度（只读，不用手动维护）。"""
+    stt = load_state(job["job_code"])
+    jd_ok = stt.get("jd_provided")
+    a1 = stt.get("step1_analyzed")
+    jd_chip = "📥 JD 已收" if jd_ok else "📥 等 JD"
+    a1_chip = "✅ ① 岗前分析完成" if a1 else "⬜ ① 岗前分析未做"
+    st.markdown(f"**流程进度**：{jd_chip}　→　{a1_chip}　→　🔒 ② 探索采集（未接入）　→　🔒 ③ 池子评估（未接入）")
+    hint = []
+    if not jd_ok:
+        hint.append("先上传/粘贴 JD（新建岗位时），或直接在下方输入框把 JD 原文发来。")
+    elif not a1:
+        hint.append("点下方「🚀 开始岗位分析」跑第一步。")
+    else:
+        hint.append("①分析已出：可确认/追问/纠错，或点「重跑/导出汇报」；②采集请用 run_pipeline 后台跑（面板未接入）。")
+    st.caption("　".join(hint))
+
+
+def render_action_row(job: dict) -> str | None:
+    """动作按钮行：由岗位状态自动亮/灰；返回要发送的任务文本（无则 None）。"""
+    stt = load_state(job["job_code"])
+    jd_ok = stt.get("jd_provided") and (_job_dir(job) / "jd.txt").exists()
+    arts = list_artifacts(job["job_code"])
+
+    c1, c2, c3, c4 = st.columns(4)
+    task = None
+    if not jd_ok:
+        st.info("岗位 JD 还没就位：请先在左侧新建岗位时粘贴/上传 JD。")
+        return None
+    label1 = "🔄 重跑岗位分析" if stt.get("step1_analyzed") else "🚀 开始岗位分析"
+    if c1.button(label1, key="act_analyze", use_container_width=True,
+                 help="读 JD+方法论+成长规则 → 评分/接单判断/4组关键字 → 自动写 JSON + HTML 过程文档"):
+        task = build_step1_task(job)
+    if c2.button("📤 导出 HTML 汇报", key="act_report", use_container_width=True,
+                 disabled=len(arts) == 0,
+                 help="读已有分析产物，整理成一份给人看的 HTML 汇报（按需点）"):
+        task = build_report_task(job)
+    if c3.button("🔒 ② 探索采集", key="act_collect", use_container_width=True, disabled=True,
+                 help="未接入：需要 pwsh+浏览器工具。现可用 run_pipeline 后台跑（bestagent\\ 下 python run_pipeline.py --jd …）"):
+        pass
+    if c4.button("🔒 ③ 池子评估", key="act_eval", use_container_width=True, disabled=True,
+                 help="未接入：评估需要接池子数据与评估方法论，后续版本接"):
+        pass
+    return task
 
 
 def render_main(cfg: dict) -> None:
@@ -417,12 +525,11 @@ def render_main(cfg: dict) -> None:
     pick = st.session_state.get("job_pick_chat") or jobs[0]["job_code"]
     job = next((j for j in jobs if j["job_code"] == pick), jobs[0])
 
-    # ── 头部：当前岗 + 步骤
     st.markdown(f"### 🗣 {job['title'] or job['job_code']}")
-    st.caption(f"岗位 {job['job_code']} · 会话 {job['session_id']} · 创建于 {job['created_at']}　|　"
-               f"当前测试步骤：**{cfg['step']['name']}**")
+    st.caption(f"岗位 {job['job_code']} · 会话 {job['session_id']} · 创建于 {job['created_at']}")
+    render_progress_line(job)
 
-    # 产物预览（助理生成的报告/HTML 过程文档）
+    # 产物预览
     arts = list_artifacts(job["job_code"])
     if arts:
         with st.expander(f"📄 工作产物（{len(arts)} 个，最新在前）", expanded=False):
@@ -436,42 +543,51 @@ def render_main(cfg: dict) -> None:
                 st.code(txt[:6000] + ("\n…（过长已截断）" if len(txt) > 6000 else ""),
                         language="json" if fpath.suffix == ".json" else None)
 
-    # ── 对话历史
+    # 对话历史
     for m in load_transcript(job["job_code"]):
         with st.chat_message(m["role"]):
             st.markdown(m["content"])
             for a in m.get("artifacts") or []:
                 st.caption(f"📎 {a}")
 
-    # ── 快捷指令（先测步骤①）
-    quick = None
-    if cfg["step"]["no"] == 1:
-        quick = st.button("🚀 步骤①：执行岗前分析并生成 HTML 过程文档", key="quick_step1",
-                          use_container_width=True,
-                          disabled=not (_job_dir(job) / "jd.txt").exists())
-        if quick:
-            quick = build_step1_task(job)
+    # 动作按钮行 + 自由输入
+    task = render_action_row(job)
+    prompt = st.chat_input("跟小猎说话：发指令 / 追问 / 讨论；也可以直接粘贴 JD 原文…")
 
-    prompt = st.chat_input("跟小猎说话：发指令 / 追问 / 讨论（Enter 发送）…")
-    if prompt or quick:
-        msg = prompt if prompt else quick
-        append_msg(job["job_code"], "user", msg)
+    to_send = None
+    action_kind = None
+    if task:
+        to_send, action_kind = task, ("analyze" if task.startswith("老板要你执行【步骤①") else "report")
+    elif prompt:
+        # 若输入疑似整段 JD 且 jd.txt 为空 → 顺手存档为岗位 JD
+        if not load_state(job["job_code"]).get("jd_provided") and len(prompt) > 200 and ("职位" in prompt or "岗位" in prompt):
+            (_job_dir(job) / "jd.txt").write_text(prompt, encoding="utf-8")
+            save_state(job["job_code"], jd_provided=True)
+        to_send, action_kind = prompt, "chat"
+
+    if to_send:
+        append_msg(job["job_code"], "user", to_send)
         try:
             with st.status("小猎工作中（阻塞式，长任务请耐心等待）…", expanded=False) as status:
-                reply, new_files = run_assistant(job, msg, cfg["env_path"], stub=cfg["stub"])
+                reply, new_files = run_assistant(job, to_send, cfg["env_path"], stub=cfg["stub"])
                 status.update(label="小猎完成", state="complete")
         except Exception as e:
             reply = f"⚠️ 执行出错：{e}\n\n（若是 .env/API 问题请检查侧栏运行设置；界面自测请开「假执行」）"
             new_files = []
         append_msg(job["job_code"], "assistant", reply,
                    artifacts=[p.name for p in new_files])
+        # 更新状态卡
+        upd = {"last_action": {"analyze": "岗位分析", "report": "导出汇报", "chat": "自由对话"}[action_kind]}
+        if action_kind == "analyze":
+            upd["step1_analyzed"] = True
+        save_state(job["job_code"], **upd)
         st.rerun()
 
 
 def main() -> None:
-    st.set_page_config(page_title="数字合伙人 · 对话汇报（v1.5）", page_icon="🗣", layout="wide")
+    st.set_page_config(page_title="数字合伙人 · 对话汇报（v1.6）", page_icon="🗣", layout="wide")
     st.markdown("# 🗣 数字合伙人 · 对话式汇报")
-    st.caption("v1.5（DSH Web 迷你版 · 分步骤测试用）｜ 一岗一会话｜ 纠错成长账："
+    st.caption("v1.6｜ 一岗一会话｜ 状态卡自动记忆｜ 过程自动落 HTML｜ 纠错成长账："
                "`data/growth/records.jsonl` + `data/prompts/rules.md`")
     ensure_rules()
     cfg = render_sidebar()
