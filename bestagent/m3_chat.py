@@ -1,6 +1,12 @@
 # -*- coding: utf-8 -*-
 """M3 界面 v1.6：对话式汇报面板（DSH Web 迷你版 · 分步骤测试用）
 
+v1.6.5 变更（2026-09-04，③ 池子评估接入面板）：
+③ 按钮按 ②采集完成点亮 / 聊天“评估一下这批人”类发令自动路由；agent 读 JD+最新 collected 池子
++pool_quality/match_candidate 方法论 → 池评（优/良/中/差+分布+data_valid）→ 逐人紧凑评分
+（score/verdict/summary，≥60 加 match_points/concerns）→ 写 pool_report_*.json + HTML 过程 → 汇报 top；
+纯文件任务走 CORDIS_MINIMAL，max_tokens 提至 32768；state 新增 step3_done（按 pool_report 推断）。
+
 v1.6.4 变更（2026-09-04，② 探索采集接入面板）：
 1. 执行通道按任务切换 cordis：纯文件任务（①/自由对话/导出）用 CORDIS_MINIMAL，
    「② 采集执行」用 CORDIS_PWSH（带 pwsh 工具，可跑 collect_liepin.py 配方表脚本）
@@ -78,10 +84,11 @@ STEP_NAME = {s["no"]: s["name"] for s in STEPS}
 CAPABILITIES = (
     "【能力边界·必须诚实】本会话当前：已接入 = ①文件读写（读 JD/手册/报告、写 JSON 报告与 HTML 过程文档）"
     "＋②探索采集（真实猎聘，走配方表脚本 collect_liepin.py，由 pwsh 工具执行；采集前必须先向老板展示"
-    "关键字/条件并获确认，老板已明确说\"直接跑/按计划\"除外）；"
-    "未接入 = ③ 候选人池评估/逐人评分、外部搜索、打招呼、浏览器自由操作等任何其他对外动作。"
+    "关键字/条件并获确认，老板已明确说\"直接跑/按计划\"除外）"
+    "＋③池子评估（读采集池子按方法论逐人评分，纯文件任务）；"
+    "未接入 = 联系跟进/打招呼、外部搜索、浏览器自由操作等任何其他对外动作。"
     "老板要求未接入能力时，必须如实说明「这一步我还没接 XX 能力」，并给替代建议"
-    "（例如：池子评估可让老板在 PyCharm 用 run_pipeline 后台跑，结果文件会出现在工作目录），"
+    "（例如：打招呼/联系候选人需走人工闸门），"
     "严禁找其他借口、严禁假装执行。"
 )
 
@@ -196,7 +203,7 @@ def _job_dir(job: dict) -> Path:
 def load_state(job_code: str) -> dict:
     p = job_dir(job_code) / "state.json"
     st_def = {"job_code": job_code, "jd_provided": False, "step1_analyzed": False,
-              "step2_collected": False, "last_action": None, "updated_at": None}
+              "step2_collected": False, "step3_done": False, "last_action": None, "updated_at": None}
     if p.exists():
         try:
             st_def.update(json.loads(p.read_text(encoding="utf-8")))
@@ -210,6 +217,8 @@ def load_state(job_code: str) -> dict:
         st_def["step1_analyzed"] = True
     if any(p.name.startswith("collected_") for p in list_artifacts(job_code)):
         st_def["step2_collected"] = True
+    if any(p.name.startswith("pool_report_") for p in list_artifacts(job_code)):
+        st_def["step3_done"] = True
     return st_def
 
 
@@ -464,6 +473,71 @@ def build_step2_run_task(job: dict, plan_file: Path) -> str:
 {CAPABILITIES}"""
 
 
+# ── 步骤③ 池子评估（读 ② 采集池子 → 池评+逐人评分 → JSON 报告 + HTML 过程；纯文件，无外部副作用）──
+
+EVAL_WORDS = ("评估", "评分", "评一评", "打分", "这批人", "候选人池")
+FRESH_COLLECT_WORDS = ("去猎聘", "跑一轮", "搜候选人", "搜一轮", "补采", "再采", "去采", "换关键字", "放宽")
+
+
+def detect_eval_intent(msg: str, job: dict) -> bool:
+    """识别③评估发令（把已采池子评估一遍）。要求：有评估词、非讨论问句、盘上已有 collected 池子、
+    不是“再去采集”类发令（走 ②）、不是“按计划跑/直接跑”确认（走 ② 执行）。"""
+    m = msg.strip()
+    if not any(w in m for w in EVAL_WORDS):
+        return False
+    if ("怎么" in m or "为什么" in m or "是啥" in m or "是什么" in m
+            or m.endswith("？") or m.endswith("?") or m.endswith("吗")):
+        return False
+    if any(w in m for w in FRESH_COLLECT_WORDS):
+        return False
+    if any(w in m for w in COLLECT_CONFIRM_WORDS):
+        return False
+    if latest_report(job, "collected_", ".json") is None:
+        return False
+    return True
+
+
+def build_step3_task(job: dict) -> str:
+    """③ 池子评估：读 JD+最新采集池子+方法论 → 池评+逐人评分 → 写 pool_report JSON + HTML 过程 → 汇报。"""
+    jd = (_job_dir(job) / "jd.txt").as_posix()
+    reports_dir = (_job_dir(job) / "reports").as_posix()
+    collected = latest_report(job, "collected_", ".json")
+    analyze = latest_report(job, "analyze_", ".json")
+    ts = datetime.now().strftime("%Y%m%d-%H%M%S")
+    pool_report = f"{reports_dir}/pool_report_{ts}.json"
+    html_out = f"{reports_dir}/评估_{ts}_过程.html"
+    pq = (PROMPTS / "pool_quality.txt").as_posix()
+    mc = (PROMPTS / "match_candidate.txt").as_posix()
+    if collected is None:
+        return (f"老板，这个岗位还没有②采集结果（reports 里没有 collected_*.json）。"
+                f"请先点「② 探索采集」或说“去猎聘跑一轮”，采到池子后我再做③评估。\n{CAPABILITIES}")
+    analyze_hint = analyze.as_posix() if analyze else "（暂无，直接从 JD 提炼硬性条件）"
+    rules_hint = (f"先读成长规则库 {RULES.as_posix()}，遵守其中「③ 池子评估」及流程小节的相关规则。\n"
+                  ) if RULES.exists() else ""
+    return f"""老板要你执行【步骤③ 池子评估】。请全程用文件工具完成（纯计算，无外部动作）：
+1. 读岗位 JD：{jd}
+2. 读要评估的采集池子：{collected}
+   —— rows 数组就是候选池，按数组顺序编号 1..N 作为 candidate_id；共 N=rows 条。若 rows 为空请如实说池子为空。
+3. 读最新岗前分析：{analyze_hint}（它的硬性条件与口径提醒是你评分的依据）
+4. 读你的两份方法论手册：
+   池子质量手册（先评整池）：{pq}
+   单候选人匹配手册（再逐人评）：{mc}
+   {rules_hint}
+5. 先按 pool_quality 手册评估整个池子并写进报告的 pool_quality：池子质量（优/良/中/差）、
+   匹配分布 high/medium/low 数量（界线 ≥80/60-79/<60）、主要缺口、优势、行动建议、data_valid 校验
+   （发现重复采集/占位/无效行要如实指出）。
+6. 再按 match_candidate 手册逐人评分（紧凑格式）：每位必须有 candidate_id/score(0-100)/verdict(推荐/待定/不推荐)/
+   summary(一句话)；只有 score≥60 或 verdict≠不推荐 才额外给 match_points(≤3 条)与 concerns(≤2 条)；
+   其余只给三字段。评分严格贴 JD 硬性条件（学历/年限/城市/技能），年限口径矛盾等要先按 JD 原文判断并在 summary 提示。
+7. 把完整 JSON 结果写入：{pool_report}
+   结构：{{"pool_quality": {{...}}, "candidates": [{{"candidate_id": 1, "score": 0-100, "verdict": "...",
+          "match_points": [...], "concerns": [...], "summary": "..."}}, ...]}}
+8. 把本次工作过程写成一份简短中文 HTML 过程文档（池子评级+分布+Top 名单+各 3 句理由），保存到：{html_out}
+9. 用「老板，池子评估好了」口吻汇报 ≤8 句：池子评级结论、分布、推荐/待定 top 名单（人名/分数/一句理由）、
+   数据校验发现（如有）、下一步建议（如是否补采/深挖谁）；回复里给出上面两个文件的路径。
+{CAPABILITIES}"""
+
+
 # ═══════════════════════ 执行通道 ═══════════════════════
 
 def _env_from_file(env_path: Path) -> dict:
@@ -600,7 +674,7 @@ def render_sidebar() -> dict:
                 "- **干活**：点上方动作按钮（系统按岗位状态自动亮/灰）或直接打字发令\n"
                 "- **看过程**：每步执行自动落 HTML 过程文档，展开「工作产物」查看，不用盯屏\n"
                 "- **纠错**：侧栏记一笔 → 成长账；消化成规则后可让助理写进 rules.md\n"
-                "- **能力边界**：②采集/③评估按钮未接入（灰+原因）；自由聊天里也会如实说明")
+                "- **能力边界**：①②③已接入（分析/采集/评估），联系候选人=人工闸门（未接入）；自由聊天里也会如实说明")
 
     return {"jobs": jobs, "stub": stub, "env_path": Path(env_path)}
 
@@ -611,18 +685,23 @@ def render_progress_line(job: dict) -> None:
     jd_ok = stt.get("jd_provided")
     a1 = stt.get("step1_analyzed")
     c2 = stt.get("step2_collected")
+    c3 = stt.get("step3_done")
     jd_chip = "📥 JD 已收" if jd_ok else "📥 等 JD"
     a1_chip = "✅ ① 岗前分析完成" if a1 else "⬜ ① 岗前分析未做"
-    c2_chip = "✅ ② 已采集一轮" if c2 else "② 探索采集（可点按钮发令）"
-    st.markdown(f"**流程进度**：{jd_chip}　→　{a1_chip}　→　{c2_chip}　→　🔒 ③ 池子评估（未接入）")
+    c2_chip = "✅ ② 已采集" if c2 else "② 探索采集（可点按钮发令）"
+    c3_chip = "✅ ③ 池子已评估" if c3 else "③ 池子评估（②采完才可点）"
+    st.markdown(f"**流程进度**：{jd_chip}　→　{a1_chip}　→　{c2_chip}　→　{c3_chip}")
     hint = []
     if not jd_ok:
         hint.append("先上传/粘贴 JD（新建岗位时），或直接在下方输入框把 JD 原文发来。")
     elif not a1:
         hint.append("点下方「🚀 开始岗位分析」跑第一步。")
+    elif not c2:
+        hint.append("①分析已出：②探索采集已接入——点按钮或说“去猎聘跑一轮”（先出计划你确认后再真跑）。")
+    elif not c3:
+        hint.append("②已采集：可点「③ 池子评估」给这批人评分（读方法论逐人打分，纯计算）。")
     else:
-        hint.append("①分析已出：可确认/追问/纠错，或点「重跑/导出汇报」；"
-                    "②探索采集已接入：点按钮或直接说“去猎聘跑一轮”（先出计划你确认后再真跑）。")
+        hint.append("③评估已出：看 top 清单可追问/纠错/重跑；联系候选人=人工闸门（未接入）。")
     st.caption("　".join(hint))
 
 
@@ -649,9 +728,10 @@ def render_action_row(job: dict) -> str | None:
                  disabled=not stt.get("step1_analyzed"),
                  help="已接入：第一步先出计划（关键字/条件请你确认，不耗额度）→ 你回复“按计划跑”才真跑猎聘采集"):
         task = build_step2_plan_task(job)
-    if c4.button("🔒 ③ 池子评估", key="act_eval", use_container_width=True, disabled=True,
-                 help="未接入：评估需要接池子数据与评估方法论，后续版本接"):
-        pass
+    if c4.button("③ 池子评估", key="act_eval", use_container_width=True,
+                 disabled=not stt.get("step2_collected"),
+                 help="已接入：读②采集池子+方法论 → 池评+逐人评分 → JSON 报告+HTML 过程（纯计算）"):
+        task = build_step3_task(job)
     return task
 
 
@@ -699,6 +779,8 @@ def render_main(cfg: dict) -> None:
             return "collect_plan"
         if t.startswith("老板已确认【步骤②"):
             return "collect_run"
+        if t.startswith("老板要你执行【步骤③"):
+            return "eval"
         return "report"
 
     to_send = None
@@ -716,12 +798,15 @@ def render_main(cfg: dict) -> None:
         to_send = prompt
         # v1.6.3 修复：自由聊天必须走 build_free_task，注入状态卡+完整路径+能力边界+硬指令
         # （历史 bug：build_free_task 定义了没接线，agent 反复“找不到岗位文件”）
-        # v1.6.4：先识别 ② 采集发令（去猎聘/采集/跑一轮…）→ 走“出计划→确认→执行”两步；讨论性问句不触发
+        # v1.6.4/1.6.5：先识别意图——③评估（纯计算，优先）→ ②采集两步（出计划/确认后执行）；讨论性问句不触发
+        ev, coll = False, ""
         if load_state(job["job_code"]).get("step1_analyzed"):
-            coll = detect_collect_intent(prompt, job)
-        else:
-            coll = ""
-        if coll == "plan":
+            ev = detect_eval_intent(prompt, job)
+            if not ev:
+                coll = detect_collect_intent(prompt, job)
+        if ev:
+            action_kind, agent_prompt = "eval", build_step3_task(job)
+        elif coll == "plan":
             action_kind, agent_prompt = "collect_plan", build_step2_plan_task(job)
         elif coll == "run":
             plan_f = latest_collect_plan(job)
@@ -735,8 +820,9 @@ def render_main(cfg: dict) -> None:
         try:
             with st.status("小猎工作中（阻塞式，长任务请耐心等待）…", expanded=False) as status:
                 cordis = CORDIS_PWSH if action_kind == "collect_run" else None
+                max_tok = 32768 if action_kind == "eval" else 8192
                 reply, new_files = run_assistant(job, agent_prompt, cfg["env_path"],
-                                                 stub=cfg["stub"], cordis=cordis)
+                                                 stub=cfg["stub"], max_tokens=max_tok, cordis=cordis)
                 status.update(label="小猎完成", state="complete")
         except Exception as e:
             reply = f"⚠️ 执行出错：{e}\n\n（若是 .env/API 问题请检查侧栏运行设置；界面自测请开「假执行」）"
@@ -745,21 +831,25 @@ def render_main(cfg: dict) -> None:
                    artifacts=[p.name for p in new_files])
         # 更新状态卡
         label_map = {"analyze": "岗位分析", "report": "导出汇报", "chat": "自由对话",
-                     "collect_plan": "②采集·出计划", "collect_run": "②采集·执行"}
+                     "collect_plan": "②采集·出计划", "collect_run": "②采集·执行",
+                     "eval": "③池子评估"}
         upd = {"last_action": label_map.get(action_kind, action_kind)}
         if action_kind == "analyze":
             upd["step1_analyzed"] = True
         if action_kind == "collect_run":
             upd["step2_collected"] = bool(any(p.name.startswith("collected_")
                                               for p in list_artifacts(job["job_code"])))
+        if action_kind == "eval":
+            upd["step3_done"] = bool(any(p.name.startswith("pool_report_")
+                                         for p in list_artifacts(job["job_code"])))
         save_state(job["job_code"], **upd)
         st.rerun()
 
 
 def main() -> None:
-    st.set_page_config(page_title="数字合伙人 · 对话汇报（v1.6.4）", page_icon="🗣", layout="wide")
+    st.set_page_config(page_title="数字合伙人 · 对话汇报（v1.6.5）", page_icon="🗣", layout="wide")
     st.markdown("# 🗣 数字合伙人 · 对话式汇报")
-    st.caption("v1.6.4｜ 一岗一会话｜ 状态卡自动记忆｜ 过程自动落 HTML｜ ①②已接入（分析/探索采集），③评估未接入｜ "
+    st.caption("v1.6.5｜ 一岗一会话｜ 状态卡自动记忆｜ 过程自动落 HTML｜ ①②③已接入（分析/采集/评估），联系跟进=人工闸门｜ "
                "纠错成长账：`data/growth/records.jsonl` + `data/prompts/rules.md`")
     ensure_rules()
     cfg = render_sidebar()
