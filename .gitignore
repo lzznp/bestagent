@@ -4,6 +4,9 @@
 __pycache__/
 *.pyc
 
+# m3_chat 会话运行时数据（测试对话/产物，留在盘上不入库）
+bestagent/data/chat/
+
 # 密钥/环境文件
 *.env
 
