@@ -52,6 +52,15 @@ def latest(reports: Path, prefix: str) -> Path | None:
     return max(cands, key=lambda p: p.stat().st_mtime) if cands else None
 
 
+def latest_final(reports: Path, prefix: str, suffix: str = ".json") -> Path | None:
+    """最新“成品”文件（排除 *_part_* 分片，如 greet_part 不是合并后的 greet）。"""
+    if not reports.is_dir():
+        return None
+    cands = [p for p in reports.glob(prefix + "*" + suffix)
+             if p.is_file() and "part" not in p.name[len(prefix):]]
+    return max(cands, key=lambda p: p.stat().st_mtime) if cands else None
+
+
 def load_env_file(path: Path) -> dict[str, str]:
     env: dict[str, str] = {}
     for line in path.read_text(encoding="utf-8").splitlines():
@@ -99,6 +108,25 @@ def detail_file_for(reports: Path, candidate_id: int) -> Path | None:
     return files[-1] if files else None
 
 
+def _requirements_from_analyze(ana: dict) -> str:
+    """岗位硬性口径（评分/话术依据）：analyze 报告 → difficulty.value（冒号后）→ 退回 jd_extracted.requirements。
+
+    2026-09-05 教训：greet 话术里的"岗位硬性口径"曾是写死的样例岗内容，
+    换岗会口径泄漏——现在一律从本岗 analyze 报告动态提取（自动 pipeline 复用安全）。
+    """
+    try:
+        sc = ana.get("score") or {}
+        val = ((sc.get("details") or {}).get("difficulty") or {}).get("value") or ""
+        for sep in ("：", ":"):
+            if sep in val:
+                return val.split(sep, 1)[1].strip()
+        if val.strip():
+            return val.strip()
+    except Exception:
+        pass
+    return (ana.get("jd_extracted") or {}).get("requirements") or ""
+
+
 def build_batch(job_code: str, start: int, end: int) -> dict:
     d = CHAT / job_code
     reports = d / "reports"
@@ -106,35 +134,43 @@ def build_batch(job_code: str, start: int, end: int) -> dict:
     batch = items[start - 1:end]
     if not batch:
         raise SystemExit(f"短名单 {len(items)} 人，区间 {start}-{end} 为空")
-    # 岗位要点（analyze 报告 jd_extracted/score 精简）——第一批任务里让 agent 写"岗位卖点总述"
-    ana_p = latest(reports, "analyze_")
-    job_hint = ""
+    # 岗位要点（analyze 报告 jd_extracted/score 精简）——第一批任务里让 agent 写"岗位卖点总述"。
+    # ⚠️ 用后缀过滤 .json：analyze_<ts>_过程.html 是同名伴生文件（面板/auto_job 都会产），不能误读
+    ana_p = latest_final(reports, "analyze_", ".json")
+    job_hint, job_requirements = "", ""
     if ana_p:
         try:
             a = json.loads(ana_p.read_text(encoding="utf-8-sig"))
             je = a.get("jd_extracted") or {}
             job_hint = f"岗位：{je.get('job_title')}｜公司：{je.get('company')}｜地点：{je.get('city')}｜薪资：{je.get('salary')}｜建议：{(a.get('score') or {}).get('advice')}"
+            job_requirements = _requirements_from_analyze(a)
         except Exception:
             pass
     metas = []
     for it in batch:
         df = detail_file_for(reports, it["candidate_id"])
+        if df is None:
+            print(f"  ⚠️ 跳过 #{it['candidate_id']}（{it.get('score')}分/{it.get('verdict')}）：没有 detail 深采履历，"
+                  f"先跑 detail_collect 再打招呼")
+            continue
+        meta_p = df.with_name(df.stem + "_meta.json")
         flags = []
-        if df:
-            meta_p = df.with_name(df.stem + "_meta.json")
-            if meta_p.exists():
-                try:
-                    flags = json.loads(meta_p.read_text(encoding="utf-8-sig")).get("flags") or []
-                except Exception:
-                    pass
-        metas.append({"candidate_id": it["candidate_id"], "name_hint": df.name if df else "",
+        if meta_p.exists():
+            try:
+                flags = json.loads(meta_p.read_text(encoding="utf-8-sig")).get("flags") or []
+            except Exception:
+                pass
+        metas.append({"candidate_id": it["candidate_id"], "name_hint": df.name,
                       "score": it["score"], "verdict": it["verdict"],
                       "summary": it["summary"], "match_points": it["match_points"],
                       "concerns": it["concerns"], "res_id": it["res_id"],
                       "url": DETAIL_URL.format(rid=it["res_id"]),
-                      "detail_file": df.as_posix() if df else None,
+                      "detail_file": df.as_posix(),
                       "flags": flags})
-    return {"job_code": job_code, "job_hint": job_hint, "items": metas}
+    if not metas:
+        raise SystemExit(f"本批 {start}-{end} 无人有 detail 履历：先跑 detail_collect 深采再打招呼")
+    return {"job_code": job_code, "job_hint": job_hint,
+            "job_requirements": job_requirements, "items": metas}
 
 
 def build_task(job_code: str, batch: dict, out_file: Path, first: bool) -> str:
@@ -145,6 +181,7 @@ def build_task(job_code: str, batch: dict, out_file: Path, first: bool) -> str:
         job_block = f"""
 - **岗位要点（老板提供的口径）**：{batch['job_hint'] or '见岗位报告'}
 - 第 1 步先写岗位「卖点总述」（30~60 字，供打招呼开场引用）：放进输出 JSON 的 "job" 字段。"""
+    req_block = f"- 岗位硬性口径（来自本岗 analyze 报告，冲突处以此为准；拿不准的写进「先核实」）：{batch['job_requirements'] or '见岗位报告'}"
     return f"""老板要为岗位 {job_code} 准备打招呼内容。请全程用文件工具完成（纯本地，不对外发任何消息）：
 
 1. 对下面每位入围候选人，**用文件工具读取其 detail 完整履历文件**（那是刚抓的真实猎聘详情页全文，含每段工作职责业绩/项目/技能/期望等），再参考我给的 pool 评分摘要：
@@ -152,14 +189,14 @@ def build_task(job_code: str, batch: dict, out_file: Path, first: bool) -> str:
 
 2. 每位输出（严格按此 JSON 结构，写入文件）：
    {{
-     "job": {{"title": "后端设计工程师（数字后端·中兴微·三地30HC）", "卖点": "…"}},   ← 仅第一批写 job，后续批留 {{}}
+     "job": {{"title": "岗位名称（来自 job_hint）", "卖点": "…"}},   ← 仅第一批写 job，后续批留 {{}}
      "candidates": [
        {{
          "candidate_id": 1,
          "概况": "一句话（≤40字，基于真实履历）",
          "匹配点": ["≤3 条短句，必须来自 detail 履历实料（公司/项目/技能/工艺节点）"],
          "先核实": ["≤3 条：平台提示/口径问题/无法从简历确认的关键点（如外包驻场意愿、年限口径 0-3 vs 1-3、学历大专vs本科）"],
-         "话术1": "岗位亮点开场（≤60字，含薪酬城市/三地可选/HC多等 JD 卖点）",
+         "话术1": "岗位亮点开场（≤60字，含薪酬城市/可选地点/HC多等 JD 卖点）",
          "话术2": "匹配理由（≤60字，引用其真实履历亮点）",
          "link": "https://h.liepin.com/resume/showresumedetail/?res_id_encode=XXX"
        }}
@@ -169,7 +206,7 @@ def build_task(job_code: str, batch: dict, out_file: Path, first: bool) -> str:
    - 概况/匹配点/话术2 **只能写 detail 履历里有的实料**，列表摘要仅供参考；拿不准的绝不编造，一律写进"先核实"。
    - "先核实"必须包含 detail meta 里的平台提示（如有重叠/矛盾标注）与岗位口径冲突点。
    - 话术是给老板人工核对后复制的草稿，语气像真人猎头、勿夸大、勿承诺。
-   - 岗位硬性口径：数字后端-模块交付（PNR/STA/PA/PV），先进/新进工艺实战硬性优先，三地 onsite（上海/深圳/南京），外包代招（科锐国际签约驻场），学历本科口径（列表大专冲突）、年限 1-3 年（列表 0-3 冲突）。
+   - {req_block}
 4. 把完整 JSON 写入：{out_file.as_posix()}
 5. 用「老板，打招呼内容好了」口吻汇报 ≤4 句：写了几位、谁最稳谁最需先核实、输出文件路径。{job_block}"""
 
@@ -240,11 +277,11 @@ def render_html(job_code: str, title: str) -> Path:
     from report_html import render  # 本地渲染器（数据/展示分离）
     d = CHAT / job_code
     reports = d / "reports"
-    greet_p = latest(reports, "greet_")
+    greet_p = latest_final(reports, "greet_")
     pool_p = latest(reports, "pool_report_")
     col_p = latest(reports, "collected_")
     if not greet_p:
-        raise SystemExit("没有 greet_*.json")
+        raise SystemExit("没有 greet_*.json（先跑 merge_greet / auto_job --step greet）")
     greet = json.loads(greet_p.read_text(encoding="utf-8-sig"))
     pool = json.loads(pool_p.read_text(encoding="utf-8-sig")) if pool_p else {}
     col = json.loads(col_p.read_text(encoding="utf-8-sig")) if col_p else {}

@@ -280,3 +280,20 @@
 - **踩坑/机制（重要）**：agent 在分批任务里把 candidate_id 按**批内 1..N 重编号**（被 prompt JSON 示例诱导）→ 合并时与真实 pool 编号错位；修复 = **合并按 link 里的 res_id 回填真实 candidate_id**（`greet_run.merge_greet` 已内置校正），坏产物已清理。教训：批量 prompt 的编号示例要用真实编号或明确"编号取自任务列表"；凡 agent 产分片再合并的链路，合并层必须按唯一键（res_id）对齐而非位置
 - **数据/展示分离落地**：`report_html.py`（渲染器）+ `greet_run.py`（打招呼数据生成/合并/渲染）——LLM 只产小 JSON，HTML 全部本地渲染；换壳（弃 Streamlit）不废产物。v1.6.8 待办不变：面板③大池分批提示 + 💬按钮改为"agent 产 JSON → 本地渲染 HTML"（含详情深采可选开关）
 
+## v1.6.8 档1 实施记录（2026-09-05 深夜，auto_job.py 新岗一条龙 ✅）
+
+> 新对话北极星档1：把 2026-09-05 中兴微单**手工链路**合成一条命令。交付 `bestagent\auto_job.py` + 两个配套小改（greet_run/detail_collect）。真执行冒烟通过（中国移动 NLP 岗 J-AUTO-20260905-220105：analyze + plan 两段 agent 真跑，停采集闸门）。
+
+- **`auto_job.py` 一条龙语义（缺啥补啥 · 幂等续跑）**：`python auto_job.py --jd data/inbox/<新JD>.txt --env-file <path/.env>`
+  - 第 1 次跑：建档 J-AUTO-<ts> → ① analyze → ② plan（agent 出 collect_plan）→ **停**（采集=闸门，看计划）
+  - 再跑同一条命令：**同 JD 内容幂等复用已有岗**（meta.jd_sha1 + jd.txt 双校验）→ 缺啥补啥（analyze/plan 已有则复用）→ 问「确认按此计划采集？」→ y 后一路：②采集（配方表+限速 80/500/8-20s）→ ③分批评估 ≤72/批（m2_eval_run）自动合并 `pool_report_<ts>.json` + **本地渲染 匹配报告_<ts>.html** → ④详情深采（detail_collect，**detail 100/天 保险丝**，默认再问一次=查看量闸门，`--skip-detail` 可跳过）→ 💬打招呼 ≤5/批（greet_run）合并 `greet_<ts>.json` → **本地渲染 打招呼清单_<ts>.html** → 停（人工打招呼永远闸门）
+  - 产物目录与面板同构 `data/chat/<job_code>/reports/`（analyze_/collect_plan_/collected_/pool_part*/pool_report_/detail_*/greet_part*/greet_/打招呼清单_*.html）→ **面板报告栏可直接看、import_chat_job 可直接入库**
+- **`--step` 分步复用**（--step analyze|plan|collect|eval|detail|greet|html，可多次）：强制重跑指定步（跳过"缺啥补啥"）；agent 步（analyze/plan/eval/greet）需 .env，collect/detail/html 本地执行可省 .env
+- **闸门语义**：②采集计划（默认交互问 y/N，`--yes` 无人值守跳过）；④详情深采（默认再问，查看量风控点）；打招呼（永不自动，只产清单 HTML）。**数据/展示分离贯穿**：LLM 只产小 JSON，匹配报告/打招呼清单 HTML 一律 report_html.py 本地渲染（0 token、永不截断）
+- **配套小改**：① `greet_run.py` 岗位硬性口径**参数化**（原来 build_task 里写死中兴微"数字后端-模块交付/科锐国际/学历本科/年限1-3"口径，换岗必泄漏 → 现从本岗 analyze 报告动态提取 difficulty.value 冒号后 → jd_extracted.requirements）；加 `latest_final()` 排除 `*_part_*` 分片（analyze 有同名 `_过程.html` 伴生文件，原 latest() 会误读）；build_batch 跳过无 detail 履历者并明示。② `detail_collect.py` **接入 detail 配额保险丝**（Quota check("detail")/record("detail")，100/天，`--no-quota` 调试跳过；抽 `collect_all()` 函数供 auto_job 复用）
+- **真执行冒烟（J-AUTO-20260905-220105，中国移动 NLP 应届博士岗）**：① analyze agent 真跑 → 16分/普通/建议沟通（与 run_pipeline 历史判定一致，判别力稳定），产物合规 3.8KB；② 幂等复用生效（同命令再跑 → "复用已有岗 J-AUTO-.../复用 analyze"）→ plan agent 真跑 → collect_plan 质量在线（4 路全国捞不带城市：大模型 Agent / 大模型 智能体 / RAG 大模型 / LangChain 大模型；conds=education=博士+years=应届生；C9/QS50 筛不掉留③；同义词拆路防 AND 叠词 0 命中；年限 0-3 vs 应届口径矛盾提示）→ **停采集闸门**（无 stdin 自动停，提示续跑命令）✅
+- **自测矩阵**：py_compile 全过；--dry-run 0 写盘纯打印；latest_final 分片排除（构造更"新"的 greet_part 验证取 greet_ 成品）；create_job/find_existing_job 幂等（同内容命中/改内容不命中）；_newer 新旧判定；greet_run.build_batch 三态（15 人全有 detail → 全保留；医药岗 4 入围 2 缺 detail → 只留 2 并提示）；中兴微岗 --step html 本地重渲染打招呼清单（15 人 46KB）；已闭环岗短路提示；半程岗（analyze+plan）停在采集闸门；--step analyze 无 env 报错 / --step html·detail 无 env 放行
+- **遗留/边界**：greet 重复跑会全量 merge 旧 greet_part 分片（有 res_id 去重兜底不重复人，属 v1.6.8 待办⑤"中间件自动清理"范围，档1 未扩）；采集/详情/打招呼 HTML 的真跑后半段（collect→eval→detail→greet→HTML 一路绿灯）需老板用新单实测（要真实猎聘搜索+查看量）
+- **下一步（v1.6.8 档2+）**：面板 m3_chat ③按钮池子>72 自动提示分批（或复用 auto_job 的 eval 编排）；💬按钮改「小猎产 JSON → report_html 本地渲染 HTML」+ 详情深采可选开关；④详情精筛按钮；分片自动清理中间件；随后：本单（中兴微）人工打招呼收尾 + PM 口径澄清；成长账首笔 + rules.md 首条规则
+
+

@@ -29,6 +29,7 @@ sys.path.insert(0, str(BROWSER_AGENT))
 from agent.core import submit_task  # noqa: E402
 from agent.recipe_exec import BRIDGE  # noqa: E402
 from collect_liepin import find_liepin_tab  # noqa: E402
+from quota import Quota  # noqa: E402
 
 CHAT = WORKSPACE / "data" / "chat"
 DETAIL_URL = "https://h.liepin.com/resume/showresumedetail/?res_id_encode={rid}"
@@ -170,37 +171,60 @@ def collect_one(tab: int, item: dict, out_dir: Path) -> dict:
             submit_task(BRIDGE, "switch_tab", {"tab_id": tab}, source="detail-collect")
 
 
+def collect_all(job_code: str, limit: int | None = None, dry_run: bool = False,
+                no_quota: bool = False) -> list[dict]:
+    """批量详情深采（可独立调用，供 auto_job 一条龙复用）。
+
+    每开 1 个详情 = 1 次查看量（平台风控点）→ 默认走 Quota detail 账本（100/天 保险丝），
+    --no-quota 跳过（调试用）。返回每条结果 [{ok, name, chars, flags, file} | {ok:False, error}].
+    """
+    items = shortlist(job_code, limit)
+    if not items:
+        print("入围清单为空（pool_report 里没有 推荐/待定 或缺 res_id）")
+        return []
+    print(f"入围待深采 {len(items)} 人：")
+    for it in items:
+        print(f"  #{it['candidate_id']} {it['name']} {it['score']}分/{it['verdict']}  res_id={it['res_id'][:12]}…")
+        print(f"      URL: {DETAIL_URL.format(rid=it['res_id'])}")
+    if dry_run:
+        print("[dry-run] 未打开任何页面")
+        return []
+
+    q = None if no_quota else Quota()
+    if q:
+        print(f"▶ 查看量账本: {q.stats()}")
+
+    out_dir = CHAT / job_code / "reports"
+    out_dir.mkdir(parents=True, exist_ok=True)
+    tab = find_liepin_tab()
+    print(f"\n用新 tab 逐个抓详情（每个 = 1 次查看量；抓完自动关 tab 回原页）…")
+    results: list[dict] = []
+    for it in items:
+        if q and not q.check("detail"):
+            print(f"⚠ 今日查看简历额度已用完（detail {q.config.get('detail_daily_limit')}/天），停止深采")
+            break
+        r = collect_one(tab, it, out_dir)
+        if r.get("ok"):
+            if q:
+                q.record("detail")
+                print(f"  ⏱ detail 记账后: {q.stats()}")
+            flag_note = f"｜平台提示 {len(r['flags'])} 条: {'; '.join(r['flags'][:3])}" if r.get("flags") else ""
+            print(f"  ✅ {r['name']}: 抓到 {r['chars']} 字符{flag_note} → {r['file']}")
+        else:
+            print(f"  ⚠️ {it['name']}: {r.get('error')}")
+        results.append(r)
+    print("完成。")
+    return results
+
+
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--job-code", required=True)
     ap.add_argument("--limit", type=int, default=None)
     ap.add_argument("--dry-run", action="store_true")
+    ap.add_argument("--no-quota", action="store_true", help="跳过查看量限额（调试用）")
     args = ap.parse_args()
-
-    items = shortlist(args.job_code, args.limit)
-    if not items:
-        print("入围清单为空（pool_report 里没有 推荐/待定 或缺 res_id）")
-        return
-    print(f"入围待深采 {len(items)} 人：")
-    for it in items:
-        print(f"  #{it['candidate_id']} {it['name']} {it['score']}分/{it['verdict']}  res_id={it['res_id'][:12]}…")
-        print(f"      URL: {DETAIL_URL.format(rid=it['res_id'])}")
-    if args.dry_run:
-        print("[dry-run] 未打开任何页面")
-        return
-
-    out_dir = CHAT / args.job_code / "reports"
-    out_dir.mkdir(parents=True, exist_ok=True)
-    tab = find_liepin_tab()
-    print(f"\n用新 tab 逐个抓详情（每个 = 1 次查看量；抓完自动关 tab 回原页）…")
-    for it in items:
-        r = collect_one(tab, it, out_dir)
-        if r.get("ok"):
-            flag_note = f"｜平台提示 {len(r['flags'])} 条: {'; '.join(r['flags'][:3])}" if r.get("flags") else ""
-            print(f"  ✅ {r['name']}: 抓到 {r['chars']} 字符{flag_note} → {r['file']}")
-        else:
-            print(f"  ⚠️ {it['name']}: {r.get('error')}")
-    print("完成。")
+    collect_all(args.job_code, limit=args.limit, dry_run=args.dry_run, no_quota=args.no_quota)
 
 
 if __name__ == "__main__":
