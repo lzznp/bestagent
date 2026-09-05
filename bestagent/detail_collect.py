@@ -16,6 +16,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 import sys
 import time
 from datetime import datetime
@@ -75,6 +76,64 @@ def _name_of(text: str, idx: int) -> str:
     return (m.group(1) + "**") if m else f"cand{idx}"
 
 
+# 详情页折叠提示（展开再抓，否则项目经历等被折叠丢失）
+TOGGLE_RE = re.compile(r"(显示其他\s*\d+\s*段[^\n]{0,24}|查看更多[^\n]{0,16}|查看全部\s*\(?\d*\)?[^\n]{0,8})")
+# 猎聘平台简历自检信号（重叠/矛盾提示 → 标为"需向候选人核实项"，不直接否决）
+FLAG_RE = re.compile(r"(有重叠[^\n]{0,20}|重叠[^\n]{0,12}去问他|时间[^\n]{0,8}矛盾|去问他)")
+
+
+def _snap_body(tab_id: int) -> str:
+    snap = submit_task(BRIDGE, "snapshot", {"tab_id": tab_id}, source="detail-collect")
+    if not snap.get("ok"):
+        return ""
+    return (snap.get("result") or {}).get("body_preview") or ""
+
+
+def _expand_all(tab_id: int, first_body: str) -> str:
+    """循环点开“显示其他N段…/查看更多/查看全部”折叠项，合并去重抓全主简历。"""
+    bodies = [first_body]
+    clicked_toggles: set[str] = set()
+    for _ in range(12):
+        cur = bodies[-1]
+        toggles = []
+        for m in TOGGLE_RE.finditer(cur):
+            t = (m.group(1) or "").strip()
+            if t and t not in clicked_toggles:
+                toggles.append(t)
+        if not toggles:
+            break
+        hit = False
+        for t in toggles:
+            rc = submit_task(BRIDGE, "click_by_text",
+                             {"tab_id": tab_id, "text": t, "occurrence": 1}, source="detail-collect")
+            clicked_toggles.add(t)
+            if rc.get("ok"):
+                hit = True
+        if not hit:
+            break
+        time.sleep(2.2)
+        b = _snap_body(tab_id)
+        if not b or b == cur:
+            if not hit:
+                break
+            continue
+        bodies.append(b)
+    # 按行合并去重（保留首次出现顺序）
+    seen: set[str] = set()
+    lines = []
+    for b in bodies:
+        for ln in b.splitlines():
+            s = ln.strip()
+            if s and s not in seen:
+                seen.add(s)
+                lines.append(s)
+    return "\n".join(lines)
+
+
+def _find_flags(text: str) -> list[str]:
+    return sorted({m.group(0).strip() for m in FLAG_RE.finditer(text)})
+
+
 def collect_one(tab: int, item: dict, out_dir: Path) -> dict:
     url = DETAIL_URL.format(rid=item["res_id"])
     name_safe = (item["name"] or "").replace("*", "x")  # Windows 文件名禁 * : / 等
@@ -85,23 +144,25 @@ def collect_one(tab: int, item: dict, out_dir: Path) -> dict:
             return {"ok": False, "error": f"new_tab 失败: {nt.get('error')}"}
         new_id = int((nt.get("result") or {}).get("tab_id") or nt.get("tab_id") or 0)
         time.sleep(6.0)  # 详情页加载（含附件简历整合）
-        snap = submit_task(BRIDGE, "snapshot", {"tab_id": new_id}, source="detail-collect")
-        body = ""
-        url_actual = ""
-        if snap.get("ok"):
-            res = snap.get("result") or {}
-            body = res.get("body_preview") or ""
+        body0 = _snap_body(new_id)
+        url_actual = url
+        snap0 = submit_task(BRIDGE, "snapshot", {"tab_id": new_id}, source="detail-collect")
+        if snap0.get("ok"):
+            res = snap0.get("result") or {}
             url_actual = res.get("url") or url
+        merged = _expand_all(new_id, body0 or "")
+        flags = _find_flags(merged)
         ts = datetime.now().strftime("%Y%m%d-%H%M%S")
         txt_p = out_dir / f"detail_{item['candidate_id']:02d}_{name_safe}_{ts}.txt"
         meta_p = out_dir / f"detail_{item['candidate_id']:02d}_{name_safe}_{ts}_meta.json"
-        txt_p.write_text(body or "(空)", encoding="utf-8")
+        txt_p.write_text(merged or "(空)", encoding="utf-8")
         meta_p.write_text(json.dumps({"candidate_id": item["candidate_id"], "name": item["name"],
                                       "score": item["score"], "verdict": item["verdict"],
                                       "res_id": item["res_id"], "url": url_actual,
-                                      "chars": len(body)}, ensure_ascii=False, indent=1),
-                          encoding="utf-8")
-        return {"ok": True, "name": item["name"], "chars": len(body), "file": txt_p.name}
+                                      "chars": len(merged), "flags": flags},
+                                     ensure_ascii=False, indent=1), encoding="utf-8")
+        return {"ok": True, "name": item["name"], "chars": len(merged),
+                "flags": flags, "file": txt_p.name}
     finally:
         if new_id:
             submit_task(BRIDGE, "close_tab", {"tab_id": new_id}, source="detail-collect")
@@ -135,7 +196,8 @@ def main() -> None:
     for it in items:
         r = collect_one(tab, it, out_dir)
         if r.get("ok"):
-            print(f"  ✅ {r['name']}: 抓到 {r['chars']} 字符 → {r['file']}")
+            flag_note = f"｜平台提示 {len(r['flags'])} 条: {'; '.join(r['flags'][:3])}" if r.get("flags") else ""
+            print(f"  ✅ {r['name']}: 抓到 {r['chars']} 字符{flag_note} → {r['file']}")
         else:
             print(f"  ⚠️ {it['name']}: {r.get('error')}")
     print("完成。")
