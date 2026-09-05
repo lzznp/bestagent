@@ -26,10 +26,11 @@ except Exception:
     pass
 
 DEFAULT_CONFIG = {
-    "search_daily_limit": 20,    # 每天搜索轮数上限
-    "extract_daily_limit": 200,  # 每天提取条数上限（查看量保护）
-    "min_delay_sec": 5,          # 轮间最小延迟（秒）
-    "max_delay_sec": 15,         # 轮间最大延迟（秒）
+    "search_daily_limit": 80,    # 每天搜索轮数上限（2026-09-05 老板拍板：搜索次数非平台红线，放宽为防失控熔断）
+    "extract_daily_limit": 500,  # 每天提取条数上限（列表页读取，随搜索走）
+    "min_delay_sec": 8,          # 轮间最小延迟（秒）（模拟真人节奏的核心，勿调太短）
+    "max_delay_sec": 20,         # 轮间最大延迟（秒）
+    "detail_daily_limit": 100,   # 查看简历数（打开候选人详情页）日上限——平台真正统计的风控点；详情深采接入后生效
 }
 
 

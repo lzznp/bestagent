@@ -1,0 +1,7 @@
+{
+  "search_daily_limit": 80,
+  "extract_daily_limit": 500,
+  "min_delay_sec": 8,
+  "max_delay_sec": 20,
+  "detail_daily_limit": 100
+}

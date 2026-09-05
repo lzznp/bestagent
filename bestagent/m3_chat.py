@@ -120,7 +120,8 @@ PERSONA = (
     "DumpStack 等系统占用文件报错，这是正常现象，不代表文件不存在）。"
     "若文件工具已成功返回内容，就正常使用，不得声称“文件读不到/目录没挂载/被锁住”；"
     "只有按给定路径读取真实报错时才可请老板协助，且必须把报错原文贴给老板，禁止臆测原因。"
-    "【② 采集纪律·务必遵守】采集=在真实猎聘上搜索（耗当日限速额度），禁止用自然语言让浏览器"
+    "【② 采集纪律·务必遵守】采集=在真实猎聘上搜索（搜索次数不设紧限，但**轮间必须保持 8-20 秒真人节奏、"
+    "勿连点**；平台真正统计的风控点是“查看简历数”=打开候选人详情页的数量，列表采集不开详情页、安全），禁止用自然语言让浏览器"
     "自己操作猎聘页面（条件会设不上），**只准用 pwsh 运行配方表脚本 collect_liepin.py**；"
     "采集前先读 analyze 报告取 search_keywords、按 JD 硬性条件给 --conds 建议，把计划写进 "
     "collect_plan_*.json 并请老板确认后才执行；执行完如实汇报命中条数/质量，不许粉饰，报错贴原文。"
@@ -447,18 +448,21 @@ def build_step2_plan_task(job: dict) -> str:
     ts = datetime.now().strftime("%Y%m%d-%H%M%S")
     plan_file = f"{reports_dir}/collect_plan_{ts}.json"
     method = (PROMPTS / "analyze_job.txt").as_posix()
-    return f"""老板要你执行【步骤② 探索采集·第一步：出计划】。请全程用文件工具完成，**这一步不真跑采集、不耗额度**：
+    return f"""老板要你执行【步骤② 探索采集·第一步：出计划】。请全程用文件工具完成，**这一步不真跑采集（只出计划给老板确认）**：
 1. 读岗位 JD：{jd}
 2. 读最新岗前分析报告：{analyze_hint}
    —— 从报告的 search_keywords 里挑 2~4 个最可能命中目标候选人的关键字（参考其精确/职能/竞品/技能分组；
    若报告没有关键字，按方法论 {method} 的思路从 JD 拆）。
 3. 按 JD 硬性条件给出猎聘筛选条件建议（配方组 group_id=value，可空，如 education=博士/博士后、
-   city_current=杭州、years=应届生…；注意：院校 C9/QS50 猎聘筛不掉，年限对资深岗可能无对应选项，别硬凑）。
+   city_current=杭州、years=应届生…；注意：院校 C9/QS50 猎聘筛不掉，年限对资深岗可能无对应选项，别硬凑；
+   ⚠️ **学历筛只有离散档：不限/本科/硕士/博士/博士后/大专/中专/中技/高中及以下——没有“本科及以上/大专及以上”这种档位**，
+   JD 写“本科及以上”就选“本科”或干脆不筛学历、留待③逐人把关）。
 4. 把计划写成 JSON 文件：{plan_file}
    格式：{{"keywords": [关键字...], "conds": ["group_id=value"...], "reasons": "为何这样选（2~3 句）",
           "note": "口径提醒（如年限矛盾先核实）", "created_at": "..."}}
 5. 用「老板，采集计划好了」口吻回复 ≤6 句：列出关键字与条件、为什么这样选、预估代价
-   （每个关键字=1 次猎聘搜索，今日额度有限）、以及**请老板确认**（老板回复“按计划跑/直接跑”才会执行）。
+   （每个关键字=1 次猎聘搜索，搜索次数不是瓶颈；⚠️ 猎聘搜索框是“包含全部关键词”——空格分隔的词**全部要命中**，
+   关键字词内别叠同义词/多词，否则极易 0 命中；同义词宁可拆成多个关键字分路跑）、以及**请老板确认**（老板回复“按计划跑/直接跑”才会执行）。
 {CAPABILITIES}"""
 
 
@@ -469,7 +473,7 @@ def build_step2_run_task(job: dict, plan_file: Path) -> str:
     ts = datetime.now().strftime("%Y%m%d-%H%M%S")
     out_file = f"{reports_dir}/collected_{ts}.json"
     py = sys.executable.replace("\\", "/")  # 面板自身解释器（lzstudy），换机器自动跟随
-    return f"""老板已确认【步骤② 探索采集】计划。请执行真实采集（会耗当日猎聘搜索额度）：
+    return f"""老板已确认【步骤② 探索采集】计划。请执行真实采集（真实搜索，关键字轮间保持 8-20 秒节奏，勿连点）：
 1. 先用文件工具读计划文件：{plan_abs}
    —— 取它的 keywords 与 conds；若读不到该文件，如实说明并请老板重新发令（“去猎聘跑一轮”）。
 2. 用 **pwsh 工具**（不是 bash）在当前工作目录（bestagent，collect_liepin.py 所在目录）运行采集脚本，
@@ -801,7 +805,7 @@ def render_action_row(job: dict) -> str | None:
         task = build_report_task(job)
     if c3.button("② 探索采集", key="act_collect", use_container_width=True,
                  disabled=not stt.get("step1_analyzed"),
-                 help="已接入：第一步先出计划（关键字/条件请你确认，不耗额度）→ 你回复“按计划跑”才真跑猎聘采集"):
+                 help="已接入：第一步先出计划（关键字/条件请你确认）→ 你回复“按计划跑”才真跑猎聘采集"):
         task = build_step2_plan_task(job)
     if c4.button("③ 池子评估", key="act_eval", use_container_width=True,
                  disabled=not stt.get("step2_collected"),
