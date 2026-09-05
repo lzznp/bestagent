@@ -18,7 +18,7 @@
 
 ## ④ 汇报 / HTML 过程文档
 
-（暂无）
+- [成长账 2026-09-05 22:29 / COMMON] 当生成打招呼数据（greet_run / 💬打招呼清单 / auto_job --step greet）时，岗位硬性口径（学历/年限/城市/签约性质/工艺方向…）必须取自**本岗 analyze 报告**（difficulty.value 冒号后 → jd_extracted.requirements），不得在任务模板里写死任何具体岗位的口径示例——曾把中兴微岗口径写死在 greet_run.build_task 纪律里，换岗必口径泄漏、把上一岗要求套到新候选人身上。
 
 ## 流程 / 工具
 

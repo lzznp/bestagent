@@ -118,7 +118,7 @@
    - **★ v1.6.8 档1 已交付（2026-09-05 深夜）→ 老板实测 `auto_job.py`**（北极星首务）：`python auto_job.py --jd data/inbox/<新JD>.txt --env-file <path/.env>` 一条龙；第 1 次跑 analyze+plan 停 → 看计划 → 重跑同命令问「y 确认采集」→ 一路到 💬打招呼清单 HTML（人工闸门停）。**重点实测后半段**（采集→分批评估→详情深采→打招呼数据→HTML 一路绿灯，需要真实猎聘搜索+查看量；档1 冒烟只真跑到 plan 闸门）。真执行示例岗：`J-AUTO-20260905-220105`（中国移动 NLP 应届博士，analyze+plan 已跑）可直接续
    - **随后（v1.6.8 档2+，按序）**：② 面板③检测池子>72 自动提示/走分批（可复用 auto_job eval 编排）③ 💬按钮改「小猎产小 JSON → report_html.py 本地渲染 HTML」（替代 v1.6.7 手写 md）+ 详情深采可选开关 ④ 给小猎挂 pwsh 通道（③/💬/详情）+ **工具手册**（auto_job/detail_collect/greet_run/report_html 用法）+ rules.md 纪律（HTML 一律本地渲染、禁手写大文件、greet 口径从本岗 analyze 动态提取勿写死）⑤ 中间件自动清理（合并后删 greet_part/pool_part 分片）——小步验证，做完回顾
    - **本单（中兴微 J-CHAT-20260905-141728）收尾**：老板试用 `打招呼清单_20260905-165826.html`（15 人卡片：概况/匹配点/先核实/话术1·2+直达链接）→ 照"先核实"栏人工打招呼（闸门）→ PM 澄清口径（职能/学历/年限/薪资 20k 档 vs 候选人 35-55k 期望）→（可选）人工动作记 candidate_events
-   - **随后候选**：新单跑顺后 成长账首笔 + rules.md 首条规则（好样本：education 档位坑/AND 叠词坑/分片 id 校正/断流分批/如实汇报/**greet 岗位口径写死泄漏坑**）→ 多岗总览（"待我审阅收件箱"）→ agent 自主动态优化（看评估结果自己改条件重采）→ 桌面化(PySide6/wails)与全自动编排器/边界设计（远期，UI=临时壳定位下不急）
+   - **随后候选**：**成长机制阶段决策已拍板（2026-09-05，勿提前做完整机制）**——先跑通日常全流程，老板完全和小猎配合跑真单攒纠错经验，再回对话设计"共同成长"完整机制（含小猎自助消化链）；档案柜首笔已落（成长账 records.jsonl 首条 + rules.md 首条规则，见 PROGRESS 同节）；然后多岗总览（"待我审阅收件箱"）→ agent 自主动态优化（看评估结果自己改条件重采）→ 桌面化(PySide6/wails)与全自动编排器/边界设计（远期，UI=临时壳定位下不急）
    - 老链路新 JD 直接用：`python run_pipeline.py --jd data/inbox/<新JD>.txt --env-file <path/.env>`（①-④直写库；详情/打招呼走 auto_job 或面板）
    - v1 卡片面板（m3_ui.py）保留：`streamlit run m3_ui.py`（读 business.db；确认/纠错/放行卡片形态）；m3_chat.py 报告栏/按钮继续用
 
