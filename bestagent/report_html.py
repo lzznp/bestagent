@@ -81,6 +81,158 @@ def text_snippet(row: dict, limit: int = 300) -> str:
     return t if len(t) <= limit else t[:limit] + "…"
 
 
+# ── 发岗助手渲染（v1.6.8：📋 生成发岗文字 → 逐格复制到猎聘发岗表单）─────────
+# 输入与 data/prompts/publish_manual.txt 的 JSON 契约一致：
+#   {company_name, job_title_original, job_title_normalized, city, salary_original,
+#    salary_benefits, work_years, education, headcount,
+#    responsibilities[], requirements[], priority_notes[], compliance_issues[]}
+#   可选 salary_converted（本地换算，如 "50-120万/18薪" → "42-100K·18薪"）
+# 展示按猎聘发岗表单的格子排：每格一个可编辑输入框 + 「复制此格」按钮；职位描述本地拼。
+
+PUB_FIELD_DEFS = [
+    ("company_name", "1️⃣ 招聘企业", False),
+    ("job_title_normalized", "2️⃣ 职位名称", True),   # 显示原始名对照
+    ("city", "3️⃣ 工作城市", False),
+    ("salary_display", "4️⃣ 职位薪资", False),         # 显示换算后 + 原始
+    ("salary_benefits", "5️⃣ 薪资福利", False),
+    ("work_years", "6️⃣ 工作年限", False),
+    ("education", "7️⃣ 学历要求", False),
+    ("headcount", "8️⃣ 招聘人数", False),
+    ("job_description", "9️⃣ 职位描述（岗位职责/任职要求/优先考虑）", False),
+]
+
+
+def _pub_field_value(pub: dict, key: str) -> str:
+    """渲染值：本地换算/拼装优先，LLM 原始字段兜底。"""
+    if key == "salary_display":
+        conv = (pub.get("salary_converted") or {}).get("converted") if isinstance(pub.get("salary_converted"), dict) else None
+        return conv or (pub.get("salary_original") or "")
+    if key == "job_description":
+        parts = []
+        resp = pub.get("responsibilities") or []
+        if resp:
+            parts.append("【岗位职责】")
+            parts.append("\n".join(f"{i}. {x}" for i, x in enumerate(resp, 1)))
+        req = pub.get("requirements") or []
+        if req:
+            parts.append("【任职要求】")
+            parts.append("\n".join(f"• {x}" for x in req))
+        pri = pub.get("priority_notes") or []
+        if pri:
+            parts.append("【优先考虑】")
+            parts.append("\n".join(f"• {x}" for x in pri))
+        return "\n\n".join(parts)
+    v = pub.get(key)
+    if isinstance(v, list):
+        return "\n".join(str(x) for x in v)
+    return str(v or "")
+
+
+def _pub_orig(pub: dict, key: str) -> str:
+    """原始值对照（职位名称/薪资 显示 LLM 提取的原文，供老板核对）。"""
+    if key == "job_title_normalized":
+        o = pub.get("job_title_original")
+        n = pub.get("job_title_normalized")
+        return f"📌 原始：{o}" if o and o != n else ""
+    if key == "salary_display":
+        s = pub.get("salary_original")
+        conv = pub.get("salary_converted") if isinstance(pub.get("salary_converted"), dict) else None
+        if s and conv and conv.get("converted"):
+            return f"📌 换算：{s} / {conv.get('months', 12)}薪 → {conv.get('converted')}"
+        return f"📌 原始：{s}" if s else ""
+    return ""
+
+
+def render_publish(job_title: str, pub: dict) -> str:
+    now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    comp = (pub.get("compliance_issues") or [])
+    warn = ""
+    if comp:
+        items = "".join(f"<li>{esc(x)}</li>" for x in comp)
+        warn = (f'<div class="pub-warn"><b>⚠️ 已自动过滤以下不合规内容（发岗前请知悉）</b>'
+                f'<ul>{items}</ul></div>')
+
+    rows = []
+    for key, label, _show_orig in PUB_FIELD_DEFS:
+        val = _pub_field_value(pub, key)
+        orig = _pub_orig(pub, key)
+        rows.append(f"""<div class="pub-row" data-key="{esc(key)}">
+      <div class="pub-head"><span class="pub-label">{esc(label)}</span>
+        <span class="pub-btns"><button class="pub-copy" data-key="{esc(key)}">📋 复制此格</button></span></div>
+      <textarea class="pub-input" data-key="{esc(key)}" rows="{6 if key == 'job_description' else 2}">{esc(val)}</textarea>
+      {f'<div class="pub-orig">{esc(orig)}</div>' if orig else ''}
+    </div>""")
+    rows_html = "\n".join(rows)
+
+    return f"""<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{esc(job_title)} · 发岗助手</title>
+<style>
+  body{{font-family:-apple-system,"Segoe UI","Microsoft YaHei",sans-serif;background:#f2f4f8;margin:0;padding:20px;color:#1f2937;}}
+  .wrap{{max-width:760px;margin:0 auto;}}
+  h1{{font-size:20px;margin:0 0 2px;}}
+  .meta{{color:#6b7280;font-size:12px;margin-bottom:14px;}}
+  .tip{{background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;padding:8px 12px;font-size:13px;margin-bottom:12px;}}
+  .pub-warn{{background:#fffbeb;border:1px solid #fde68a;border-radius:8px;padding:8px 12px;font-size:13px;margin-bottom:12px;}}
+  .pub-warn ul{{margin:4px 0 0 20px;padding:0;}} .pub-warn li{{color:#92400e;}}
+  .pub-row{{background:#fff;border:1px solid #e5e7eb;border-radius:10px;padding:10px 14px;margin-bottom:10px;}}
+  .pub-head{{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;}}
+  .pub-label{{font-weight:600;font-size:14px;}}
+  .pub-copy{{background:#2563eb;color:#fff;border:0;border-radius:8px;padding:4px 12px;cursor:pointer;font-size:12px;}}
+  .pub-copy:hover{{background:#1d4ed8;}}
+  .pub-input{{width:100%;box-sizing:border-box;border:1px solid #d1d5db;border-radius:8px;padding:6px 10px;font-size:14px;font-family:inherit;resize:vertical;}}
+  .pub-input:focus{{outline:2px solid #bfdbfe;border-color:#3b82f6;}}
+  .pub-orig{{color:#9ca3af;font-size:12px;margin-top:4px;}}
+  .bar{{display:flex;gap:10px;margin-bottom:16px;}}
+  .bar button{{flex:1;padding:8px 0;border-radius:8px;font-size:13px;cursor:pointer;border:0;}}
+  .btn-copy-all{{background:#10b981;color:#fff;}}
+  .btn-copy-all:hover{{background:#059669;}}
+  .footer{{text-align:center;margin-top:16px;color:#9ca3af;font-size:12px;}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>📤 {esc(job_title)} · 发岗助手</h1>
+  <div class="meta">本地渲染（LLM 只产字段 JSON，本页可随时重生）· 生成 {esc(now)}</div>
+  <div class="tip">💡 打开猎聘「发布职位」页与此页并排：逐格点「复制此格」→ 粘贴到对应输入框；职位描述整段复制到正文框。</div>
+  {warn}
+  <div class="bar">
+    <button class="btn-copy-all" id="copyAll">📋 一键复制全部字段（带标签）</button>
+  </div>
+  {rows_html}
+  <div class="footer">小猎工作台产物 · 数据资产在 reports/publish_*.json，本页可随时重新生成</div>
+</div>
+<script>
+  function g(k){{ var el = document.querySelector('textarea[data-key="'+k+'"]'); return el ? el.value : ''; }}
+  async function copy(t, msg) {{
+    try {{ await navigator.clipboard.writeText(t); }} catch(e) {{
+      var ta = document.createElement('textarea'); ta.value = t; document.body.appendChild(ta);
+      ta.select(); try {{ document.execCommand('copy'); }} catch(_) {{}}
+      document.body.removeChild(ta);
+    }}
+    var b = msg && msg.parentElement ? msg : document.body;
+    var tip = document.createElement('div'); tip.textContent = '✅ 已复制'; tip.style.cssText =
+      'position:fixed;top:16px;right:16px;background:#10b981;color:#fff;padding:6px 14px;border-radius:8px;z-index:99;';
+    document.body.appendChild(tip); setTimeout(function(){{ tip.remove(); }}, 1200);
+  }}
+  document.querySelectorAll('.pub-copy').forEach(function(btn){{
+    btn.addEventListener('click', function(){{ var k = btn.getAttribute('data-key'); copy(g(k), btn); }});
+  }});
+  document.getElementById('copyAll').addEventListener('click', function(){{
+    var keys = {json.dumps([d[0] for d in PUB_FIELD_DEFS], ensure_ascii=False)};
+    var labels = {{}}; {json.dumps({d[0]: d[1] for d in PUB_FIELD_DEFS}, ensure_ascii=False)};
+    var parts = [];
+    keys.forEach(function(k){{ var v = g(k); parts.push(labels[k] + '：' + (v || '未提供')); }});
+    copy(parts.join('\\n'), this);
+  }});
+</script>
+</body>
+</html>"""
+
+
 def render(job_title: str, pool: dict, candidates: list[dict],
            collected_rows: list[dict], group: str = "none") -> str:
     now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")

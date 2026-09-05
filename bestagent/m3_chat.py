@@ -784,11 +784,17 @@ def render_progress_line(job: dict) -> None:
     st.caption("　".join(hint))
 
 
-def render_action_row(job: dict) -> str | None:
-    """动作按钮行：由岗位状态自动亮/灰；返回要发送的任务文本（无则 None）。"""
+def render_action_row(job: dict, cfg: dict | None = None) -> str | None:
+    """动作按钮行：由岗位状态自动亮/灰；返回要发送的任务文本（无则 None）。
+
+    v1.6.8：📋 生成发岗文字按钮改为本地驱动 publish_run（agent 产字段 JSON →
+    本地渲染 发岗文字_<ts>.html，逐格复制到猎聘），不再走聊天 agent 手写整篇 md。
+    """
     stt = load_state(job["job_code"])
     jd_ok = stt.get("jd_provided") and (_job_dir(job) / "jd.txt").exists()
     arts = list_artifacts(job["job_code"])
+    stub = bool(cfg and cfg.get("stub"))
+    env_path = (cfg or {}).get("env_path")
 
     c1, c2, c3, c4 = st.columns(4)
     task = None
@@ -812,12 +818,28 @@ def render_action_row(job: dict) -> str | None:
                  help="已接入：读②采集池子+方法论 → 池评+逐人评分 → JSON 报告+HTML 过程（纯计算）"):
         task = build_step3_task(job)
 
-    # 第二行动作行：发岗文字 / ④打招呼清单（agent 生成）/ 入库当前岗（本地直写 business.db，不调 agent）
+    # 第二行动作行：发岗文字（v1.6.8 走 publish_run 本地渲染）/ ④打招呼清单 / 入库当前岗
     c5, c6, c7 = st.columns(3)
     if c5.button("📋 生成发岗文字", key="act_post_text", use_container_width=True,
                  disabled=not stt.get("step1_analyzed"),
-                 help="读 JD+①分析 → 猎聘发布文案落 reports，老板复制粘贴发布（发布动作人工）"):
-        task = build_post_text_task(job)
+                 help="v1.6.8：读 JD+①+发岗手册 → 发岗字段 JSON → 本地渲染 HTML（9 格逐格复制到猎聘发岗页，发布人工）"):
+        if stub:
+            st.info("假执行模式：跳过 API（真执行会产发岗字段 JSON + 渲染 发岗文字_*.html）")
+        elif not env_path:
+            st.warning("未配置 .env 路径（侧栏「运行设置」）。")
+        else:
+            try:
+                import publish_run
+                with st.status("小猎整理发岗文字中（读发岗手册+JD → 字段 JSON → 本地渲染）…",
+                               expanded=False) as status:
+                    jf, hf = publish_run.publish_for_job(job["job_code"], env_path)
+                    status.update(label="发岗文字完成", state="complete")
+                if hf and Path(hf).exists():
+                    st.success(f"✅ 发岗文字已生成：{Path(hf).name} —— 打开后逐格复制到猎聘发岗页（发布动作人工）")
+                else:
+                    st.warning("发岗文字未生成：看上方汇报与报告栏定位问题（可重跑/纠错）。")
+            except Exception as e:
+                st.error(f"⚠️ 生成发岗文字失败：{e}")
     if c6.button("💬 生成打招呼清单", key="act_greet", use_container_width=True,
                  disabled=not stt.get("step3_done"),
                  help="③评估后：入围者(推荐/待定)每人 话术1/2 + 猎聘直达链接 → reports/打招呼清单_*.md，"
@@ -850,7 +872,7 @@ def report_group(name: str) -> str:
         return "③ 池子评估"
     if name.startswith("detail_"):
         return "候选人详情（深采）"
-    if name.startswith("发岗文字_"):
+    if name.startswith(("发岗文字_", "publish_")):
         return "📋 发岗文字"
     if name.startswith("打招呼清单_"):
         return "💬 打招呼清单"
@@ -918,7 +940,7 @@ def render_main(cfg: dict) -> None:
         render_report_panel(job)
 
     # 动作按钮行 + 自由输入
-    task = render_action_row(job)
+    task = render_action_row(job, cfg)
     prompt = st.chat_input("跟小猎说话：发指令 / 追问 / 讨论；也可以直接粘贴 JD 原文…")
 
     def kind_of_task(t: str) -> str:
