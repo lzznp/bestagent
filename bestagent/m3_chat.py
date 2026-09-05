@@ -1,6 +1,13 @@
 # -*- coding: utf-8 -*-
 """M3 界面 v1.6：对话式汇报面板（DSH Web 迷你版 · 分步骤测试用）
 
+v1.6.7 变更（2026-09-05，报告栏 + 打招呼清单）：
+1. 💬 生成打招呼清单（③评估后）：入围者(推荐/待定,≤15 按分排序)每人 匹配点2/先核实2/话术1(岗位亮点)/话术2(匹配理由)
+   + 猎聘直达链接(<a target=_blank>) → reports/打招呼清单_*.md；老板照单点链接复制话术人工打招呼
+2. 右侧报告栏：主区双栏（左对话流 3 / 右本岗报告 2），产物按步骤分组列示、点开即预览
+   （HTML 内嵌 / Markdown 渲染(链接可点) / JSON 代码），打招呼清单默认展开
+3. 布局目标：所有步骤都以报告收尾——"点报告干活"（据清单逐一联系候选人）
+
 v1.6.6 变更（2026-09-04，决策入库 + 发岗文字）：
 动作区第二行：📋 生成发岗文字（agent 读 JD+① → 猎聘发布文案落 reports，发布动作人工）/
 📥 入库当前岗（本地调 import_chat_job.import_job，把该岗①-③产物幂等写入 business.db：
@@ -569,6 +576,41 @@ def build_post_text_task(job: dict) -> str:
 {CAPABILITIES}"""
 
 
+# ── ④ 打招呼准备清单（③评估后：入围者(推荐/待定) → 话术1/2 + 猎聘直达链接 → .md，老板照单点链接打）──
+
+def build_step4_greet_task(job: dict) -> str:
+    jd = (_job_dir(job) / "jd.txt").as_posix()
+    reports_dir = (_job_dir(job) / "reports").as_posix()
+    pool = latest_report(job, "pool_report_", ".json")
+    collected = latest_report(job, "collected_", ".json")
+    if pool is None or collected is None:
+        return (f"老板，③评估（pool_report）还没做，先点「③ 池子评估」或说“把这批人评估一遍”，"
+                f"出结果后我再生成打招呼清单。\n{CAPABILITIES}")
+    ts = datetime.now().strftime("%Y%m%d-%H%M%S")
+    out = f"{reports_dir}/打招呼清单_{ts}.md"
+    rules_hint = (f"先读成长规则库 {RULES.as_posix()}，遵守其中「④ 汇报 / HTML 过程文档」及流程小节相关规则。\n"
+                  ) if RULES.exists() else ""
+    return f"""老板要你生成【打招呼准备清单】——老板照着一行行点链接、复制话术去猎聘打招呼（打招呼动作由老板人工执行，你只产出清单，不代发）：
+1. 读岗位 JD：{jd}
+2. 读池子评估：{pool}（candidates 数组按 candidate_id 对应采集顺序；含 score/verdict/match_points/concerns/summary）
+3. 读采集池子：{collected}——rows[candidate_id-1].fields.res_id_encode 是该候选人猎聘 ID，
+   详情链接 = https://h.liepin.com/resume/showresumedetail/?res_id_encode=该ID
+{rules_hint}
+4. 只列【入围者】= verdict ∈ {{推荐, 待定}}，按 score 降序，**最多 15 人**；verdict=不推荐 的不进清单
+   （文件末尾一行备注“另有 N 人不推荐未列入”）。
+5. 每人生成一个小节（Markdown，链接用 HTML 锚点以便新标签打开）：
+   ### N. 姓名 — score分（verdict）　<a href="https://h.liepin.com/resume/showresumedetail/?res_id_encode=XXX" target="_blank">▶ 打开猎聘详情</a>
+   - 一句话概况（现职/城市/最相关点）
+   - 匹配点：最多 2 条（从 match_points 精选最硬的）
+   - 先核实：最多 2 条（从 concerns 精选最可能影响沟通的，如年限口径/重叠提示/专业错配/薪资预期；措辞要能在打招呼里自然问出）
+   - 话术1（岗位亮点，含一句卖点+薪酬城市，可直接复制发送）
+   - 话术2（针对此人匹配理由，自然带出 1 个核实点）
+6. 文件头部先写岗位一句话卖点总述（每个招呼前都能用），再写“今日建议先打：…2-3 人（理由）”。
+7. 保存到：{out}
+8. 回复 ≤6 句：共几个入围者、先打哪 2-3 人及理由、文件路径。
+{CAPABILITIES}"""
+
+
 # ═══════════════════════ 执行通道 ═══════════════════════
 
 def _env_from_file(env_path: Path) -> dict:
@@ -639,7 +681,7 @@ def render_sidebar() -> dict:
             st.caption("还没有岗位会话，先在下面新建一个。")
         else:
             pick = st.selectbox("当前岗位（=一条对话线程）", options,
-                                format_func=lambda c: labels[c], key="job_pick_chat")
+                                format_func=lambda c: labels.get(c, str(c)), key="job_pick_chat")
         with st.expander("➕ 新建岗位会话", expanded=not bool(options)):
             title = st.text_input("岗位标题（可空）", key="nj_title",
                                   placeholder="如：中国移动 NLP 应届博士岗")
@@ -766,13 +808,18 @@ def render_action_row(job: dict) -> str | None:
                  help="已接入：读②采集池子+方法论 → 池评+逐人评分 → JSON 报告+HTML 过程（纯计算）"):
         task = build_step3_task(job)
 
-    # 第二行动作行：发岗文字（agent 生成）/ 入库当前岗（本地直写 business.db，不调 agent）
-    c5, c6, _ = st.columns(3)
+    # 第二行动作行：发岗文字 / ④打招呼清单（agent 生成）/ 入库当前岗（本地直写 business.db，不调 agent）
+    c5, c6, c7 = st.columns(3)
     if c5.button("📋 生成发岗文字", key="act_post_text", use_container_width=True,
                  disabled=not stt.get("step1_analyzed"),
                  help="读 JD+①分析 → 猎聘发布文案落 reports，老板复制粘贴发布（发布动作人工）"):
         task = build_post_text_task(job)
-    if c6.button("📥 入库当前岗", key="act_import_db", use_container_width=True,
+    if c6.button("💬 生成打招呼清单", key="act_greet", use_container_width=True,
+                 disabled=not stt.get("step3_done"),
+                 help="③评估后：入围者(推荐/待定)每人 话术1/2 + 猎聘直达链接 → reports/打招呼清单_*.md，"
+                      "老板照单点链接、复制话术去打招呼（打招呼动作人工）"):
+        task = build_step4_greet_task(job)
+    if c7.button("📥 入库当前岗", key="act_import_db", use_container_width=True,
                  help="把该岗①-③产物幂等写入 business.db（jobs/候选人/评估），可重复点，重复只刷新不新增"):
         try:
             import import_chat_job
@@ -782,6 +829,65 @@ def render_action_row(job: dict) -> str | None:
         except Exception as e:
             st.error(f"⚠️ 入库失败：{e}")
     return task
+
+
+# ── 右侧报告栏（v1.6.7：按步骤分组列出本岗产物，点开即用；所有步骤都以报告收尾）──
+
+REPORT_ORDER = ["① 岗前分析", "② 探索采集", "③ 池子评估", "候选人详情（深采）",
+                "📋 发岗文字", "💬 打招呼清单", "其它"]
+
+
+def report_group(name: str) -> str:
+    if name.startswith("analyze_"):
+        return "① 岗前分析"
+    if name.startswith(("collect_plan_", "collected_")):
+        return "② 探索采集"
+    if name.startswith(("pool_report_", "评估_")):
+        return "③ 池子评估"
+    if name.startswith("detail_"):
+        return "候选人详情（深采）"
+    if name.startswith("发岗文字_"):
+        return "📋 发岗文字"
+    if name.startswith("打招呼清单_"):
+        return "💬 打招呼清单"
+    return "其它"
+
+
+def render_report_panel(job: dict) -> None:
+    arts = list_artifacts(job["job_code"])
+    st.markdown("#### 📄 本岗报告")
+    if not arts:
+        st.caption("还没有产物——跑完一步后这里会出现报告，点开即用。")
+        return
+    groups: dict[str, list[Path]] = {}
+    for p in arts:
+        groups.setdefault(report_group(p.name), []).append(p)
+    for g in REPORT_ORDER:
+        ps = groups.get(g)
+        if not ps:
+            continue
+        with st.expander(f"{g} · {len(ps)}", expanded=(g in ("💬 打招呼清单", "① 岗前分析"))):
+            for p in ps:
+                if st.button(f"▶ {p.name}", key=f"rp_{job['job_code']}_{p.name}", use_container_width=True):
+                    st.session_state["report_preview"] = p.as_posix()
+    prev = st.session_state.get("report_preview")
+    if prev and Path(prev).exists():
+        p = Path(prev)
+        st.divider()
+        if p.name.endswith(".html"):
+            st.components.v1.html(p.read_text(encoding="utf-8", errors="replace"),
+                                  height=500, scrolling=True)
+        elif p.name.endswith(".md"):
+            st.markdown(p.read_text(encoding="utf-8", errors="replace"), unsafe_allow_html=True)
+        else:
+            txt = p.read_text(encoding="utf-8", errors="replace")
+            st.code(txt[:4000] + ("\n…（过长已截断）" if len(txt) > 4000 else ""),
+                    language="json" if p.suffix == ".json" else None)
+        if st.button("✖ 关闭预览", key="rp_close", use_container_width=True):
+            st.session_state.pop("report_preview", None)
+            st.rerun()
+    else:
+        st.caption("点上方任一产物查看内容。")
 
 
 def render_main(cfg: dict) -> None:
@@ -796,26 +902,16 @@ def render_main(cfg: dict) -> None:
     st.caption(f"岗位 {job['job_code']} · 会话 {job['session_id']} · 创建于 {job['created_at']}")
     render_progress_line(job)
 
-    # 产物预览
-    arts = list_artifacts(job["job_code"])
-    if arts:
-        with st.expander(f"📄 工作产物（{len(arts)} 个，最新在前）", expanded=False):
-            fname = st.selectbox("选择产物查看", [p.name for p in arts], key="art_pick")
-            fpath = _job_dir(job) / "reports" / fname
-            if fpath.name.endswith(".html"):
-                html = fpath.read_text(encoding="utf-8", errors="replace")
-                st.components.v1.html(html, height=620, scrolling=True)
-            else:
-                txt = fpath.read_text(encoding="utf-8", errors="replace")
-                st.code(txt[:6000] + ("\n…（过长已截断）" if len(txt) > 6000 else ""),
-                        language="json" if fpath.suffix == ".json" else None)
-
-    # 对话历史
-    for m in load_transcript(job["job_code"]):
-        with st.chat_message(m["role"]):
-            st.markdown(m["content"])
-            for a in m.get("artifacts") or []:
-                st.caption(f"📎 {a}")
+    # v1.6.7 布局：左=对话流，右=本岗报告栏（按步骤分组、点开即用）
+    left, right = st.columns([3, 2], gap="medium")
+    with left:
+        for m in load_transcript(job["job_code"]):
+            with st.chat_message(m["role"]):
+                st.markdown(m["content"])
+                for a in m.get("artifacts") or []:
+                    st.caption(f"📎 {a}")
+    with right:
+        render_report_panel(job)
 
     # 动作按钮行 + 自由输入
     task = render_action_row(job)
@@ -832,6 +928,8 @@ def render_main(cfg: dict) -> None:
             return "eval"
         if t.startswith("老板要你生成【发岗文字】"):
             return "post_text"
+        if t.startswith("老板要你生成【打招呼准备清单】"):
+            return "greet"
         return "report"
 
     to_send = None
@@ -871,7 +969,7 @@ def render_main(cfg: dict) -> None:
         try:
             with st.status("小猎工作中（阻塞式，长任务请耐心等待）…", expanded=False) as status:
                 cordis = CORDIS_PWSH if action_kind == "collect_run" else None
-                max_tok = 32768 if action_kind == "eval" else 8192
+                max_tok = 32768 if action_kind == "eval" else (16384 if action_kind == "greet" else 8192)
                 reply, new_files = run_assistant(job, agent_prompt, cfg["env_path"],
                                                  stub=cfg["stub"], max_tokens=max_tok, cordis=cordis)
                 status.update(label="小猎完成", state="complete")
@@ -883,7 +981,7 @@ def render_main(cfg: dict) -> None:
         # 更新状态卡
         label_map = {"analyze": "岗位分析", "report": "导出汇报", "chat": "自由对话",
                      "collect_plan": "②采集·出计划", "collect_run": "②采集·执行",
-                     "eval": "③池子评估", "post_text": "发岗文字"}
+                     "eval": "③池子评估", "post_text": "发岗文字", "greet": "打招呼清单"}
         upd = {"last_action": label_map.get(action_kind, action_kind)}
         if action_kind == "analyze":
             upd["step1_analyzed"] = True
@@ -898,9 +996,9 @@ def render_main(cfg: dict) -> None:
 
 
 def main() -> None:
-    st.set_page_config(page_title="数字合伙人 · 对话汇报（v1.6.6）", page_icon="🗣", layout="wide")
+    st.set_page_config(page_title="数字合伙人 · 对话汇报（v1.6.7）", page_icon="🗣", layout="wide")
     st.markdown("# 🗣 数字合伙人 · 对话式汇报")
-    st.caption("v1.6.6｜ 一岗一会话｜ 状态卡自动记忆｜ 过程自动落 HTML｜ ①②③+发岗文字+入库已接入｜ "
+    st.caption("v1.6.7｜ 一岗一会话｜ 右侧报告栏（按步骤，点开即用）｜ ①②③+发岗/打招呼清单/入库已接入｜ "
                "纠错成长账：`data/growth/records.jsonl` + `data/prompts/rules.md`")
     ensure_rules()
     cfg = render_sidebar()
