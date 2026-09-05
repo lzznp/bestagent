@@ -1,6 +1,11 @@
 # -*- coding: utf-8 -*-
 """M3 界面 v1.6：对话式汇报面板（DSH Web 迷你版 · 分步骤测试用）
 
+v1.6.6 变更（2026-09-04，决策入库 + 发岗文字）：
+动作区第二行：📋 生成发岗文字（agent 读 JD+① → 猎聘发布文案落 reports，发布动作人工）/
+📥 入库当前岗（本地调 import_chat_job.import_job，把该岗①-③产物幂等写入 business.db：
+jobs UPSERT + 候选人去重 + 评估 replace，job_code=目录名对齐，重复点只刷新不新增）。
+
 v1.6.5 变更（2026-09-04，③ 池子评估接入面板）：
 ③ 按钮按 ②采集完成点亮 / 聊天“评估一下这批人”类发令自动路由；agent 读 JD+最新 collected 池子
 +pool_quality/match_candidate 方法论 → 池评（优/良/中/差+分布+data_valid）→ 逐人紧凑评分
@@ -538,6 +543,32 @@ def build_step3_task(job: dict) -> str:
 {CAPABILITIES}"""
 
 
+# ── 发岗文字生成（① 决定做单后顺手用：读 JD+① → 猎聘发布文案，老板复制粘贴发布，发布动作留人工）──
+
+def build_post_text_task(job: dict) -> str:
+    """生成猎聘发岗文字：岗位名/亮点/职责/要求/薪酬地点 → 存 reports/发岗文字_<ts>.md 并在回复里全文给出。"""
+    jd = (_job_dir(job) / "jd.txt").as_posix()
+    reports_dir = (_job_dir(job) / "reports").as_posix()
+    analyze = latest_report(job, "analyze_", ".json")
+    analyze_hint = analyze.as_posix() if analyze else "（暂无，直接从 JD 提炼）"
+    ts = datetime.now().strftime("%Y%m%d-%H%M%S")
+    out = f"{reports_dir}/发岗文字_{ts}.md"
+    return f"""老板要你生成【发岗文字】（用于把岗位发布到猎聘，老板会复制粘贴去发布，发布动作由老板人工完成）：
+1. 读岗位 JD：{jd}
+2. 读最新岗前分析：{analyze_hint}（它的 jd_extracted/评分理由/风险可用来提炼卖点与口径提醒）
+3. 写一份可直接发布的猎聘职位文案，包含：
+   - 职位名称（贴合 JD 叫法 + 搜索友好）
+   - 一句话吸引点（卖点先行）
+   - 岗位职责（4~6 条，来自 JD description）
+   - 任职要求（硬性条件单列 + 加分项单列；若 JD 里有口径矛盾，如年限"博士2年 vs 10年+"，
+     文案里按更宽松口径写并备注"面议/详询"，别写死自相矛盾）
+   - 薪酬/地点/福利（按 JD；写"面议"的注明）
+   - 结尾引导语（欢迎自荐/推荐）
+4. 保存到：{out}
+5. 回复里把整份文案**全文贴出**（老板直接复制），并给 ≤3 句提示（如"注意先核实年限口径再发布"）。
+{CAPABILITIES}"""
+
+
 # ═══════════════════════ 执行通道 ═══════════════════════
 
 def _env_from_file(env_path: Path) -> dict:
@@ -674,6 +705,8 @@ def render_sidebar() -> dict:
                 "- **干活**：点上方动作按钮（系统按岗位状态自动亮/灰）或直接打字发令\n"
                 "- **看过程**：每步执行自动落 HTML 过程文档，展开「工作产物」查看，不用盯屏\n"
                 "- **纠错**：侧栏记一笔 → 成长账；消化成规则后可让助理写进 rules.md\n"
+                "- **发岗/入库**：第二行按钮——①后「生成发岗文字」复制去猎聘发布；任意时点「入库当前岗」"
+                "把该岗产物幂等写入 business.db（台账/统计用）\n"
                 "- **能力边界**：①②③已接入（分析/采集/评估），联系候选人=人工闸门（未接入）；自由聊天里也会如实说明")
 
     return {"jobs": jobs, "stub": stub, "env_path": Path(env_path)}
@@ -732,6 +765,22 @@ def render_action_row(job: dict) -> str | None:
                  disabled=not stt.get("step2_collected"),
                  help="已接入：读②采集池子+方法论 → 池评+逐人评分 → JSON 报告+HTML 过程（纯计算）"):
         task = build_step3_task(job)
+
+    # 第二行动作行：发岗文字（agent 生成）/ 入库当前岗（本地直写 business.db，不调 agent）
+    c5, c6, _ = st.columns(3)
+    if c5.button("📋 生成发岗文字", key="act_post_text", use_container_width=True,
+                 disabled=not stt.get("step1_analyzed"),
+                 help="读 JD+①分析 → 猎聘发布文案落 reports，老板复制粘贴发布（发布动作人工）"):
+        task = build_post_text_task(job)
+    if c6.button("📥 入库当前岗", key="act_import_db", use_container_width=True,
+                 help="把该岗①-③产物幂等写入 business.db（jobs/候选人/评估），可重复点，重复只刷新不新增"):
+        try:
+            import import_chat_job
+            res = import_chat_job.import_job(job["job_code"])
+            st.success(f"✅ 已入库 {res['job_code']}：岗位行已写/刷新；本次净新增候选人 "
+                       f"{res['candidates']}、评估 {res['matches']} → {res['db']}")
+        except Exception as e:
+            st.error(f"⚠️ 入库失败：{e}")
     return task
 
 
@@ -781,6 +830,8 @@ def render_main(cfg: dict) -> None:
             return "collect_run"
         if t.startswith("老板要你执行【步骤③"):
             return "eval"
+        if t.startswith("老板要你生成【发岗文字】"):
+            return "post_text"
         return "report"
 
     to_send = None
@@ -832,7 +883,7 @@ def render_main(cfg: dict) -> None:
         # 更新状态卡
         label_map = {"analyze": "岗位分析", "report": "导出汇报", "chat": "自由对话",
                      "collect_plan": "②采集·出计划", "collect_run": "②采集·执行",
-                     "eval": "③池子评估"}
+                     "eval": "③池子评估", "post_text": "发岗文字"}
         upd = {"last_action": label_map.get(action_kind, action_kind)}
         if action_kind == "analyze":
             upd["step1_analyzed"] = True
@@ -847,9 +898,9 @@ def render_main(cfg: dict) -> None:
 
 
 def main() -> None:
-    st.set_page_config(page_title="数字合伙人 · 对话汇报（v1.6.5）", page_icon="🗣", layout="wide")
+    st.set_page_config(page_title="数字合伙人 · 对话汇报（v1.6.6）", page_icon="🗣", layout="wide")
     st.markdown("# 🗣 数字合伙人 · 对话式汇报")
-    st.caption("v1.6.5｜ 一岗一会话｜ 状态卡自动记忆｜ 过程自动落 HTML｜ ①②③已接入（分析/采集/评估），联系跟进=人工闸门｜ "
+    st.caption("v1.6.6｜ 一岗一会话｜ 状态卡自动记忆｜ 过程自动落 HTML｜ ①②③+发岗文字+入库已接入｜ "
                "纠错成长账：`data/growth/records.jsonl` + `data/prompts/rules.md`")
     ensure_rules()
     cfg = render_sidebar()
