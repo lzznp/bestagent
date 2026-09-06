@@ -405,8 +405,12 @@ def build_report_task(job: dict) -> str:
 
 # ── 步骤② 探索采集（两步走：先出计划请确认 → 确认后用 pwsh 跑配方表采集）──
 
-COLLECT_WORDS = ("猎聘", "采集", "搜候选人", "搜一轮", "跑一轮", "搜人", "捞人", "搜索")
-COLLECT_CONFIRM_WORDS = ("按计划", "直接跑", "执行采集", "开始采集", "确认跑", "按这个跑")
+COLLECT_WORDS = ("猎聘", "采集", "搜候选人", "搜一轮", "跑一轮", "搜人", "捞人", "搜索",
+                 "补采", "补跑", "重采", "再采", "去采")
+COLLECT_CONFIRM_WORDS = ("按计划", "直接跑", "执行采集", "开始采集", "确认跑", "按这个跑",
+                         "执行计划", "按此计划", "按这个计划")
+# 动作意图词（配合已落盘计划 → 判定"确认执行"，如"按补跑计划执行"）
+COLLECT_ACTION_WORDS = ("执行", "继续", "开始", "确认", "按", "补", "重新")
 
 
 def latest_report(job: dict, prefix: str, suffix: str = ".json") -> Path | None:
@@ -424,17 +428,25 @@ def latest_collect_plan(job: dict) -> Path | None:
 def detect_collect_intent(msg: str, job: dict) -> str:
     """识别②采集发令。返回 "plan"（发令，先出计划）/ "run"（老板确认计划，执行）/ ""（普通对话）。
 
-    保守规则：讨论/提问（含“怎么/为什么/？”）不触发；执行必须有已落盘的 collect_plan_*.json，
-    且老板消息带采集词或明确确认词——避免“确认”二字误触其它话题。
+    保守规则：讨论/提问（含“怎么/为什么/？”）不触发；
+    - run：盘上已有 collect_plan_*.json，且消息命中 ① 明确确认词（按计划/直接跑/…）
+      或 ② 采集词（采集/补采/补跑…）+ 动作词（跑/执行/按/补…）——覆盖"按补跑计划执行"
+      这类自然说法（2026-09-06 实测卡点：只说"按补跑计划执行"未命中旧词表 → 走普通聊天、
+      没挂 pwsh 工具 → 小猎无法真跑）；
+    - plan：有采集词但还没计划（或无法判定为执行）→ 先出计划请老板确认。
     """
     m = msg.strip()
-    has_collect_word = any(w in m for w in COLLECT_WORDS)
-    has_confirm_word = any(w in m for w in COLLECT_CONFIRM_WORDS)
     is_question = ("怎么" in m or "为什么" in m or "是啥" in m or "是什么" in m
                    or m.endswith("？") or m.endswith("?") or m.endswith("吗"))
-    if has_confirm_word and latest_collect_plan(job) is not None and not is_question:
+    has_plan = latest_collect_plan(job) is not None
+    has_collect_word = any(w in m for w in COLLECT_WORDS)
+    has_confirm_word = any(w in m for w in COLLECT_CONFIRM_WORDS)
+    has_action_word = any(w in m for w in COLLECT_ACTION_WORDS)
+    if is_question:
+        return ""
+    if has_plan and (has_confirm_word or (has_collect_word and has_action_word)):
         return "run"
-    if has_collect_word and not is_question:
+    if has_collect_word:
         return "plan"
     return ""
 
