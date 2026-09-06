@@ -1,6 +1,13 @@
 # -*- coding: utf-8 -*-
 """M3 界面 v1.6：对话式汇报面板（DSH Web 迷你版 · 分步骤测试用）
 
+v1.6.9 变更（2026-09-06，对话产物即点即开 + 去掉右侧报告栏）：
+1. 助手消息的产物不再只是 📎 文件名文字——渲染成 文件名 + 「打开 ↗」按钮（os.startfile 本机打开，
+   HTML=默认浏览器打开，可直接点页面里的候选链接 / 逐格复制），取代"只给说明文字、自己翻文件夹"。
+2. 去掉右侧「本岗报告」栏（产物列表不实时更新、占右上方位置不便）→ 对话流全宽，
+   每步产物以可打开链接形式留在对话里（历史消息里的旧产物同样可点）。
+3. 📋 生成发岗文字 完成后在对话里追加一条带打开按钮的消息（不再只是页面上一条说明文字）。
+
 v1.6.7 变更（2026-09-05，报告栏 + 打招呼清单）：
 1. 💬 生成打招呼清单（③评估后）：入围者(推荐/待定,≤15 按分排序)每人 匹配点2/先核实2/话术1(岗位亮点)/话术2(匹配理由)
    + 猎聘直达链接(<a target=_blank>) → reports/打招呼清单_*.md；老板照单点链接复制话术人工打招呼
@@ -761,7 +768,7 @@ def render_sidebar() -> dict:
             st.markdown(
                 "- **建岗**：新建岗位时贴 JD（完整页面快照最稳）→ 选它进入对话\n"
                 "- **干活**：点上方动作按钮（系统按岗位状态自动亮/灰）或直接打字发令\n"
-                "- **看过程**：每步执行自动落 HTML 过程文档，展开「工作产物」查看，不用盯屏\n"
+                "- **看过程**：每步执行自动落 HTML 过程文档，对话里点产物「打开 ↗」即看，不用盯屏\n"
                 "- **纠错**：侧栏记一笔 → 成长账；消化成规则后可让助理写进 rules.md\n"
                 "- **发岗/入库**：第二行按钮——①后「生成发岗文字」复制去猎聘发布；任意时点「入库当前岗」"
                 "把该岗产物幂等写入 business.db（台账/统计用）\n"
@@ -846,10 +853,18 @@ def render_action_row(job: dict, cfg: dict | None = None) -> str | None:
                                expanded=False) as status:
                     jf, hf = publish_run.publish_for_job(job["job_code"], env_path)
                     status.update(label="发岗文字完成", state="complete")
-                if hf and Path(hf).exists():
-                    st.success(f"✅ 发岗文字已生成：{Path(hf).name} —— 打开后逐格复制到猎聘发岗页（发布动作人工）")
+                files = [Path(p) for p in (jf, hf) if p and Path(p).exists()]
+                if files:
+                    # v1.6.9：产物以「可打开」消息留在对话里（HTML 打开即逐格复制，不再只给说明文字）
+                    append_msg(job["job_code"], "assistant",
+                               f"📋 发岗文字已生成（{now_str()}）——点下方「打开 ↗」用浏览器打开，"
+                               "逐格复制到猎聘发岗页（发布动作人工）。",
+                               artifacts=[p.name for p in files])
+                    save_state(job["job_code"], last_action="发岗文字")
+                    st.success("✅ 发岗文字已生成：见对话里最新一条消息（点「打开 ↗」直接看）。")
+                    st.rerun()
                 else:
-                    st.warning("发岗文字未生成：看上方汇报与报告栏定位问题（可重跑/纠错）。")
+                    st.warning("发岗文字未生成：看上方汇报定位问题（可重跑/纠错）。")
             except Exception as e:
                 st.error(f"⚠️ 生成发岗文字失败：{e}")
     if c6.button("💬 生成打招呼清单", key="act_greet", use_container_width=True,
@@ -869,63 +884,37 @@ def render_action_row(job: dict, cfg: dict | None = None) -> str | None:
     return task
 
 
-# ── 右侧报告栏（v1.6.7：按步骤分组列出本岗产物，点开即用；所有步骤都以报告收尾）──
+# ── 对话产物即点即开（v1.6.9：取代右侧报告栏；产物以可打开链接留在对话里）──
 
-REPORT_ORDER = ["① 岗前分析", "② 探索采集", "③ 池子评估", "候选人详情（深采）",
-                "📋 发岗文字", "💬 打招呼清单", "其它"]
+def artifact_open_row(path: Path, key: str) -> None:
+    """一条产物的可打开行：文件名 + 「打开 ↗」按钮（os.startfile 本机打开，HTML=默认浏览器）。
 
-
-def report_group(name: str) -> str:
-    if name.startswith("analyze_"):
-        return "① 岗前分析"
-    if name.startswith(("collect_plan_", "collected_")):
-        return "② 探索采集"
-    if name.startswith(("pool_report_", "评估_")):
-        return "③ 池子评估"
-    if name.startswith("detail_"):
-        return "候选人详情（深采）"
-    if name.startswith(("发岗文字_", "publish_")):
-        return "📋 发岗文字"
-    if name.startswith("打招呼清单_"):
-        return "💬 打招呼清单"
-    return "其它"
-
-
-def render_report_panel(job: dict) -> None:
-    arts = list_artifacts(job["job_code"])
-    st.markdown("#### 📄 本岗报告")
-    if not arts:
-        st.caption("还没有产物——跑完一步后这里会出现报告，点开即用。")
+    HTML 网页产物（发岗文字/打招呼清单/匹配报告/过程文档等）打开后可直接点页面里的链接操作，
+    不用先看说明文字再手动去翻文件夹。
+    """
+    name = path.name
+    if not path.exists():
+        st.caption(f"📎 {name}")
         return
-    groups: dict[str, list[Path]] = {}
-    for p in arts:
-        groups.setdefault(report_group(p.name), []).append(p)
-    for g in REPORT_ORDER:
-        ps = groups.get(g)
-        if not ps:
-            continue
-        with st.expander(f"{g} · {len(ps)}", expanded=(g in ("💬 打招呼清单", "① 岗前分析"))):
-            for p in ps:
-                if st.button(f"▶ {p.name}", key=f"rp_{job['job_code']}_{p.name}", use_container_width=True):
-                    st.session_state["report_preview"] = p.as_posix()
-    prev = st.session_state.get("report_preview")
-    if prev and Path(prev).exists():
-        p = Path(prev)
-        st.divider()
-        if p.name.endswith(".html"):
-            st.components.v1.html(p.read_text(encoding="utf-8", errors="replace"),
-                                  height=500, scrolling=True)
-        elif p.name.endswith(".md"):
-            st.markdown(p.read_text(encoding="utf-8", errors="replace"), unsafe_allow_html=True)
-        else:
-            txt = p.read_text(encoding="utf-8", errors="replace")
-            st.code(txt[:4000] + ("\n…（过长已截断）" if len(txt) > 4000 else ""),
-                    language="json" if p.suffix == ".json" else None)
-        if st.button("✖ 关闭预览", key="rp_close", use_container_width=True):
-            st.session_state.pop("report_preview", None)
-            st.rerun()
-    else:
-        st.caption("点上方任一产物查看内容。")
+    is_html = path.suffix.lower() == ".html"
+    c1, c2 = st.columns([7, 1], vertical_alignment="center")
+    c1.markdown(f"📄 **{name}**")
+    c1.caption("网页产物：打开后在浏览器里查看/点页面里的链接" if is_html
+               else "点「打开 ↗」用本机默认程序查看")
+    if c2.button("打开 ↗", key=key, use_container_width=True,
+                 help="用本机默认程序打开（HTML=默认浏览器）"):
+        try:
+            os.startfile(str(path))  # type: ignore[attr-defined]
+        except Exception as e:
+            st.error(f"打开失败：{e}")
+
+
+def render_artifacts(job: dict, msg_index: int, artifacts: list[str]) -> None:
+    """助手消息下方的产物行：每个都是可点「打开 ↗」的链接。"""
+    reports_dir = _job_dir(job) / "reports"
+    for a in artifacts:
+        artifact_open_row(reports_dir / a,
+                          key=f"art_open_{job['job_code']}_{msg_index}_{a}")
 
 
 def render_main(cfg: dict) -> None:
@@ -940,16 +929,11 @@ def render_main(cfg: dict) -> None:
     st.caption(f"岗位 {job['job_code']} · 会话 {job['session_id']} · 创建于 {job['created_at']}")
     render_progress_line(job)
 
-    # v1.6.7 布局：左=对话流，右=本岗报告栏（按步骤分组、点开即用）
-    left, right = st.columns([3, 2], gap="medium")
-    with left:
-        for m in load_transcript(job["job_code"]):
-            with st.chat_message(m["role"]):
-                st.markdown(m["content"])
-                for a in m.get("artifacts") or []:
-                    st.caption(f"📎 {a}")
-    with right:
-        render_report_panel(job)
+    # v1.6.9 布局：对话流全宽；每步产物以「可打开」行留在对话里（右侧报告栏已去掉）
+    for mi, m in enumerate(load_transcript(job["job_code"])):
+        with st.chat_message(m["role"]):
+            st.markdown(m["content"])
+            render_artifacts(job, mi, m.get("artifacts") or [])
 
     # 动作按钮行 + 自由输入
     task = render_action_row(job, cfg)
@@ -1034,10 +1018,10 @@ def render_main(cfg: dict) -> None:
 
 
 def main() -> None:
-    st.set_page_config(page_title="数字合伙人 · 对话汇报（v1.6.7）", page_icon="🗣", layout="wide")
+    st.set_page_config(page_title="数字合伙人 · 对话汇报（v1.6.9）", page_icon="🗣", layout="wide")
     st.markdown("# 🗣 数字合伙人 · 对话式汇报")
-    st.caption("v1.6.7｜ 一岗一会话｜ 右侧报告栏（按步骤，点开即用）｜ ①②③+发岗/打招呼清单/入库已接入｜ "
-               "纠错成长账：`data/growth/records.jsonl` + `data/prompts/rules.md`")
+    st.caption("v1.6.9｜ 一岗一会话｜ 对话里产物即点即开（HTML 用浏览器打开）｜ "
+               "①②③+发岗/打招呼清单/入库已接入｜ 纠错成长账：`data/growth/records.jsonl` + `data/prompts/rules.md`")
     ensure_rules()
     cfg = render_sidebar()
     render_main(cfg)
