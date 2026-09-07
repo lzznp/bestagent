@@ -79,6 +79,18 @@ def main() -> None:
         check("注入不含旧提问前文(限最近4条)", "〔老板消息 1〕" in t, "")
         t2 = m3_chat.build_free_task(job, "这单分析一下")
         check("非教学消息不注入成长段", "【老板要你沉淀规则" not in t2, "")
+
+        print("[5] v1.7.3 岗位资料落盘分支（job_profile.json）")
+        m3_chat.append_msg(job["job_code"], "user",
+                           "PM 说薪资可以谈到 28-30，客户是自研工业软件团队非派遣。记到岗位资料")
+        t3 = m3_chat.build_free_task(job, "把 PM 答复记到岗位资料")
+        check("岗位资料分支注入路径与结构", "job_profile.json" in t3 and "pm_notes" in t3 and "special_notes" in t3, "")
+        check("岗位资料分支注入老板原话", "薪资可以谈到 28-30" in t3 and "自研工业软件团队" in t3, "")
+        check("岗位资料分支含只追加纪律", "一律追加新条目" in t3 and "绝不删改" in t3, "")
+        t4 = m3_chat.build_free_task(job, "临时需求：这个岗位不招女的，记到岗位资料")
+        check("歧视边界提示注入", "歧视性要求" in t4 and "绝不用于筛选条件" in t4, "")
+        t5 = m3_chat.build_free_task(job, "这单先放着吧")
+        check("普通消息不注入岗位资料段", "【记到岗位资料·操作步骤】" not in t5, "")
     finally:
         m3_chat.CHAT_DIR = old_dir
         shutil.rmtree(tmp, ignore_errors=True)

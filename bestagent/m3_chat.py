@@ -1,6 +1,12 @@
 # -*- coding: utf-8 -*-
 """M3 界面 v1.6：对话式汇报面板（DSH Web 迷你版 · 分步骤测试用）
 
+v1.7.3 变更（2026-09-07，岗位资料落盘：岗位目录 = 正式底座起步）：
+1. 岗位目录新增 job_profile.json（pm_notes 口径 / special_notes 猎头关注与客户特殊要求 / events 变动时间线），
+   老板发令"记到岗位资料 / 这是 PM 的口径 / 临时需求…" → 小猎把对话里的 PM 答复/口径/关注
+   分类【追加】进该文件（只追加不改历史、写完回读展示）；含歧视性要求时只作内部事实记录并提示合规边界。
+2. state_block 提示岗位资料文件（后续步骤涉本岗口径可读）。
+
 v1.7.2 变更（2026-09-07，成长沉淀补丁：教学原文注入，治"它说没看到您教的规则"）：
 根因 = agent 无跨 run 记忆（项目铁律：不赌会话记忆、文档是唯一记忆），老板教的经验只存在于
 transcript.json（给人看的），下一次"记到成长库"发令时是全新执行、真的看不到教学原文。
@@ -115,6 +121,11 @@ DEFAULT_ENV = WORKSPACE.parent / "参考代码" / "lietou-agent" / "browser-agen
 # v1.7.1 成长沉淀：老板"教规则并让记进成长库"的触发词（build_free_task 检测后给写入指引）
 TEACH_WORDS = ("记到成长库", "记进成长库", "写进规则", "写入规则", "记住这条", "记下来",
                "沉淀下来", "成长库", "教给你", "写进你的成长库", "记到 rules", "写进 rules")
+
+# v1.7.3 岗位资料：老板把 PM 口径/临时需求/猎头关注"记到岗位资料"的触发词
+PROFILE_WORDS = ("记到岗位资料", "记进岗位资料", "写进岗位资料", "记到岗位档案", "岗位资料里",
+                 "这是 PM 的口径", "这是 PM 说的", "PM 答复", "PM 回复", "临时需求",
+                 "补充到岗位", "记到岗位信息")
 
 # 步骤清单（业务汇报断点；0=自由讨论，仅用于纠错记录时标注）
 STEPS = [
@@ -319,12 +330,14 @@ def state_block(job: dict) -> str:
     dec_line = decision_text(st_.get("decision"))
     dec_extra = (f"（备注：{st_['decision_note'][:60]}）"
                  if st_.get("decision_note") else "")
+    prof_p = job_profile_path(job)
     return (
         f"【岗位状态卡】{job.get('title','')}（{job['job_code']}）\n"
         f"- 岗位 JD 文件：{jd_p.as_posix()}（{jd_status}。已提供则开口前必须先读它）\n"
         f"- ① 岗前分析：{'已完成' if st_.get('step1_analyzed') else '未做'}"
         f"（最近一次动作：{st_.get('last_action') or '无'}）\n"
         f"- ⚖️ 老板决策：{dec_line or '尚未到判断点（①分析做完后老板会在对话里拍板 做/不做/先核实）'}{dec_extra}\n"
+        f"- 📋 岗位资料（PM 口径/猎头关注，若已建则涉本岗口径先读它）：{prof_p.as_posix()}\n"
         f"- 现有产物 {len(arts)} 个（如需参考请读 reports 目录，最新的在前）\n"
         f"- 成长规则库：{RULES.as_posix()}（执行业务步骤前先读对应小节并遵守）\n"
     )
@@ -406,10 +419,35 @@ def ensure_rules() -> None:
 
 # ═══════════════════════ 任务构建（发令内容）══════════════════════
 
+def job_profile_path(job: dict) -> Path:
+    """岗位资料文件（v1.7.3，岗位目录 = 正式底座的附加信息载体）：
+    {"job_code", "pm_notes": [...], "special_notes": [...], "events": [{"ts","who","note"}]}"""
+    return _job_dir(job) / "job_profile.json"
+
+
+def _recent_boss_text(job_code: str, limit: int = 4) -> str:
+    """本会话老板最近 limit 条非任务原话（注入用；v1.7.2：agent 无跨 run 记忆，
+    老板在对话里给的口径/教学原文不注入它真看不到）。"""
+    msgs = load_transcript(job_code)
+    boss_lines = []
+    for m in msgs:
+        c = (m.get("content") or "").strip()
+        if m.get("role") != "user" or not c:
+            continue
+        if c.startswith("老板要你") or c.startswith("老板已确认"):
+            continue  # 任务注入文本，非老板原话
+        boss_lines.append(c)
+    recent = boss_lines[-limit:]
+    if not recent:
+        return "〔本会话暂无可引用的老板原话〕"
+    return "\n\n".join(f"〔老板消息 {i + 1}〕{c}" for i, c in enumerate(recent))
+
+
 def build_free_task(job: dict, user_msg: str) -> str:
     """自由讨论/追问：注入状态卡 + 能力边界 + 完整路径，先读文件再开口（禁 bash、禁列盘、读不到不许编）。
 
     v1.7.1：检测"老板教规则"意图 → 追加成长沉淀操作指引（小猎自助写 rules.md，只追加不改删）。
+    v1.7.3：检测"记到岗位资料/PM 口径"意图 → 追加岗位资料落盘指引（job_profile.json，只追加）。
     ⚠️ 2026-09-04 v1.6.2 修复：此前本函数写好却未接线，自由聊天把老板原始消息直接发给 agent，
     persona 承诺“路径每条消息都给”是假的 → agent 反复列盘找 jd.txt → “找不到岗位文件”。
     现由 render_main 对每条自由消息调用本函数，路径逐条写死。
@@ -420,28 +458,12 @@ def build_free_task(job: dict, user_msg: str) -> str:
                    if a.name.startswith("analyze_") and a.suffix == ".json"), None)
     analyze_hint = (latest.as_posix() if latest
                     else f"{reports_dir}（当前没有 analyze_*.json，就如实说岗前分析还没做，不用去找别的）")
-    # v1.7.1/1.7.2 成长沉淀：老板明确说"记到成长库/写进 rules"类话术 → 注入教学原文 + 写入操作指引
     teach = any(w in user_msg for w in TEACH_WORDS)
+    to_profile = any(w in user_msg for w in PROFILE_WORDS)
+    inject = _recent_boss_text(job["job_code"])
+    # —— 成长沉淀分支（rules.md）——
     growth_hint = ""
     if teach:
-        # v1.7.2：agent 无跨 run 记忆（项目铁律：不赌会话记忆、文档是唯一记忆）——
-        # 老板教的经验原文只存在于对话记录（transcript.json），不注入它真看不到
-        # （11:29 实测：它如实说"您没把规则内容发我"，不是迷糊是没喂到）。
-        # 这里把本会话老板最近的非任务原话（跳过按钮/路由注入的任务文本）注入给它。
-        msgs = load_transcript(job["job_code"])
-        boss_lines = []
-        for m in msgs:
-            c = (m.get("content") or "").strip()
-            if m.get("role") != "user" or not c:
-                continue
-            if c.startswith("老板要你") or c.startswith("老板已确认"):
-                continue  # 任务注入文本，非老板原话
-            boss_lines.append(c)
-        recent_boss = boss_lines[-4:]  # 最近 4 条老板原话（教学原文大概率在其中）
-        if recent_boss:
-            inject = "\n\n".join(f"〔老板消息 {i + 1}〕{c}" for i, c in enumerate(recent_boss))
-        else:
-            inject = "〔本会话暂无可引用的老板原话〕"
         growth_hint = (
             f"\n【老板要你沉淀规则·背景（重要，先读）】你每次都是全新执行、没有跨轮记忆，"
             "老板教你的经验原文在**本会话对话记录**里——系统已把最近几条老板原话注入如下，"
@@ -461,6 +483,27 @@ def build_free_task(job: dict, user_msg: str) -> str:
             "  5) 不许删改任何已有规则行，不许动其他文件；\n"
             "  6) 写完回读确认，回复里展示你新增的行与所在节。\n"
         )
+    # —— 岗位资料落盘分支（job_profile.json）——
+    profile_hint = ""
+    if to_profile:
+        profile_hint = (
+            f"\n【老板要你记到岗位资料·背景（重要，先读）】老板给的口径/临时需求/PM 答复原文"
+            "在**本会话对话记录**里——系统已把最近几条老板原话注入如下，先从中找要记的内容：\n"
+            f"{inject}\n"
+            f"\n【记到岗位资料·操作步骤】用**文件工具**完成（禁 bash）：\n"
+            f"  1) 先读岗位资料文件（不存在就按下面结构新建）：{job_profile_path(job).as_posix()}\n"
+            "     结构 = {\"job_code\": \"...\", \"pm_notes\": [\"PM/发单方口径、补充、岗位变动…\"], "
+            "\"special_notes\": [\"猎头内部关注、客户特殊要求、潜规则…\"], "
+            "\"events\": [{\"ts\": \"日期\", \"who\": \"PM/老板\", \"note\": \"变动或补充\"}]}\n"
+            "  2) 判断内容属于哪类：PM/发单方说的口径与岗位变动 → pm_notes；"
+            "老板自己的关注点/客户特殊要求（含\"不招女的\"这类内部记录）→ special_notes；"
+            "带时间点的变动/补充 → 同时追加一条 events；\n"
+            "  3) **一律追加新条目，绝不删改已有条目**（最新口径 = 数组最后一条）；文件不存在则新建骨架；\n"
+            "  4) 内容只从注入的老板原话提炼，不编造；找不到可记内容就如实说；\n"
+            "  5) ⚠️ 若记录含性别/年龄/婚育/户籍等歧视性要求：属【客户口径的内部事实记录】，"
+            "只写进 special_notes，**绝不用于筛选条件/搜索关键字/任何对外文案**，并在回复里提示老板这条合规边界；\n"
+            "  6) 写完回读确认，回复里展示你记了什么、进哪个字段。\n"
+        )
     return (
         f"{state_block(job)}\n{CAPABILITIES}\n"
         "【必须先读再答】你要读的文件完整绝对路径已在上方状态卡和下面 1) 2) 里**逐条写死**——"
@@ -472,6 +515,7 @@ def build_free_task(job: dict, user_msg: str) -> str:
         "读完再作答，并可以引用文件内容。文件工具真实报错时，把报错原文原样贴给老板并说明读不了哪一步；"
         "只要文件工具成功返回过内容，就不得声称“读不到/目录没挂载/被锁”。\n"
         f"{growth_hint}"
+        f"{profile_hint}"
         f"【老板消息】{user_msg}\n"
         "请以「小猎」身份回复。若老板要求执行某一步骤并出 HTML 过程文档，把工作过程写成中文 HTML "
         "保存到该岗 reports 目录（文件名自定，带上步骤与时间），回复里给出文件路径。"
@@ -1262,10 +1306,11 @@ def render_main(cfg: dict) -> None:
 
 
 def main() -> None:
-    st.set_page_config(page_title="数字合伙人 · 对话汇报（v1.7.2）", page_icon="🗣", layout="wide")
+    st.set_page_config(page_title="数字合伙人 · 对话汇报（v1.7.3）", page_icon="🗣", layout="wide")
     st.markdown("# 🗣 数字合伙人 · 对话式汇报")
-    st.caption("v1.7.2｜ 判断对话化（①分析完 → 小猎给态度+理由 → 你拍板 做/不做/先核实）｜ "
-               "对话里教规则 → 说「记到成长库」小猎自助写入 rules.md（自动带上你最近教的原话，只追加）｜ "
+    st.caption("v1.7.3｜ 判断对话化（①分析完 → 小猎给态度+理由 → 你拍板 做/不做/先核实）｜ "
+               "对话里教规则 → 说「记到成长库」小猎自助写 rules.md；PM 口径/临时需求 → 说「记到岗位资料」"
+               "小猎写 job_profile.json（均只追加）｜ "
                "一岗一会话｜ 对话里产物即点即开（HTML 用浏览器打开）｜ "
                "①②③+发岗/打招呼清单/入库已接入｜ 纠错成长账：`data/growth/records.jsonl` + `data/prompts/rules.md`")
     ensure_rules()
