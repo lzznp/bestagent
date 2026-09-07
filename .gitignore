@@ -7,6 +7,9 @@ __pycache__/
 # m3_chat 会话运行时数据（测试对话/产物，留在盘上不入库）
 bestagent/data/chat/
 
+# 自测临时目录（test_m3chat_v170_*.py / selftest_v170_realtime.py 运行时产生）
+bestagent/data/_selftest_tmp/
+
 # 密钥/环境文件
 *.env
 

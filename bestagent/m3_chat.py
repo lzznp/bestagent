@@ -1,6 +1,16 @@
 # -*- coding: utf-8 -*-
 """M3 界面 v1.6：对话式汇报面板（DSH Web 迷你版 · 分步骤测试用）
 
+v1.7.0 变更（2026-09-07 起，P0 交互模型改造：判断对话化·骨架）：
+1. 判断环节进对话（决策 20 落地骨架）：①岗前分析完成后小猎给「态度+理由」（明确 接/先沟通/别做 三选一，
+   不骑墙），并请老板拍板；老板可反驳追问（自由聊天通道照旧），然后回复 做/不做/先核实 拍板。
+2. 拍板 = 本地识别落盘（不耗 API）：state.json 增 decision 字段（pending/accept/decline/clarify
+   + decision_note + decision_ts）；拍板动作以确认消息留在对话里（可纠正）。
+3. 按钮退「执行显示层」：②采集 / 📋发岗文字 / ③评估 的可用性由 decision 驱动——①分析完先等拍板
+   （decision=pending 时锁），拍板 accept 才解锁；decline 后锁并提示改主意可说「重新判断」重跑①；
+   clarify 后暂锁待核实回来再定。旧岗无 decision 字段默认不锁（兼容）。
+4. 「重新判断 / 重新分析」消息 = 重跑①（decision 回 pending）。
+
 v1.6.9 变更（2026-09-06，对话产物即点即开 + 去掉右侧报告栏）：
 1. 助手消息的产物不再只是 📎 文件名文字——渲染成 文件名 + 「打开 ↗」按钮（os.startfile 本机打开，
    HTML=默认浏览器打开，可直接点页面里的候选链接 / 逐格复制），取代"只给说明文字、自己翻文件夹"。
@@ -83,7 +93,8 @@ except Exception:
     CORDIS_PWSH = WORKSPACE / "minimal-pwsh-nonpty.cordis.yml"
     REQUEST_TIMEOUT = 1200
 
-CHAT_DIR = WORKSPACE / "data" / "chat"
+CHAT_DIR = (Path(os.environ["M3CHAT_CHAT_DIR"]) if os.environ.get("M3CHAT_CHAT_DIR")
+            else WORKSPACE / "data" / "chat")  # 环境变量覆盖：AppTest/多实例隔离用
 GROWTH_DIR = WORKSPACE / "data" / "growth"
 RECORDS = GROWTH_DIR / "records.jsonl"
 RULES = PROMPTS / "rules.md"
@@ -106,6 +117,11 @@ CAPABILITIES = (
     "关键字/条件并获确认，老板已明确说\"直接跑/按计划\"除外）"
     "＋③池子评估（读采集池子按方法论逐人评分，纯文件任务）；"
     "未接入 = 联系跟进/打招呼、外部搜索、浏览器自由操作等任何其他对外动作。"
+    "【判断对话化·务必遵守】判断主通道 = 对话：老板要的是你给态度+理由、他反驳追问、然后他拍板，"
+    "不是丢一份报告让他自己消化。①岗前分析完必须给明确态度（接/先沟通/别做）并请老板拍板；"
+    "老板回复 做吧/不做/先核实 后岗位状态会记下该决策（accept/decline/clarify），后续步骤据此放行/锁定。"
+    "判断错不罚、不诚实必罚：宁可直说判断（包括\"信息不足要先问 PM\"），不许含糊骑墙、不许粉饰、"
+    "不许假装执行。"
     "老板要求未接入能力时，必须如实说明「这一步我还没接 XX 能力」，并给替代建议"
     "（例如：打招呼/联系候选人需走人工闸门），"
     "严禁找其他借口、严禁假装执行。"
@@ -120,6 +136,9 @@ PERSONA = (
     "开口/动手前先读该岗的 jd.txt 与已有报告，禁止向老板索要已经存在的信息。"
     "当老板要求执行某步骤时，把工作过程写成中文 HTML 过程文档保存到该岗 reports 目录，"
     "方便老板事后查看（他不想盯着屏幕）。"
+    "【判断对话化·务必遵守】老板要的是搭档不是工具：岗前分析后你要给明确态度（接/先沟通/别做）"
+    "和理由、请他拍板，他可以反驳追问；判断错不罚、不诚实必罚——不许骑墙含糊、不许粉饰、"
+    "不许假装执行，信息不足就直说要先问 PM/核实什么。"
     "【工具纪律·务必遵守】本环境 bash 工具不可用（Windows），读文件/列目录/写文件"
     "一律用文件工具（fs/str_replace_editor）；只有【② 采集执行】时用 pwsh 工具运行 collect_liepin.py "
     "（Windows 下可用，每次调用是新进程）。岗位文件的完整绝对路径会**在每条消息里直接给出**："
@@ -223,7 +242,9 @@ def _job_dir(job: dict) -> Path:
 def load_state(job_code: str) -> dict:
     p = job_dir(job_code) / "state.json"
     st_def = {"job_code": job_code, "jd_provided": False, "step1_analyzed": False,
-              "step2_collected": False, "step3_done": False, "last_action": None, "updated_at": None}
+              "step2_collected": False, "step3_done": False, "last_action": None,
+              "decision": None, "decision_note": None, "decision_ts": None,
+              "updated_at": None}
     if p.exists():
         try:
             st_def.update(json.loads(p.read_text(encoding="utf-8")))
@@ -250,17 +271,34 @@ def save_state(job_code: str, **updates) -> None:
         json.dumps(st_, ensure_ascii=False, indent=2), encoding="utf-8")
 
 
+DECISION_TEXT = {
+    None: "",
+    "pending": "⚖️ ①岗前分析完成，正在等老板拍板（老板回复 做吧/不做/先核实 之一；此前可追问理由）",
+    "accept": "✅ 老板已拍板：做这单",
+    "decline": "⛔ 老板已拍板：不做这单（②采集/③评估/发岗已锁定；老板改主意会说「重新判断」重跑①）",
+    "clarify": "📌 老板已拍板：先核实/暂缓再定（②③暂锁；核实完老板会说「做吧」或「不做」覆盖本决策）",
+}
+
+
+def decision_text(decision: str | None) -> str:
+    return DECISION_TEXT.get(decision, "")
+
+
 def state_block(job: dict) -> str:
     """状态卡文本：注入每条 prompt，让 agent 无论有没有会话记忆都掌握岗位现状。"""
     st_ = load_state(job["job_code"])
     jd_p = _job_dir(job) / "jd.txt"
     arts = list_artifacts(job["job_code"])
     jd_status = "已提供" if (st_.get("jd_provided") and jd_p.exists()) else "为空/未提供"
+    dec_line = decision_text(st_.get("decision"))
+    dec_extra = (f"（备注：{st_['decision_note'][:60]}）"
+                 if st_.get("decision_note") else "")
     return (
         f"【岗位状态卡】{job.get('title','')}（{job['job_code']}）\n"
         f"- 岗位 JD 文件：{jd_p.as_posix()}（{jd_status}。已提供则开口前必须先读它）\n"
         f"- ① 岗前分析：{'已完成' if st_.get('step1_analyzed') else '未做'}"
         f"（最近一次动作：{st_.get('last_action') or '无'}）\n"
+        f"- ⚖️ 老板决策：{dec_line or '尚未到判断点（①分析做完后老板会在对话里拍板 做/不做/先核实）'}{dec_extra}\n"
         f"- 现有产物 {len(arts)} 个（如需参考请读 reports 目录，最新的在前）\n"
         f"- 成长规则库：{RULES.as_posix()}（执行业务步骤前先读对应小节并遵守）\n"
     )
@@ -391,8 +429,15 @@ def build_step1_task(job: dict) -> str:
 5. 把完整 JSON 结果写入：{report_json}
 6. 把本次工作过程写成中文 HTML 过程文档（读了什么、关键判断、逐项评分依据、关键字实验过程、结论与风险），
    保存到：{report_html}
-7. 最后用「老板，我弄的咋样？」口吻给我一段 ≤8 句的中文汇报：干了什么、这份 JD 值不值得接、
-   我的建议、下一步。回复里给出上面两个文件的路径。
+7. 最后用「老板，我弄的咋样？」口吻给我一段**判断式**回复（≤10 句，**给人读的判断，不是报告摘要**——别罗列全部字段）：
+   - 第 1 句给明确态度：从「这单我建议：接 / 先沟通再定 / 别做」三选一（与你报告的 recommendation 一致，
+     不许含糊骑墙）；
+   - 接着给最硬的 3~4 条理由（佣金/HC/新鲜度/上游/难度里哪几项拉分、哪几项拉胯，各一句话，可引用评分）；
+   - 再点 1~2 条最该注意的风险或要先跟 PM 核实/澄清的口径；
+   - 最后**请老板拍板**：「您定：做 / 不做 / 先核实——也可以再问我理由。」
+   注意：老板拍板后岗位状态会记决策（accept/decline/clarify），他说「做吧」才会解锁②采集等下一步；
+   判断错不罚、不诚实必罚。
+8. 回复里给出上面两个文件的路径。
 {CAPABILITIES}"""
 
 
@@ -408,6 +453,77 @@ def build_report_task(job: dict) -> str:
 3. 保存到：{out}
 4. 用「老板，汇报好了」口吻给我 ≤5 句摘要，附文件路径。
 {CAPABILITIES}"""
+
+
+# ── 判断拍板意图（v1.7.0 判断对话化：老板对①岗前分析结果拍板 做/不做/先核实）──
+
+# 拍板词表（保守：宁可不命中落自由对话，也不误触记错决策；问句一律不触发）
+ACCEPT_WORDS = ("做吧", "咱做", "可以做", "值得做", "就做", "决定做", "确定做", "做这单",
+                "做做看", "接单", "接吧", "接单吧", "接了", "拿下", "干吧", "干这单",
+                "可以，做", "好，做", "行，做")
+DECLINE_WORDS = ("不做", "别做", "放弃", "不接", "别接", "算了", "不干", "拒了", "不值得",
+                 "别做了", "不做吧", "放弃吧", "不做了", "钓鱼单", "坑单", "这单不行", "别搞")
+CLARIFY_WORDS = ("先核实", "先问", "先沟通", "先确认", "先跟", "核实一下", "再想想", "考虑一下",
+                 "先别定", "跟pm", "问pm", "看看再说", "先放着", "先不决定")
+REJUDGE_WORDS = ("重新判断", "重新分析", "重跑分析", "再分析", "重新看看", "重看一遍", "再判断")
+
+
+def detect_decision_intent(msg: str) -> str:
+    """识别老板对①岗前分析的拍板。返回 "accept"/"decline"/"clarify"/""（未命中=自由对话）。
+
+    仅在 decision==pending 时由路由调用。保守规则：
+    - 讨论/反问句（怎么/为什么/？/吗…）一律不触发 → 落自由对话（老板可追问理由）；
+    - 「别放弃/别急着…」等反向表达不触发 decline；
+    - 先查整句短词（"做"/"不做"/"可以"…），再查包含词；decline 先于 accept 查
+      （"不值得做" 应判 decline 而非 accept）。
+    """
+    m = msg.strip()
+    if not m:
+        return ""
+    if ("怎么" in m or "为什么" in m or "是啥" in m or "是什么" in m
+            or "？" in m or "?" in m or m.endswith("吗") or m.endswith("么")):
+        return ""
+    if "别放弃" in m or "别急着" in m:
+        return ""
+    m_short = m.rstrip("。！!~ ")
+    if m_short in ("做", "做吧", "可以", "可以做", "好", "行", "接", "干", "拿下"):
+        return "accept"
+    if m_short in ("不做", "别做", "算了", "放弃", "不接", "不干", "不做吧", "别做了"):
+        return "decline"
+    if any(w in m for w in DECLINE_WORDS):
+        return "decline"
+    if any(w in m for w in ACCEPT_WORDS):
+        return "accept"
+    if any(w in m for w in CLARIFY_WORDS):
+        return "clarify"
+    return ""
+
+
+def detect_rejudge_intent(msg: str) -> bool:
+    """老板想重跑①重新判断（decision 已非空时启用：decline 改主意 / 想再看一遍）。"""
+    return any(w in msg for w in REJUDGE_WORDS)
+
+
+def record_decision(job: dict, decision: str, note: str = "") -> None:
+    """拍板落盘（本地动作，不调 agent）。note = 老板原话截断，留档可查。"""
+    label = {"accept": "做", "decline": "不做", "clarify": "先核实"}.get(decision, decision)
+    save_state(job["job_code"], decision=decision,
+               decision_note=(note or "").strip()[:80] or None,
+               decision_ts=now_str(), last_action=f"拍板：{label}")
+
+
+def build_decision_reply(decision: str, note: str = "") -> str:
+    """拍板确认消息（本地生成，留在对话里；理解错可纠正）。"""
+    note_short = (note or "").strip()[:60]
+    if decision == "accept":
+        return ("✅ 收到：**这单咱做**。已记入岗位决策，②采集/③评估/发岗解锁。\n"
+                "下一步你挑一个：说「去猎聘跑一轮」（先出采集计划请你确认）／点 📋 生成发岗文字"
+                "／📥 入库当前岗。理解错了跟我说一声即可。")
+    if decision == "decline":
+        return ("✅ 收到：**这单不做**。已记入岗位决策，②③/发岗已锁定。\n"
+                f"备注已留：{note_short or '（无）'}。想改主意或重新看一遍，说「重新判断」即可。")
+    return ("📌 收到：**先核实再定**。②③/发岗暂锁，等你核实完回来说「做吧」或「不做」即可。\n"
+            f"备注已留：{note_short or '（无）'}。")
 
 
 # ── 步骤② 探索采集（两步走：先出计划请确认 → 确认后用 pwsh 跑配方表采集）──
@@ -479,9 +595,11 @@ def build_step2_plan_task(job: dict) -> str:
 4. 把计划写成 JSON 文件：{plan_file}
    格式：{{"keywords": [关键字...], "conds": ["group_id=value"...], "reasons": "为何这样选（2~3 句）",
           "note": "口径提醒（如年限矛盾先核实）", "created_at": "..."}}
-5. 用「老板，采集计划好了」口吻回复 ≤6 句：列出关键字与条件、为什么这样选、预估代价
+5. 用「老板，采集计划好了」口吻回复 ≤8 句：列出关键字与条件、为什么这样选、预估代价
    （每个关键字=1 次猎聘搜索，搜索次数不是瓶颈；⚠️ 猎聘搜索框是“包含全部关键词”——空格分隔的词**全部要命中**，
-   关键字词内别叠同义词/多词，否则极易 0 命中；同义词宁可拆成多个关键字分路跑）、以及**请老板确认**（老板回复“按计划跑/直接跑”才会执行）。
+   关键字词内别叠同义词/多词，否则极易 0 命中；同义词宁可拆成多个关键字分路跑）、
+   给一句**池子预期判断**（这个池子估摸着 厚/正常/薄——薄的话说明这单捞人费劲，老板心里有数再拍板）、
+   以及**请老板拍板**（老板回复“按计划跑/直接跑”才执行；他想调关键字/条件，就说“重新出采集计划”按他的意思改）。
 {CAPABILITIES}"""
 
 
@@ -767,10 +885,12 @@ def render_sidebar() -> dict:
         with st.expander("📖 怎么用（1 分钟）"):
             st.markdown(
                 "- **建岗**：新建岗位时贴 JD（完整页面快照最稳）→ 选它进入对话\n"
-                "- **干活**：点上方动作按钮（系统按岗位状态自动亮/灰）或直接打字发令\n"
+                "- **判断在对话里**：🚀 岗前分析完，小猎给「接 / 先沟通 / 别做」态度 + 理由，"
+                "你回复 做吧/不做/先核实 拍板，或直接追问「为什么」反驳；拍板后才解锁②采集/发岗\n"
+                "- **按钮=执行显示层**：也可点按钮快捷发令（系统按岗位状态 + 你的拍板自动亮/灰）\n"
                 "- **看过程**：每步执行自动落 HTML 过程文档，对话里点产物「打开 ↗」即看，不用盯屏\n"
                 "- **纠错**：侧栏记一笔 → 成长账；消化成规则后可让助理写进 rules.md\n"
-                "- **发岗/入库**：第二行按钮——①后「生成发岗文字」复制去猎聘发布；任意时点「入库当前岗」"
+                "- **发岗/入库**：第二行按钮——①拍板做后「生成发岗文字」复制去猎聘发布；任意时点「入库当前岗」"
                 "把该岗产物幂等写入 business.db（台账/统计用）\n"
                 "- **能力边界**：①②③已接入（分析/采集/评估），联系候选人=人工闸门（未接入）；自由聊天里也会如实说明")
 
@@ -778,24 +898,43 @@ def render_sidebar() -> dict:
 
 
 def render_progress_line(job: dict) -> None:
-    """岗位自动进度（只读，不用手动维护）。"""
+    """岗位自动进度（只读，不用手动维护）。v1.7.0：①分析完进入「等你拍板」判断点。"""
     stt = load_state(job["job_code"])
     jd_ok = stt.get("jd_provided")
     a1 = stt.get("step1_analyzed")
     c2 = stt.get("step2_collected")
     c3 = stt.get("step3_done")
+    dec = stt.get("decision")
     jd_chip = "📥 JD 已收" if jd_ok else "📥 等 JD"
-    a1_chip = "✅ ① 岗前分析完成" if a1 else "⬜ ① 岗前分析未做"
-    c2_chip = "✅ ② 已采集" if c2 else "② 探索采集（可点按钮发令）"
+    if not a1:
+        a1_chip = "⬜ ① 岗前分析未做"
+    elif dec == "pending":
+        a1_chip = "⚖️ ① 分析完 · 等你拍板"
+    elif dec == "accept":
+        a1_chip = "✅ ① 分析完 · 已拍板：做"
+    elif dec == "decline":
+        a1_chip = "⛔ ① 分析完 · 已拍板：不做"
+    elif dec == "clarify":
+        a1_chip = "📌 ① 分析完 · 已拍板：先核实"
+    else:  # 旧岗无 decision 字段 → 兼容不锁
+        a1_chip = "✅ ① 岗前分析完成（旧岗，未走拍板）"
+    c2_chip = "✅ ② 已采集" if c2 else "② 探索采集（拍板做后解锁）"
     c3_chip = "✅ ③ 池子已评估" if c3 else "③ 池子评估（②采完才可点）"
     st.markdown(f"**流程进度**：{jd_chip}　→　{a1_chip}　→　{c2_chip}　→　{c3_chip}")
     hint = []
     if not jd_ok:
         hint.append("先上传/粘贴 JD（新建岗位时），或直接在下方输入框把 JD 原文发来。")
     elif not a1:
-        hint.append("点下方「🚀 开始岗位分析」跑第一步。")
+        hint.append("点下方「🚀 开始岗位分析」——小猎会真分析并给「接/先沟通/别做」的态度和理由，等你拍板。")
+    elif dec == "pending":
+        hint.append("小猎的判断在上一条消息里：回复「做吧 / 不做 / 先核实」拍板，或直接追问「为什么」反驳。"
+                    "（②采集要等你拍板做才解锁）")
+    elif dec in ("decline", "clarify"):
+        hint.append("②③/发岗已按你的拍板锁定。改主意/核实完了：说「做吧」「不做」，或「重新判断」重跑①。")
+    elif dec is None:
+        hint.append("旧岗兼容（未走拍板流程）：可继续按按钮走；想重新过一遍判断说「重新判断」。")
     elif not c2:
-        hint.append("①分析已出：②探索采集已接入——点按钮或说“去猎聘跑一轮”（先出计划你确认后再真跑）。")
+        hint.append("①已拍板做：②探索采集已解锁——点按钮或说「去猎聘跑一轮」（先出计划你确认后再真跑）。")
     elif not c3:
         hint.append("②已采集：可点「③ 池子评估」给这批人评分（读方法论逐人打分，纯计算）。")
     else:
@@ -806,6 +945,9 @@ def render_progress_line(job: dict) -> None:
 def render_action_row(job: dict, cfg: dict | None = None) -> str | None:
     """动作按钮行：由岗位状态自动亮/灰；返回要发送的任务文本（无则 None）。
 
+    v1.7.0 按钮 = 「执行显示层」：判断主通道在对话（小猎给态度+理由 → 老板拍板）。
+    ①分析完先等拍板（decision=pending 锁②③/发岗）；accept 才解锁；decline/clarify 锁；
+    旧岗无 decision 字段（None）不锁（兼容）。
     v1.6.8：📋 生成发岗文字按钮改为本地驱动 publish_run（agent 产字段 JSON →
     本地渲染 发岗文字_<ts>.html，逐格复制到猎聘），不再走聊天 agent 手写整篇 md。
     """
@@ -814,33 +956,45 @@ def render_action_row(job: dict, cfg: dict | None = None) -> str | None:
     arts = list_artifacts(job["job_code"])
     stub = bool(cfg and cfg.get("stub"))
     env_path = (cfg or {}).get("env_path")
+    a1 = stt.get("step1_analyzed")
+    dec = stt.get("decision")
 
     c1, c2, c3, c4 = st.columns(4)
     task = None
     if not jd_ok:
         st.info("岗位 JD 还没就位：请先在左侧新建岗位时粘贴/上传 JD。")
         return None
-    label1 = "🔄 重跑岗位分析" if stt.get("step1_analyzed") else "🚀 开始岗位分析"
+    # v1.7.0：判断点提示——按钮是执行显示层，拍板在对话里
+    if a1 and dec == "pending":
+        st.info("⚖️ **判断点**：小猎已给态度和理由（见上一条消息）。请回复「做吧 / 不做 / 先核实」拍板，"
+                "或先追问「为什么」——②采集/发岗要等你拍板做才解锁。")
+    elif a1 and dec == "decline":
+        st.info("⛔ 已拍板**不做**这单：②③/发岗已锁定。改主意或重看一遍，回复「重新判断」。")
+    elif a1 and dec == "clarify":
+        st.info("📌 已拍板**先核实再定**：②③/发岗暂锁。核实完回复「做吧」或「不做」。")
+    decision_ok = dec in (None, "accept")  # None=旧岗兼容
+    label1 = "🔄 重跑岗位分析（重新给判断）" if a1 else "🚀 开始岗位分析"
     if c1.button(label1, key="act_analyze", use_container_width=True,
-                 help="读 JD+方法论+成长规则 → 评分/接单判断/4组关键字 → 自动写 JSON + HTML 过程文档"):
+                 help="读 JD+方法论+成长规则 → 评分/接单判断/4组关键字 → JSON+HTML 落盘 → "
+                      "对话里给「接/先沟通/别做」态度与理由，等你拍板"):
         task = build_step1_task(job)
     if c2.button("📤 导出 HTML 汇报", key="act_report", use_container_width=True,
                  disabled=len(arts) == 0,
                  help="读已有分析产物，整理成一份给人看的 HTML 汇报（按需点）"):
         task = build_report_task(job)
     if c3.button("② 探索采集", key="act_collect", use_container_width=True,
-                 disabled=not stt.get("step1_analyzed"),
-                 help="已接入：第一步先出计划（关键字/条件请你确认）→ 你回复“按计划跑”才真跑猎聘采集"):
+                 disabled=not (a1 and decision_ok),
+                 help="已接入：第一步先出计划（关键字/条件 + 池子厚薄预期请你拍板）→ 你回复“按计划跑”才真跑猎聘采集"):
         task = build_step2_plan_task(job)
     if c4.button("③ 池子评估", key="act_eval", use_container_width=True,
-                 disabled=not stt.get("step2_collected"),
+                 disabled=not (stt.get("step2_collected") and decision_ok),
                  help="已接入：读②采集池子+方法论 → 池评+逐人评分 → JSON 报告+HTML 过程（纯计算）"):
         task = build_step3_task(job)
 
     # 第二行动作行：发岗文字（v1.6.8 走 publish_run 本地渲染）/ ④打招呼清单 / 入库当前岗
     c5, c6, c7 = st.columns(3)
     if c5.button("📋 生成发岗文字", key="act_post_text", use_container_width=True,
-                 disabled=not stt.get("step1_analyzed"),
+                 disabled=not (a1 and decision_ok),
                  help="v1.6.8：读 JD+①+发岗手册 → 发岗字段 JSON → 本地渲染 HTML（9 格逐格复制到猎聘发岗页，发布人工）"):
         if stub:
             st.info("假执行模式：跳过 API（真执行会产发岗字段 JSON + 渲染 发岗文字_*.html）")
@@ -967,24 +1121,39 @@ def render_main(cfg: dict) -> None:
             (_job_dir(job) / "jd.txt").write_text(prompt, encoding="utf-8")
             save_state(job["job_code"], jd_provided=True)
         to_send = prompt
-        # v1.6.3 修复：自由聊天必须走 build_free_task，注入状态卡+完整路径+能力边界+硬指令
-        # （历史 bug：build_free_task 定义了没接线，agent 反复“找不到岗位文件”）
-        # v1.6.4/1.6.5：先识别意图——③评估（纯计算，优先）→ ②采集两步（出计划/确认后执行）；讨论性问句不触发
-        ev, coll = False, ""
-        if load_state(job["job_code"]).get("step1_analyzed"):
-            ev = detect_eval_intent(prompt, job)
-            if not ev:
-                coll = detect_collect_intent(prompt, job)
-        if ev:
-            action_kind, agent_prompt = "eval", build_step3_task(job)
-        elif coll == "plan":
-            action_kind, agent_prompt = "collect_plan", build_step2_plan_task(job)
-        elif coll == "run":
-            plan_f = latest_collect_plan(job)
-            action_kind = "collect_run"
-            agent_prompt = build_step2_run_task(job, plan_f) if plan_f else build_free_task(job, prompt)
+        stt_now = load_state(job["job_code"])
+        # v1.7.0 判断对话化：①分析完 & 等你拍板 → 先识别拍板（本地处理，不调 agent；可纠正）
+        if stt_now.get("step1_analyzed") and stt_now.get("decision") == "pending":
+            dec_action = detect_decision_intent(prompt)
+            if dec_action:
+                append_msg(job["job_code"], "user", to_send)
+                record_decision(job, dec_action, prompt)
+                append_msg(job["job_code"], "assistant", build_decision_reply(dec_action, prompt))
+                st.rerun()
+                return
+        # 已拍板（decline/clarify）后想重跑①重新判断 → 走 analyze（decision 自动回 pending）
+        if (stt_now.get("step1_analyzed") and stt_now.get("decision") in ("decline", "clarify")
+                and detect_rejudge_intent(prompt)):
+            action_kind, agent_prompt = "analyze", build_step1_task(job)
         else:
-            action_kind, agent_prompt = "chat", build_free_task(job, prompt)
+            # v1.6.3 修复：自由聊天必须走 build_free_task，注入状态卡+完整路径+能力边界+硬指令
+            # （历史 bug：build_free_task 定义了没接线，agent 反复“找不到岗位文件”）
+            # v1.6.4/1.6.5：先识别意图——③评估（纯计算，优先）→ ②采集两步（出计划/确认后执行）；讨论性问句不触发
+            ev, coll = False, ""
+            if stt_now.get("step1_analyzed"):
+                ev = detect_eval_intent(prompt, job)
+                if not ev:
+                    coll = detect_collect_intent(prompt, job)
+            if ev:
+                action_kind, agent_prompt = "eval", build_step3_task(job)
+            elif coll == "plan":
+                action_kind, agent_prompt = "collect_plan", build_step2_plan_task(job)
+            elif coll == "run":
+                plan_f = latest_collect_plan(job)
+                action_kind = "collect_run"
+                agent_prompt = build_step2_run_task(job, plan_f) if plan_f else build_free_task(job, prompt)
+            else:
+                action_kind, agent_prompt = "chat", build_free_task(job, prompt)
 
     if to_send:
         append_msg(job["job_code"], "user", to_send)
@@ -1006,7 +1175,11 @@ def render_main(cfg: dict) -> None:
                      "eval": "③池子评估", "post_text": "发岗文字", "greet": "打招呼清单"}
         upd = {"last_action": label_map.get(action_kind, action_kind)}
         if action_kind == "analyze":
+            # v1.7.0：①分析完 → 进入「等你拍板」判断点（重跑清掉旧决策）
             upd["step1_analyzed"] = True
+            upd["decision"] = "pending"
+            upd["decision_note"] = None
+            upd["decision_ts"] = None
         if action_kind == "collect_run":
             upd["step2_collected"] = bool(any(p.name.startswith("collected_")
                                               for p in list_artifacts(job["job_code"])))
@@ -1018,9 +1191,10 @@ def render_main(cfg: dict) -> None:
 
 
 def main() -> None:
-    st.set_page_config(page_title="数字合伙人 · 对话汇报（v1.6.9）", page_icon="🗣", layout="wide")
+    st.set_page_config(page_title="数字合伙人 · 对话汇报（v1.7.0）", page_icon="🗣", layout="wide")
     st.markdown("# 🗣 数字合伙人 · 对话式汇报")
-    st.caption("v1.6.9｜ 一岗一会话｜ 对话里产物即点即开（HTML 用浏览器打开）｜ "
+    st.caption("v1.7.0｜ 判断对话化（①分析完 → 小猎给态度+理由 → 你拍板 做/不做/先核实）｜ "
+               "一岗一会话｜ 对话里产物即点即开（HTML 用浏览器打开）｜ "
                "①②③+发岗/打招呼清单/入库已接入｜ 纠错成长账：`data/growth/records.jsonl` + `data/prompts/rules.md`")
     ensure_rules()
     cfg = render_sidebar()
