@@ -1,6 +1,12 @@
 # -*- coding: utf-8 -*-
 """M3 界面 v1.6：对话式汇报面板（DSH Web 迷你版 · 分步骤测试用）
 
+v1.7.2 变更（2026-09-07，成长沉淀补丁：教学原文注入，治"它说没看到您教的规则"）：
+根因 = agent 无跨 run 记忆（项目铁律：不赌会话记忆、文档是唯一记忆），老板教的经验只存在于
+transcript.json（给人看的），下一次"记到成长库"发令时是全新执行、真的看不到教学原文。
+修复 = build_free_task 教学分支把本会话老板最近的非任务原话（跳过任务注入文本）注入 prompt，
+让它在写入 rules.md 前先读到教学原文提炼；找不到原文必须如实报告，不许脑补。
+
 v1.7.1 变更（2026-09-07，成长沉淀：对话里教 → 小猎自助写 rules.md）：
 1. 老板在自由对话里明确发令（"记到成长库/写进 rules/记住这条/沉淀下来"等）时，
    小猎被授权把规则【追加】进 data/prompts/rules.md 对应小节（详见 CAPABILITIES「成长沉淀」段
@@ -414,19 +420,44 @@ def build_free_task(job: dict, user_msg: str) -> str:
                    if a.name.startswith("analyze_") and a.suffix == ".json"), None)
     analyze_hint = (latest.as_posix() if latest
                     else f"{reports_dir}（当前没有 analyze_*.json，就如实说岗前分析还没做，不用去找别的）")
-    # v1.7.1 成长沉淀：老板明确说"记到成长库/写进 rules"类话术 → 给写入操作指引
+    # v1.7.1/1.7.2 成长沉淀：老板明确说"记到成长库/写进 rules"类话术 → 注入教学原文 + 写入操作指引
     teach = any(w in user_msg for w in TEACH_WORDS)
     growth_hint = ""
     if teach:
+        # v1.7.2：agent 无跨 run 记忆（项目铁律：不赌会话记忆、文档是唯一记忆）——
+        # 老板教的经验原文只存在于对话记录（transcript.json），不注入它真看不到
+        # （11:29 实测：它如实说"您没把规则内容发我"，不是迷糊是没喂到）。
+        # 这里把本会话老板最近的非任务原话（跳过按钮/路由注入的任务文本）注入给它。
+        msgs = load_transcript(job["job_code"])
+        boss_lines = []
+        for m in msgs:
+            c = (m.get("content") or "").strip()
+            if m.get("role") != "user" or not c:
+                continue
+            if c.startswith("老板要你") or c.startswith("老板已确认"):
+                continue  # 任务注入文本，非老板原话
+            boss_lines.append(c)
+        recent_boss = boss_lines[-4:]  # 最近 4 条老板原话（教学原文大概率在其中）
+        if recent_boss:
+            inject = "\n\n".join(f"〔老板消息 {i + 1}〕{c}" for i, c in enumerate(recent_boss))
+        else:
+            inject = "〔本会话暂无可引用的老板原话〕"
         growth_hint = (
+            f"\n【老板要你沉淀规则·背景（重要，先读）】你每次都是全新执行、没有跨轮记忆，"
+            "老板教你的经验原文在**本会话对话记录**里——系统已把最近几条老板原话注入如下，"
+            "**先从这里找老板教过你的规则/经验原文**（通常含\"教你/说明一下/记住/这个…\"等教学话术；"
+            "跳过纯岗位问答）：\n"
+            f"{inject}\n"
             f"\n【老板要你沉淀规则·操作步骤】用**文件工具**完成（禁 bash）：\n"
             f"  1) 先读成长规则库全文：{RULES.as_posix()}\n"
             "  2) 判断这条规则属于哪一节（## ① 岗位分析 / ## ② 采集 / ## ③ 池子评估 / "
             "## ④ 汇报 / HTML 过程文档 / ## 流程 / 工具）——不确定就放「流程 / 工具」；\n"
             "  3) 只在该节写入：若该节只有（暂无）占位，把占位替换成你的规则行；"
             "若已有规则，则在最后一条规则后、下一个 ## 小节标题前【追加】一行，格式：\n"
-            "     `- [来源 本岗 {job['job_code']} / {datetime.now().strftime('%Y-%m-%d')}] 当〔情境〕时，应〔怎么做〕`\n"
-            "  4) 规则内容只用老板这次教你的话归纳成一句，不许编造老板没说的；\n"
+            f"     `- [来源 本岗 {job['job_code']} / {datetime.now().strftime('%Y-%m-%d')}] 当〔情境〕时，应〔怎么做〕`\n"
+            "  4) 规则内容**只从上面注入的老板原话里提炼归纳**成一句，不许编造老板没说的；"
+            "若注入内容里找不到可提炼的教学原文，如实告诉老板「我没找到您教的规则原文，请把原话发我」，"
+            "**不许脑补、不许拿猜的内容写进成长库**；\n"
             "  5) 不许删改任何已有规则行，不许动其他文件；\n"
             "  6) 写完回读确认，回复里展示你新增的行与所在节。\n"
         )
@@ -1231,10 +1262,10 @@ def render_main(cfg: dict) -> None:
 
 
 def main() -> None:
-    st.set_page_config(page_title="数字合伙人 · 对话汇报（v1.7.1）", page_icon="🗣", layout="wide")
+    st.set_page_config(page_title="数字合伙人 · 对话汇报（v1.7.2）", page_icon="🗣", layout="wide")
     st.markdown("# 🗣 数字合伙人 · 对话式汇报")
-    st.caption("v1.7.1｜ 判断对话化（①分析完 → 小猎给态度+理由 → 你拍板 做/不做/先核实）｜ "
-               "对话里教规则 → 小猎可自助写入成长库 rules.md（只追加）｜ "
+    st.caption("v1.7.2｜ 判断对话化（①分析完 → 小猎给态度+理由 → 你拍板 做/不做/先核实）｜ "
+               "对话里教规则 → 说「记到成长库」小猎自助写入 rules.md（自动带上你最近教的原话，只追加）｜ "
                "一岗一会话｜ 对话里产物即点即开（HTML 用浏览器打开）｜ "
                "①②③+发岗/打招呼清单/入库已接入｜ 纠错成长账：`data/growth/records.jsonl` + `data/prompts/rules.md`")
     ensure_rules()

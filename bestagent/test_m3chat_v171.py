@@ -67,6 +67,18 @@ def main() -> None:
         check("②采集 节唯一", n_collect == 1, f"→ {n_collect} 个")
         check("①/③/④/流程 节齐全", all(s in rules_txt for s in
               ("## ① 岗位分析", "## ③ 池子评估", "## ④ 汇报", "## 流程 / 工具")), "")
+
+        print("[4] v1.7.2 教学原文注入（治'它说没看到您教的规则'）")
+        m3_chat.append_msg(job["job_code"], "user", "教你读禾蛙接单页快照：顶部账号名=我本人，司顾问那张卡才是发单顾问")
+        m3_chat.append_msg(job["job_code"], "assistant", "（复述）明白了")
+        m3_chat.append_msg(job["job_code"], "user", "老板要你执行【步骤① 岗前分析】……（任务注入文本，应被跳过）")
+        m3_chat.append_msg(job["job_code"], "user", "再说明一下：最早出现的人名是猎头本人，第二位是 PM，带@禾蛙运营的是 PM 领导")
+        t = m3_chat.build_free_task(job, "把这两条规则记到成长库")
+        check("注入含最近教学原文", "教你读禾蛙接单页快照" in t and "最早出现的人名是猎头本人" in t, "")
+        check("注入跳过任务文本", "任务注入文本，应被跳过" not in t, "")
+        check("注入不含旧提问前文(限最近4条)", "〔老板消息 1〕" in t, "")
+        t2 = m3_chat.build_free_task(job, "这单分析一下")
+        check("非教学消息不注入成长段", "【老板要你沉淀规则" not in t2, "")
     finally:
         m3_chat.CHAT_DIR = old_dir
         shutil.rmtree(tmp, ignore_errors=True)
