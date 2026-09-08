@@ -91,6 +91,20 @@ def main() -> None:
         check("歧视边界提示注入", "歧视性要求" in t4 and "绝不用于筛选条件" in t4, "")
         t5 = m3_chat.build_free_task(job, "这单先放着吧")
         check("普通消息不注入岗位资料段", "【记到岗位资料·操作步骤】" not in t5, "")
+
+        print("[6] v1.7.4 结构性修改硬边界")
+        # 注：CAPABILITIES 全局也有"【结构性修改·硬边界】"声明；操作指引段标题带"（务必遵守）"后缀用于区分
+        t6 = m3_chat.build_free_task(job, "取消掉不要女性的这个要求，修改岗位资料")
+        check("删除/修改岗位资料 → 拒绝操作指引注入", "【结构性修改·硬边界（务必遵守）】" in t6, "")
+        check("拒绝指引含'由老板或实施对话处理'", "由老板或实施对话处理" in t6, "")
+        t7 = m3_chat.build_free_task(job, "把 rules 里那条规则删掉")
+        check("删规则 → 拒绝操作指引", "【结构性修改·硬边界（务必遵守）】" in t7, "")
+        t8 = m3_chat.build_free_task(job, "记到岗位资料：PM 说薪资可谈")
+        check("追加类不受拒绝指引影响", "【结构性修改·硬边界（务必遵守）】" not in t8
+              and "【记到岗位资料·操作步骤】" in t8, "")
+        t9 = m3_chat.build_free_task(job, "这单分析一下")
+        check("普通消息无拒绝操作指引", "【结构性修改·硬边界（务必遵守）】" not in t9
+              and "【结构性修改·硬边界】" in t9, "")  # 只有全局声明无操作指引
     finally:
         m3_chat.CHAT_DIR = old_dir
         shutil.rmtree(tmp, ignore_errors=True)
