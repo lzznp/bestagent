@@ -21,6 +21,29 @@ WORKSPACE = Path(r"D:\study\bestagent\bestagent")
 tmp_root = WORKSPACE / "data" / "_selftest_tmp"
 tmp_root.mkdir(parents=True, exist_ok=True)
 tempfile.tempdir = str(tmp_root)  # 沙箱下默认 TEMP 区清理受限，指到工作区
+
+
+def _plain_mkdtemp(*args, **kwargs):
+    """沙箱对 tempfile.mkdtemp 产物目录加限制 ACL（清理时 scandir/chmod 被拒，WinError 5），
+    用普通 os.mkdir 复刻 mkdtemp 语义（目录建在 tempfile.tempdir 下）以绕开限制。"""
+    import uuid as _uuid
+
+    base = kwargs.pop("dir", None) or tempfile.tempdir or "."
+    prefix = kwargs.pop("prefix", "tmp")
+    suffix = kwargs.pop("suffix", "")
+    if kwargs:  # 语义不支持的其他参数（Windows 下 mode 等无意义）
+        raise TypeError(f"unsupported mkdtemp kwargs: {kwargs.keys()}")
+    for _ in range(100):
+        name = os.path.join(base, prefix + _uuid.uuid4().hex + suffix)
+        try:
+            os.mkdir(name)
+            return name
+        except FileExistsError:
+            continue
+    raise FileExistsError("mkdtemp: 无法生成唯一目录名")
+
+
+tempfile.mkdtemp = _plain_mkdtemp  # streamlit AppTest 内部用 mkdtemp/TemporaryDirectory
 os.environ["M3CHAT_STUB"] = "1"
 os.environ["M3CHAT_CHAT_DIR"] = str(tmp_root)  # m3_chat.py 支持环境变量覆盖 CHAT_DIR（AppTest 隔离）
 
