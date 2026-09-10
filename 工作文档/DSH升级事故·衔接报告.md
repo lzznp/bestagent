@@ -120,8 +120,7 @@ RESULT: TypeError -> DeepSeekHarnessConfig.__init__() got an unexpected keyword 
 
 ## 4. 待办 / 下一步
 
-1. 【老板】**重装浏览器助手插件** —— `dsh plugin --profile web add <包名>` 或 GUI 插件页安装；
-   ⚠️ **包名待老板提供线索**（在哪看到的 / 截图 / 当初怎么装的）。
+1. 【老板】**重装浏览器助手插件** —— ✅ **已完成（2026-09-10 晚）**：`@yuxianglin/dsh-bridge-browser`（源码 `C:\deepseek\dsh-browser`，以 `link:` 装进 `~/.dsh/profiles/web`）；细节见 §7。
 2. 【实施对话】**只读调研**（不动代码）：新版 profile 组装 + 会话落盘 + pwsh/沙箱权限 → 产出"修复方案 + 工作量 + 风险"。
 3. 【拍板】手脚层修复方案（+ 是否让项目自带 `dsh_home` 与 GUI 解耦）。
 4. 【挂起不变】本单 **J-CHAT-20260909-094907**（智库·机械工程师 12HC，已 accept）的 ②采集 / ③评估 / 发岗 —— 底座修好才能跑；
@@ -150,3 +149,43 @@ RESULT: TypeError -> DeepSeekHarnessConfig.__init__() got an unexpected keyword 
 - **关之前**：本对话的记录在 `C:\Users\84005\.dsh\sessions\--D-study-bestagent--\session-8312a8b5-*.jsonl`
   （可恢复，但按规矩**不指望它** —— 记忆看本报告）。
 - **重开之后**：GUI 里重新打开 `D:\study\bestagent` 工作区 → 用 §5 开场白起新对话。
+
+---
+
+## 7. 附：`C:\deepseek` 目录勘察（2026-09-10 晚，老板装好浏览器助手插件后）
+
+### 7.1 目录角色（**删东西前必读**）
+
+| 路径 | 是什么 | 能否删 |
+|---|---|---|
+| `C:\deepseek\deepseek-harness` | **DSH 本体**（v0.1.5-alpha.2，浅克隆） | ❌ **不能删** |
+| `C:\deepseek\dsh-browser` | **浏览器助手插件源码**（`@yuxianglin/dsh-bridge-browser` v0.0.4，作者 Yuxiang Lin，MIT，private） | ❌ **不能删** —— 它以 **`link:C:/deepseek/dsh-browser/packages/browser/bridge-browser`** 装进 `~/.dsh/profiles/web/package.json` 的 `dsh.profile.bundles`；删了插件即废 |
+| `C:\deepseek\dsh-session-surgeon` | 第三方**会话文件修复器**（`xiaoshenming/dsh-session-surgeon` v0.2.0）：修 `~/.dsh/sessions/**/session.jsonl.zstd` 的磁盘级损坏（torn-tail / seq-gap-committed / 代理码元 / 缺消息 id 等），子命令 `scan / index / inspect / repair / compact / export` | ✅ 可删 —— **实测未装进任何 profile**（web profile 的 package.json 只列了 bridge-browser），与浏览器助手无关 |
+| `C:\deepseek\sessions-backup` | 旧会话备份（7 个工作区目录，含 `--D-study-bestagent--`，mtime 2026-09-10 14:39） | 🟡 建议留（老板已确认聊天记录无用，但"升级前先备份"的习惯值得保留） |
+| `C:\deepseek\cd`、`C:\deepseek\git` | 两个 **0 字节空文件**（创建于 2026-08-14 17:32:53） | ✅ 可删（命令笔误产生的垃圾） |
+| `C:\deepseek\dsh-session-surgeon-分析.md` | 2026-09-10 16:06 的分析报告（另一会话产出） | 🟡 可留作参考 |
+
+### 7.2 浏览器助手插件（对我们项目的意义）
+
+- 形态：**token 认证的 WebSocket 载体 + Chrome 扩展 + `browser_*` 文本工具**（让 agent 驱动老板自己的 Chrome）。
+- token 落 `~/.dsh/ext-bridge-token`；WebSocket 走 **DSH 自己的 web 端口**（代码：`ws://127.0.0.1:${ctx.httpServer.port}/ext/bridge`）
+  → **不占独立端口，与我们项目 `browser-agent` 的 8080 桥不冲突** ✅
+- ⚠️ 其 workspace / peerDependencies 钉在 dsh **0.1.2-rc.1**（最低支持），本机已 0.1.5-alpha.2（老板实测"插件好了"）。
+- **新增待讨论议题（未展开）**：DSH 生态已有浏览器桥 → 我们自研的 `browser-agent`（Python bridge + Chrome 扩展 + 配方表 `execute_spec`）与之**功能重叠**：继续自研 / 借力 / 混合，是后续设计议题。
+
+### 7.3 `dsh-session-surgeon` 与「历史加载失败」（交叉验证）
+
+该项目的分析文档结论与本报告 §2.6 **独立一致**：全仓库 0 命中 `opening baseline` / `opted-in`；判定它更像 harness **加载/重放阶段的语义校验**问题，而非磁盘字节级损坏；建议"别手改、保留证据、上报上游"。
+→ 两条独立证据同结论：**既不是会话文件坏了，也不是浏览器助手插件的锅**。
+
+### 7.4 删除 `dsh-session-surgeon` 被"占用"的排查
+
+- **可查到的线索**：该目录 `.git` 的 mtime = **2026-09-10 17:42:02**，而两个 node 进程（PID 2432 / 10176）**恰好也在 17:42:02 启动** → 那一刻确有进程在该仓库活动。
+- **无法确定元凶**：本沙箱读不到 node 进程命令行（PS 5.1 无 `CommandLine`、WMI 不可用），`Get-NetTCPConnection` 亦不可用。
+- **排查顺序（从便宜到彻底）**：
+  1. 关掉所有可能开着它的窗口（资源管理器 / PyCharm / 终端 / 编辑器）→ 再删；
+  2. **关闭 DSH 服务**（启动 GUI 的窗口 Ctrl+C）→ 再删 —— "原来的 node 进程"里就包含正在跑的服务本体；
+  3. 还不行 → **改名**（`Rename-Item` 常能成功；**改名也失败才是真占用**）→ 改名后再删；
+  4. 或换 cmd：`rmdir /s /q "C:\deepseek\dsh-session-surgeon"`；
+  5. 还不行 → **重启电脑**，开机后第一件事就删（此时无任何占用）；
+  6. 可选：Sysinternals `handle.exe` 精确定位持有者。
