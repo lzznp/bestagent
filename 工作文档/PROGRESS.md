@@ -435,5 +435,7 @@
 - **新增根因议题（未拍板）**：事故根因 = 项目底座挂在 DSH 源码 checkout / 共享 `~/.dsh` 上，**GUI 一升级就把项目带崩** → 新版 `dsh_home` 参数允许**项目自带运行时目录**，可与 GUI 彻底解耦（建议纳入设计 = 永久免疫同类事故）。
 - **方案候选（未拍板）**：①手脚层（必修；先只读调研 profile 组装 / 会话落盘 / pwsh+沙箱权限，再报工作量）②壳层（可选后置，等老板摸过新版 GUI 能力）③根因治理（项目自带 `dsh_home`）。老板立场：升级是**被动点的**，目标 = **恢复能干活**，不是"用上新功能"。
 - **环境事实（新增）**：**`npm.ps1` 被执行策略禁止 → 必须用 `npm.cmd`**；本沙箱内 `Get-NetTCPConnection` 不可用；本机无 PowerShell 7（延续教训 #4）。
+- **✅ 只读调研完成（同日晚，结论见 `DSH升级事故·衔接报告.md` §8）**：新版 SDK = **"选 profile + 打 patch"**（不再手写 cordis）。实测跑通：①最小一轮（`profile="sdk"`，`finish_reason=completed`）②项目自带 `dsh_home`（会话落 `<home>\sessions\<workspace-slug>\<session-id>\session.v3.jsonl.zstd`，**与 GUI 的 `~/.dsh` 彻底隔离**）③启动载体 `dsh_bin=<.cmd 包装>` 可被 SDK 直接 Popen ④**persona 注入（`patches=` 覆盖 `system-prompt`）实测生效**（回复真带 `[小猎]` 前缀）⑤沙箱靠 `DSH_PERMISSION_MODE`（=danger-full-access 时 approval 自动 never）。两个坑：**`sdk-minimal` 本机必崩**（内置 `terminal-pwsh + shellDialect: pwsh` → node-pty `reading 'destroy'`，正教训 #4）→ **用 `sdk`**；**旧会话格式换代**（旧无压缩 `session.jsonl` vs 新 `session.v3.jsonl.zstd`）读不回来。**修复方案**：`framework_config.py` 加 `make_harness()` 工厂 + 项目内 `tools\dsh.cmd` + persona patch 单源 → 11 个调用点机械替换（先 4 个主链路 m3_chat/auto_job/publish_run/greet_run）；**工作量估计：主链路恢复半天到一天**（不含跑真单）。**唯一验不了**：pwsh 工具（我这边沙箱必 EPERM）需老板在 PyCharm 冒烟。
+- **顺带可扔的旧包袱**：按任务切 cordis（CORDIS_MINIMAL / CORDIS_PWSH）不再需要（`sdk` profile 两工具面都有）；`.dsh-staging` 闭包退休（新版自带 runtime）；`.gitignore` 增 `bestagent/data/_probe_dshhome/` 与 `bestagent/data/dsh_home/`。
 
 

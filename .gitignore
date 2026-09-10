@@ -10,6 +10,12 @@ bestagent/data/chat/
 # 自测临时目录（test_m3chat_v170_*.py / selftest_v170_realtime.py 运行时产生）
 bestagent/data/_selftest_tmp/
 
+# DSH 底座换代探针（2026-09-10 只读调研产物：dsh.cmd / smoke.py / persona.patch.yml + 生成的 home）
+bestagent/data/_probe_dshhome/
+
+# 项目自带 harness home（新版 SDK 的 dsh_home：profiles/ + sessions/ 运行时数据）
+bestagent/data/dsh_home/
+
 # 密钥/环境文件
 *.env
 

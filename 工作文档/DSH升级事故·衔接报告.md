@@ -121,7 +121,7 @@ RESULT: TypeError -> DeepSeekHarnessConfig.__init__() got an unexpected keyword 
 ## 4. 待办 / 下一步
 
 1. 【老板】**重装浏览器助手插件** —— ✅ **已完成（2026-09-10 晚）**：`@yuxianglin/dsh-bridge-browser`（源码 `C:\deepseek\dsh-browser`，以 `link:` 装进 `~/.dsh/profiles/web`）；细节见 §7。
-2. 【实施对话】**只读调研**（不动代码）：新版 profile 组装 + 会话落盘 + pwsh/沙箱权限 → 产出"修复方案 + 工作量 + 风险"。
+2. 【实施对话】**只读调研** —— ✅ **已完成（2026-09-10 晚）**：结论见 **§8**（新版 profile 机制 + 实测跑通 + 修复方案 + 工作量半天到一天 + 风险）。
 3. 【拍板】手脚层修复方案（+ 是否让项目自带 `dsh_home` 与 GUI 解耦）。
 4. 【挂起不变】本单 **J-CHAT-20260909-094907**（智库·机械工程师 12HC，已 accept）的 ②采集 / ③评估 / 发岗 —— 底座修好才能跑；
    发岗后流程设计场（见 `工作文档\发岗后流程·设计讨论衔接报告.md`）；沟通跟进 / 决策 18 展开场。
@@ -207,4 +207,83 @@ RESULT: TypeError -> DeepSeekHarnessConfig.__init__() got an unexpected keyword 
 - **问题二（猎头项目）**：项目**不该依赖**它 —— 项目要的是**确定性重复**（配方表 `group_id/value`；HANDOFF 教训 #2：自然语言循环会"条件没设上、抓到残留数据"），插件给的是**模型即兴操作**（快照编号，页面一变即失效）。可作为**探路 / 应急 / 对照**工具，但**不进入项目链路**。
 
 **另一个实测发现（重要）**：Chrome 扩展的构建产物在 `C:\deepseek\dsh-browser\extensions\dsh-browser\dist`（2026-09-10 17:35 构建）✅，但 README 里安装器会复制到的 `~/.dsh/browser-extension` **不存在** → 说明未走一键安装器的那一步；**要真能驱动 Chrome，必须在 `chrome://extensions`（开发者模式）加载这个 `dist` 目录**。"插件注册进 profile" ≠ "扩展已加载"。
+
+---
+
+## 8. 只读调研结论（2026-09-10 晚 · **已实测跑通** → 修复方案 + 工作量 + 风险）
+
+### 8.1 一句话结论
+
+**新版 SDK 不再"手写 cordis 组合"，而是"选 profile + 打 patch"。** 我们旧 `minimal-pwsh-nonpty.cordis.yml` 想要的能力（文件工具 + pwsh 工具 + `danger-full-access` 沙箱 + 会话落盘 + persona 注入），新版内置 `sdk` profile **全都有**，且**已实测跑通真模型调用**。
+
+### 8.2 实测证据（探针目录 `bestagent\data\_probe_dshhome\`，可复用为实施模板）
+
+| 验证项 | 结果 |
+|---|---|
+| 最小一轮（`profile="sdk"`） | ✅ `finish_reason=completed`、回复"收到"、2.3s、13 events |
+| 项目自带 `dsh_home` | ✅ 会话落 `<home>\sessions\--D-study-bestagent-bestagent--\<session-id>\session.v3.jsonl.zstd`（**与 GUI 的 `~/.dsh` 彻底隔离**） |
+| 启动载体 `dsh_bin=<.cmd>` | ✅ 项目内 `.cmd` 包装（`node <checkout>\python\sdk-runtime\runtime-bootstrap.mjs %*`）**可被 SDK 直接 Popen**（实测 rc=0） |
+| **persona 注入（`patches=`）** | ✅ patch 覆盖 `system-prompt` 后，模型回复**真的带 `[小猎]` 前缀** —— 项目灵魂可注入 |
+| pwsh 工具 | ⚠️ 报 `spawn EPERM` —— **是我这个 DSH 会话的沙箱造成的**（workspace-write 禁"命名管道/被管道 stdio"，嵌套 spawn 必挂），**不是项目配置问题**；PyCharm 里没有这层沙箱 |
+| `sdk-minimal` profile | ❌ **本机必崩**：`node-pty … reading 'destroy'` —— 因它内置 `terminal-pwsh: dsh-terminal-bash + shellDialect: pwsh`，本机无 pwsh.exe（正是 HANDOFF 教训 #4）。**→ 不要用 sdk-minimal** |
+| 沙箱开关 | ✅ `sdk` profile：`mode = env DSH_PERMISSION_MODE ?? 'workspace-write'`；设 `danger-full-access` 时 `approval` 自动变 `never`（适配无头运行） |
+| 旧会话续跑 | ❌ 格式换代（旧 = 无压缩 `session.jsonl`；新 = 压缩 `session.v3.jsonl.zstd`）→ 旧 `.sessions` 读不回来（符合"不赌会话记忆"，影响可控） |
+| 两个 profile 共用 home | ❌ 会冲突（`sdk` 用 zstd、`sdk-minimal` 用 `compression: none`）→ 一个 profile 一个 home |
+
+### 8.3 调用形态对照（迁移就这么改）
+
+```python
+# 旧（已作废）
+from deepseek_harness import DeepSeekHarness
+with DeepSeekHarness(
+    provider="deepseek-official", model="deepseek-v4-flash", max_tokens=max_tokens,
+    cwd=str(WORKSPACE), session_root=str(SESSIONS),
+    cordis=str(cordis or CORDIS_MINIMAL),                    # ← 没了
+    launch_args_override=("node", str(RUNTIME_BIN)),          # ← 没了
+    env=env, request_timeout_seconds=REQUEST_TIMEOUT, shutdown_timeout_seconds=10,
+) as harness: ...
+
+# 新（实测可用）
+with DeepSeekHarness(
+    provider="deepseek-official", model="deepseek-v4-flash", max_tokens=max_tokens,
+    cwd=str(WORKSPACE),
+    dsh_home=str(DSH_HOME_PROJECT),     # 项目自带 home（解耦！）
+    profile="sdk",                      # 工具面 + 沙箱 + 会话落盘都在这
+    dsh_bin=str(DSH_BIN_CMD),           # 项目内 dsh.cmd 包装
+    patches=(str(PERSONA_PATCH),),      # persona（原 DSH_SYSTEM_PROMPT 方式失效）
+    env={**env, "DSH_PERMISSION_MODE": "danger-full-access"},
+    request_timeout_seconds=REQUEST_TIMEOUT, shutdown_timeout_seconds=10,
+) as harness: ...
+```
+
+### 8.4 修复方案（全部集中到 `framework_config.py` 一处）
+
+1. **`framework_config.py` 新增**：`DSH_HOME_PROJECT = DATA/"dsh_home"`、`DSH_PROFILE = "sdk"`、`DSH_BIN = WORKSPACE/"tools"/"dsh.cmd"`（内容由 `DSH_ROOT` 生成）、**`make_harness(env, max_tokens)` 工厂**（内含 `DSH_PERMISSION_MODE`、`patches`、超时）；
+2. **persona 单源**：`m3_chat.PERSONA`（常量）→ 运行前写入 `$DSH_HOME/profiles/sdk/cordis.patch.yml`（或临时 patch 文件），**避免两处维护**；
+3. **11 个调用点替换**（`m1_run / m2_run / m2_eval_run / m3_auto_run / m3_chat / auto_job / greet_run / publish_run / probe_bash / sdk_verify` + 探针）：删 3 行 `sys.path` + import，`with DeepSeekHarness(...)` → `with make_harness(...)`；**先做 4 个主链路**（m3_chat / auto_job / publish_run / greet_run），老的一次性脚本最后再改；
+4. **`check_env()` 更新**：去掉 `RUNTIME_BIN`/`CORDIS_*`，加 `dsh.cmd` + 项目 home + profile 自检。
+
+### 8.5 顺带扔掉两个旧包袱
+
+- **不用再按任务切 cordis**（旧：`CORDIS_MINIMAL` 纯文件 / `CORDIS_PWSH` 采集）→ `sdk` profile 两个工具面都有（副作用：分析类任务也能看到 pwsh，可选收窄，非必须）；
+- **不用再维护 `.dsh-staging` 闭包**（pnpm deploy 那套）→ 新版自带 runtime。
+
+### 8.6 工作量（诚实估计）
+
+| 阶段 | 内容 | 估计 |
+|---|---|---|
+| A 核心改造 | framework_config 工厂 + `dsh.cmd` + persona patch 单源 | 1–2 h |
+| B 调用点替换 | 11 文件机械替换（先 4 个主链路） | 1–2 h |
+| C 冒烟 | 起 streamlit → 小猎对话一轮 → ②采集真跑（需桥 + 猎聘登录态） | 1–2 h |
+| D 缓冲 | profile / 会话 / 未知坑 | 半天 |
+| **合计** | **主链路恢复**（不含跑真单） | **半天到一天** |
+
+### 8.7 风险与待老板确认
+
+1. **pwsh 工具必须你在 PyCharm 里冒烟一次**（我的沙箱必然 EPERM）—— 这是唯一"我验不了"的环节，也是采集链路的关键；
+2. **会话格式换代**：老岗的历史对话读不回来（影响可控，因每轮都注入状态卡）；
+3. **`dsh.cmd` 内含 checkout 路径** → 由 `framework_config` 生成 + `check_env()` 自检；**将来若 `pip install deepseek-harness-sdk`（exe 模式）可彻底退休**（我这边 pip 查询超时 = 沙箱无网，请你在 PyCharm 试一次该命令）；
+4. 工具面变宽可后续收窄（给 `sdk-minimal` 打 patch 关掉 `pty` / `terminal-pwsh`，额外工作）；
+5. 探针目录 `bestagent\data\_probe_dshhome\` 为临时产物（已 gitignore），实施时可复用其 `dsh.cmd` / `smoke.py` / `persona.patch.yml` 作模板，用完清理。
+
 
