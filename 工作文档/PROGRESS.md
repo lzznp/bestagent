@@ -422,4 +422,18 @@
 - **讨论沉淀（方向性，未落决策表，待设计场拍板）**：①交付物定义 = 靠谱候选人流 + 可联系性（③评估应降级为"够线+一句话卖点+意愿标记"，不做 HR/PM 的精确筛选）②候选人池 = 资产（跨岗复用，events 归集）③岗位资产库 + PM 表入料（智库表=7 岗样例；人找岗=内部反查可行、C 端不做）④对话层迁移 harness（m3_chat 留执行显示层/单机形态；业务层自研、对话层借力——官方 dsh-agent/goal 已证"agent 即项目载体+人在环"方向）⑤发岗动态规则通道 A/B/C 待选 ⑥"发岗以后"问题（发布回填 liepin_code/对外别称、映射长在岗位目录、沟通挂岗、台账防重复）→ 见 `工作文档\发岗后流程·设计讨论衔接报告.md`。
 - **衔接**：新设计场（发岗以后的问题，需**实际侦察猎聘页面**）开场读物 = `工作文档\发岗后流程·设计讨论衔接报告.md`。
 
+## 2026-09-10 DSH 被动升级事故 · 项目底座换代断线（只查证 + 讨论，未动代码）
+
+> 衔接报告：`工作文档\DSH升级事故·衔接报告.md`（本场全部实测结论落在此，**新对话只读这一份即可**）。
+
+- **事故**：老板被动升级 DSH（旧版 → **v0.1.5-alpha.2**）后 GUI 连环出问题（C++ 编译器 → 浏览器助手插件 → 「历史加载失败：session assistant stream omitted its opted-in opening baseline」）→ 删除整个 `~/.dsh` 重建 + 重填 key。**浏览器助手插件尚未重装**（包名待老板提供线索）。
+- **资产判定**：项目**无损** —— 工作文档 / git（事故前 HEAD `b868063`）/ `bestagent\.sessions\` 38 份旧对话 JSONL（8/31→9/9）/ `data\`（岗位目录·产物·business.db·usage）/ 参考代码 / xlsx 全在；丢的只有 `~/.dsh`（GUI 工作区列表 + 历史对话；回收站与 git 都没有 → 不可恢复；老板确认聊天记录无用）。
+- **底座断点（实测）**：新版 `DeepSeekHarnessConfig` 只认 `profile` / `dsh_home` / `dsh_bin` / `patches` 等，**已移除 `cordis` / `session_root` / `launch_args_override`** → m3_chat 现有调用实测报 `TypeError: DeepSeekHarnessConfig.__init__() got an unexpected keyword argument 'session_root'`；`framework_config.CORDIS_MINIMAL`（`examples/jsonrpc-agent/minimal.cordis.yml`）随新版消失。**修复面 = `framework_config.py` + `m3_chat.py::run_assistant()` 一处**，业务资产零改动。
+- **退旧版不可行（实测）**：主 checkout 是**浅克隆**（1 commit / 1 tag）；`参考代码\deepseek-harness-master`（0.1.2-alpha.2）与新版同代 API（无 cordis）；python 环境 / pip 缓存均无旧 SDK 副本。
+- **新版可用 + profile 机制摸清**：`node v24.13.0` + `python/sdk-runtime` bundled runtime 实测能起（**以后不必再维护 `.dsh-staging` 闭包**）；profile = `$DSH_HOME/profiles/<name>/`（`package.json` 的 `dsh.profile.bundles` + `cordis.yml` 空根 + **`cordis.patch.yml` 用户覆盖层**）；CLI `--profile` / `--from-default-profile` / `--patch` / `--dump-config`；`dsh plugin --profile <name> add <包>` 装插件。
+- **「历史加载失败」定性**：报错来自 `packages/api/session-controller/src/client/transport.ts:189`（同名测试 `rejects an opted-in opening that omits its Assistant baseline`）= **新版客户端拒绝旧格式会话**（升级自带的兼容缺口），**与浏览器助手插件无关**；旧会话已删，此错不会复现 → 结案。
+- **新增根因议题（未拍板）**：事故根因 = 项目底座挂在 DSH 源码 checkout / 共享 `~/.dsh` 上，**GUI 一升级就把项目带崩** → 新版 `dsh_home` 参数允许**项目自带运行时目录**，可与 GUI 彻底解耦（建议纳入设计 = 永久免疫同类事故）。
+- **方案候选（未拍板）**：①手脚层（必修；先只读调研 profile 组装 / 会话落盘 / pwsh+沙箱权限，再报工作量）②壳层（可选后置，等老板摸过新版 GUI 能力）③根因治理（项目自带 `dsh_home`）。老板立场：升级是**被动点的**，目标 = **恢复能干活**，不是"用上新功能"。
+- **环境事实（新增）**：**`npm.ps1` 被执行策略禁止 → 必须用 `npm.cmd`**；本沙箱内 `Get-NetTCPConnection` 不可用；本机无 PowerShell 7（延续教训 #4）。
+
 

@@ -1,0 +1,152 @@
+# DSH 升级事故 · 衔接报告（2026-09-10）
+
+> 定位：**事故复盘 + 现状定性 + 方案候选**。老板 2026-09-10 被动升级 deepseek-harness 后，GUI 工作区/历史对话出问题，遂删除整个 `~/.dsh` 重建；本场为设计讨论对话（**只查证 + 讨论，未动任何代码**）。
+> 本报告的作用：**让下一个对话不必重新侦察** —— 本场所有实测结论全部落在 §2。
+> 依据《对话交接规范》：阶段完成 → 更新 PROGRESS → 写交接 → git 提交。
+
+---
+
+## 0. 一句话状态
+
+老板**被动升级** DSH（旧版 → **v0.1.5-alpha.2**）后，GUI 侧连环出问题（C++ 编译器 / 浏览器助手插件 / 历史加载失败）→ 老板删除整个 `~/.dsh` 重建并重填 key；**项目资产全部无损**（文档/代码/旧会话 JSONL/业务数据），但**项目技术底座断了** —— m3_chat / auto_job 等所有走 SDK 的脚本现在跑不起来（旧启动方式 `cordis` / `session_root` / `launch_args_override` 已被新版 API 移除）；**"退回旧版"实测走不通**，只能向前适配新版；**浏览器助手插件待老板重装**。
+
+---
+
+## 1. 事故经过（老板口述，2026-09-10）
+
+1. 原 harness = **最早版本**；今日弹出升级提示 → 老板点了升级。
+2. 升级后接连出现问题：① **C++ 编译器**问题 → ② **dsh 浏览器助手插件**问题 → ③ 插件升级后出现
+   **「历史加载失败：session assistant stream omitted its opted-in opening baseline（gateway/internal）」**。
+3. 处置：**删除整个 `.dsh` 目录** → 重新填写 key。
+4. 现状：GUI 可用（本场对话即跑在新版上）；**浏览器助手插件尚未重装**。
+
+---
+
+## 2. 已确认事实（本场实测，别重查）
+
+### 2.1 丢失 vs 无损
+
+| 项 | 状态 |
+|---|---|
+| `~/.dsh`（旧 GUI 工作区列表 + 历史对话） | ❌ 随删除丢失；**回收站无、git 无跟踪 → 不可恢复**（老板确认：**聊天记录无用**，记忆在文档，无所谓） |
+| `工作文档\` 13 份 + git 仓库（事故前 HEAD `b868063`） | ✅ 全在 |
+| **旧 SDK 实施对话历史 38 份 JSONL**：`bestagent\.sessions\--D-study-bestagent-bestagent--\`（2026-08-31 → 09-09） | ✅ 全在 |
+| `bestagent\data\`（岗位目录 `chat\`、reports 产物、`business.db`、`usage\` 限速账本） | ✅ 全在 |
+| `参考代码\` + 根目录 `智库交付侧岗位需求及说明.xlsx` | ✅ 全在（xlsx 仍为未跟踪） |
+| 浏览器桥 `D:\study\lietou-agent\browser-agent`（bridge / extension / `.env` / `start_bridge.bat`） | ✅ 文件全在；**只是没在跑**（无 python 进程、8080 无监听）—— 与本次升级无关 |
+
+> 结论：**对话是易逝的、文档是资产** —— 这次事故反向验证了《对话交接规范》有效（对话丢了，项目毫发无伤）。
+
+### 2.2 升级事实
+
+- 当前版本 **v0.1.5-alpha.2**（`git describe` = `dsh-v0.1.5-alpha.2`；HEAD `b2e3b2a`，2026-09-09）
+- `C:\deepseek\deepseek-harness` 是**浅克隆**：`rev-list --count HEAD` = **1**，tag 总数 = **1** → 本地没有任何历史
+- 新 SDK 入口包名**未变**（`from deepseek_harness import DeepSeekHarness`），但**启动参数换代**
+
+### 2.3 底座断在哪（实测证据）
+
+新版 `DeepSeekHarnessConfig` 接受的字段（实测打印）：
+
+```
+api_key, base_url, cwd, dsh_bin, dsh_home, env, initialize_timeout_seconds,
+max_tokens, model, patches, profile, provider, reasoning_effort,
+request_timeout_seconds, runtime_cwd, shutdown_timeout_seconds
+```
+
+**没有** `cordis` / `session_root` / `launch_args_override`。用 m3_chat 现在的旧参数实测构造：
+
+```
+RESULT: TypeError -> DeepSeekHarnessConfig.__init__() got an unexpected keyword argument 'session_root'
+```
+
+另：`framework_config.CORDIS_MINIMAL` = `DSH_ROOT/examples/jsonrpc-agent/minimal.cordis.yml`
+→ **新版已无 `examples/` 目录**（该文件在本次 checkout 的 git 历史里从未存在过，`git log -- <path>` 为空）。
+
+**影响面（小且集中）**：
+- `bestagent\framework_config.py`（SDK 启动配置）+ `bestagent\m3_chat.py::run_assistant()`（唯一 `DeepSeekHarness(...)` 调用点）
+- 修好这两处 → m3_chat / auto_job / 采集 / 评估 / 发岗**一起复活**
+- **业务资产零改动**：方法论 / rules.md / 配方表 / 岗位目录 / 小 JSON + 本地 HTML 渲染 / business.db 全部与 SDK 解耦（"脚本定流程 + 数据展示分离"的红利）
+
+### 2.4 "退回旧版" —— 实测不可行
+
+| 退路 | 结论 |
+|---|---|
+| 主 checkout 用 git 退版本 | ❌ **浅克隆**（1 commit / 1 tag），无历史可退 |
+| `参考代码\deepseek-harness-master`（旧快照，版本 `0.1.2-alpha.2`） | ❌ 它的 API 与新版**同代**（`profile`/`dsh_home`/`dsh_bin`，同样无 `cordis`）→ 救不了；且缺 `examples/jsonrpc-agent/minimal.cordis.yml` |
+| Python 环境 / pip 缓存 | ❌ 从未安装过该包（一直 PYTHONPATH 注入源码），无副本 |
+
+> 例外：若老板想起旧版当初**另有安装路径**（如某个全局 npm 目录），值得再挖一次。
+
+### 2.5 新版运行时可用（好消息）
+
+- `node -v` = **v24.13.0**；`python/sdk-runtime/runtime-bootstrap.mjs --help` **实测能起来**：
+  `dsh: boot a DeepSeek Harness profile — an ordered stack of plugin-bundle patch layers under your own overrides.`
+- → 新版**自带 bundled runtime**（`python/sdk-runtime`）：**以后不必再维护 `.dsh-staging` 那套 pnpm deploy 闭包**（长期更省事、更可迁移 → 对上决策 9 / 25）
+- **profile 机制 = 旧 cordis 的继任者**（已摸清）：
+  - `$DSH_HOME/profiles/<name>/package.json` 的 `dsh.profile.bundles` = bundle 列表
+    （GUI 的 web profile 现为 `@deepseek-ai/dsh-base` + `@deepseek-ai/dsh-web-app`）
+  - 同目录 `cordis.yml` = 空根条目（注释明写"勿改"）；`cordis.patch.yml` = **用户层覆盖（改这里）**
+  - CLI：`--profile <name>`｜`--from-default-profile <name>`（从官方模板建自定义 profile）｜`--patch <path>`（可叠加）｜`--dump-config`
+  - `dsh plugin --profile <name> add <包>` = 装插件（转发给 pnpm）
+
+### 2.6 「历史加载失败」的真凶（已定位，**与浏览器助手插件无关**）
+
+- 报错文本来自 `packages/api/session-controller/src/client/transport.ts:189`；同名测试
+  `rejects an opted-in opening that omits its Assistant baseline`（`tests/transport.client.spec.ts:329`）
+- 定性：**新版 Web 客户端拒绝加载旧格式会话**（旧会话缺它要的 "opted-in opening baseline"）= **升级自带的兼容缺口**
+- **排除插件**：源码中搜不到"浏览器助手"（中/英）；官方 web profile 的两个 bundle 里也没有它
+  → 它是**额外装进 `~/.dsh` 的插件**，随 `.dsh` 删除一起消失，所以现在"没注册"完全对得上
+- 旧会话已删 → **此错不会再复现，可结案**
+
+### 2.7 环境事实（新增，写进 HANDOFF §4/§5）
+
+- **`npm.ps1` 被执行策略禁止**（SecurityError）→ 必须用 **`npm.cmd`**
+- 本机**无 PowerShell 7**（延续 HANDOFF 教训 #4）
+- 本沙箱内 `Get-NetTCPConnection` 不可用（端口占用查不到，需换方式）
+
+---
+
+## 3. 方案候选（本场**未拍板**，留待拍板）
+
+| 层 | 内容 | 判断 |
+|---|---|---|
+| **手脚层**（SDK 调用） | 改 `framework_config.py` + `run_assistant()`：`cordis`/`session_root`/`launch_args_override` → `profile`/`dsh_home`（+ 可选 `dsh_bin`） | **必修，且集中一处**；先做**只读调研**（①profile 怎么组装 ②会话落盘怎么配 ③pwsh 工具 + 沙箱权限怎么给）再报工作量与风险 |
+| **壳层**（对话界面） | m3_chat 1300 行界面 + v1.7.x 纪律，是否换成新版 harness 的 agent 形态（agent / goal / skills） | **可选、后置**：等老板亲手摸过新版 GUI 能力再拍板。注意：UI = 壳、产物 = 资产，换壳成本低于直觉 |
+| **根因治理**（新增议题） | 本次事故根因 = **项目底座挂在 DSH 源码 checkout / 共享 `~/.dsh` 上**，GUI 一升级就把项目带崩。新版支持 `dsh_home` 参数 → 可让**项目自带运行时目录**，与 GUI **彻底解耦** | 建议纳入设计：一次投入，永久免疫同类事故 |
+
+> **老板立场（本场）**：升级是**被提示点的**，不是主动想要新能力 → 目标 = **恢复能干活**，而不是"用上新版功能"。
+
+---
+
+## 4. 待办 / 下一步
+
+1. 【老板】**重装浏览器助手插件** —— `dsh plugin --profile web add <包名>` 或 GUI 插件页安装；
+   ⚠️ **包名待老板提供线索**（在哪看到的 / 截图 / 当初怎么装的）。
+2. 【实施对话】**只读调研**（不动代码）：新版 profile 组装 + 会话落盘 + pwsh/沙箱权限 → 产出"修复方案 + 工作量 + 风险"。
+3. 【拍板】手脚层修复方案（+ 是否让项目自带 `dsh_home` 与 GUI 解耦）。
+4. 【挂起不变】本单 **J-CHAT-20260909-094907**（智库·机械工程师 12HC，已 accept）的 ②采集 / ③评估 / 发岗 —— 底座修好才能跑；
+   发岗后流程设计场（见 `工作文档\发岗后流程·设计讨论衔接报告.md`）；沟通跟进 / 决策 18 展开场。
+5. 【待定】根目录 `智库交付侧岗位需求及说明.xlsx` 去留。
+
+---
+
+## 5. 新对话开场白（复制用）
+
+> 你是本项目的**实施工程师**（数字合伙人搭建）。
+> 只读一份：`D:\study\bestagent\工作文档\DSH升级事故·衔接报告.md`
+> （§2 全部是已实测事实，**别重查**；§3 方案候选；§4 待办）。
+> 背景一句话：DSH 被动升级到 v0.1.5-alpha.2 → 项目 SDK 底座断（旧 cordis 启动方式被移除）；业务资产无损；退旧版不可行。
+> 读完后用 3 句话确认：①当前位置 ②本次目标 ③执行计划。确认后再动手。
+> 纪律：动手前对齐目的声明；小步验证+复盘；判断错不罚、不诚实必罚；禁 bash / 路径直接用 / 小 JSON+本地渲染；**改代码前先只读调研并报工作量**。
+
+---
+
+## 6. 附：如何安全关闭本服务（老板操作）
+
+- 本服务 = 6 个 node 进程中的一个（本沙箱查不到端口占用，无法代定位 PID）。
+- **正确关法**：回到你启动 GUI 的那个终端窗口，按 **Ctrl+C**。
+- 若找不到窗口：任务管理器 → 详细信息 → 右键列头勾选"命令行" → 找含 `web` 的那个 node → 结束它。
+  ⚠️ **别一把杀所有 node**（本机同时有 6 个 node 进程，可能有别的东西在用）。
+- **关之前**：本对话的记录在 `C:\Users\84005\.dsh\sessions\--D-study-bestagent--\session-8312a8b5-*.jsonl`
+  （可恢复，但按规矩**不指望它** —— 记忆看本报告）。
+- **重开之后**：GUI 里重新打开 `D:\study\bestagent` 工作区 → 用 §5 开场白起新对话。
