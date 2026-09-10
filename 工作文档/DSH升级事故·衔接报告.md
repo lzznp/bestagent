@@ -189,3 +189,22 @@ RESULT: TypeError -> DeepSeekHarnessConfig.__init__() got an unexpected keyword 
   4. 或换 cmd：`rmdir /s /q "C:\deepseek\dsh-session-surgeon"`；
   5. 还不行 → **重启电脑**，开机后第一件事就删（此时无任何占用）；
   6. 可选：Sysinternals `handle.exe` 精确定位持有者。
+
+### 7.5 基座到底自不自带浏览器桥？（2026-09-10 实测：**不自带**）
+
+老板问"deepseek-harness 基座是不是自带这个插件功能、我们是不是不需要它了"。实测证据：
+
+| 检查 | 结果 |
+|---|---|
+| 基座源码搜 `browser_snapshot` / `browser_navigate` / `registerBrowserTools` | **0 命中** |
+| monorepo `packages/` 顶层 49 个包（acp/api/attachment/boot/bundle/client/code-runtime/compaction/context/core/credentials/e2b/experimental/extensions/feedback/fs/goal/guard/hooks/host/identity/interaction/jobs/llm/lsp/mcp/plan/preset/runtime-diagnostics/sandbox/schedule/sdk/session/session-query/settings/shell/skill/spill/storage/subagent/subprocess/terminal/test-support/todo/typert/util/web/webhook/workflow/workspace） | **无任何 browser 包** |
+| 基座 bundle | `@deepseek-ai/dsh-base 0.1.5-alpha.2`（agent 骨架/工具/沙箱/会话等基础件） |
+| `browser_*` 工具来源 | 你装的第三方插件 `@yuxianglin/dsh-bridge-browser`（其 README 自述"注册纯文本的 `browser_*` 工具集"；web profile 的 `dsh.profile.bundles` 里把它加了进去） |
+
+**结论：基座无浏览器能力，浏览器工具 100% 来自该插件。** 因此要分清两个问题：
+
+- **问题一（DSH 工作台）**：装了它，GUI 里的 AI 才能自己看页面/点按钮（登录态保留）；以前只能靠老板复制粘贴。这是**个人工作台能力扩展**，与项目无关，删了不影响 DSH 本体。
+- **问题二（猎头项目）**：项目**不该依赖**它 —— 项目要的是**确定性重复**（配方表 `group_id/value`；HANDOFF 教训 #2：自然语言循环会"条件没设上、抓到残留数据"），插件给的是**模型即兴操作**（快照编号，页面一变即失效）。可作为**探路 / 应急 / 对照**工具，但**不进入项目链路**。
+
+**另一个实测发现（重要）**：Chrome 扩展的构建产物在 `C:\deepseek\dsh-browser\extensions\dsh-browser\dist`（2026-09-10 17:35 构建）✅，但 README 里安装器会复制到的 `~/.dsh/browser-extension` **不存在** → 说明未走一键安装器的那一步；**要真能驱动 Chrome，必须在 `chrome://extensions`（开发者模式）加载这个 `dist` 目录**。"插件注册进 profile" ≠ "扩展已加载"。
+
