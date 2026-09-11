@@ -301,6 +301,23 @@ with DeepSeekHarness(
 4. 11 个调用点统一走工厂；`check_env()` 自检（SDK 版本 / 项目 home / profile / persona patch 是否存在）。
 5. **剩余风险**：目标机器 `%USERPROFILE%\.cache` 可写；pip 源可达（内网需镜像）；`.bat/.cmd` 一律 ASCII。
 
+---
+
+## 9. 实施场开场白（复制给新对话）
+
+> 你是本项目的**实施工程师**（数字合伙人搭建 · **修底座专场**）。
+> 只读两份：`工作文档\DSH升级事故·衔接报告.md`（**§8.1–§8.9 = 实测结论与最终方案，别重查**）+ `工作文档\工作模式·备忘.md`（谁是谁 / 谁拉起谁 / 三层运行边界）。
+> **任务**：按 §8.9「最终方案」把 SDK 底座修回来 —— m3_chat 能起、小猎能对话、②采集能真跑。
+> **一句话背景**：DSH 被动升级到 v0.1.5-alpha.2 → 旧调用方式（`cordis`/`session_root`/`launch_args_override`）作废；已实测 **pip 装 `deepseek-harness-sdk==0.1.5rc1`（exe 模式）可用**；业务资产零改动。
+> **先做这三步，做完向我汇报，别一次改完 11 个文件**：
+> ① `framework_config.py` 加 `make_harness()` 工厂（`profile="sdk"` / 项目 `dsh_home` / persona patch / `DSH_PERMISSION_MODE=danger-full-access` / 不传 `dsh_bin`）+ 更新 `check_env()` + 新增 `requirements.txt`（固定 `==0.1.5rc1`）；
+> ② `m3_chat.py` 改用它（删 3 行 `sys.path.insert` + 换调用）+ **session id 每次唯一** → 起 streamlit 冒烟一轮；
+> ③ 报我结果，再继续 `auto_job` / `publish_run` / `greet_run`。
+> **验收标准**：① `streamlit run m3_chat.py` 起得来 ② 跟小猎说一句能回话 ③ **②采集能真跑**（需桥 8080 + 猎聘登录态）④ 同一条命令跑两次**不再报** `session … already exists`。
+> **纪律**：动手前对齐目的声明；小步验证+复盘；判断错不罚、不诚实必罚；**禁 bash（本机用 pwsh）**；小 JSON + 本地渲染；改代码前先只读调研并报工作量。
+> **环境**：Python `C:\Users\84005\miniconda3\envs\lzstudy\python.exe`；已装 `deepseek-harness-sdk/-runtime-bin 0.1.5rc1`（229 MB 自带运行时 exe）；探针模板在 `bestagent\data\_probe_dshhome\`（已 gitignore，可复用：`smoke_rc1.py` = exe 模式范例）。
+
+
 
 
 ### 8.5 顺带扔掉两个旧包袱
