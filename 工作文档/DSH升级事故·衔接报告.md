@@ -263,6 +263,22 @@ with DeepSeekHarness(
 3. **11 个调用点替换**（`m1_run / m2_run / m2_eval_run / m3_auto_run / m3_chat / auto_job / greet_run / publish_run / probe_bash / sdk_verify` + 探针）：删 3 行 `sys.path` + import，`with DeepSeekHarness(...)` → `with make_harness(...)`；**先做 4 个主链路**（m3_chat / auto_job / publish_run / greet_run），老的一次性脚本最后再改；
 4. **`check_env()` 更新**：去掉 `RUNTIME_BIN`/`CORDIS_*`，加 `dsh.cmd` + 项目 home + profile 自检。
 
+### 8.8 实施中发现的两个必改项（2026-09-10 晚，老板在 PyCharm 实跑暴露）
+
+**坑 A：`.cmd` 包装依赖 PATH（已在探针里修掉）**
+- 现象：PyCharm 终端里跑 → 运行时**启动即死**，stderr 是**中文 GBK** 报错 → SDK 的 stderr 读取线程按 UTF-8 解码 → `UnicodeDecodeError` → 最终误报 `TransportClosedError: runtime stdout closed`。
+- 根因（高度可能）：**PyCharm 终端的环境变量是启动时缓存的**，里面没有 `C:\Program Files\nodejs\`（系统 PATH 里有）→ `dsh.cmd` 里的 `node` 找不到 → cmd 用中文报"不是内部或外部命令"。
+- 修复：`.cmd` 改为**写死 node 全路径**（`C:\Program Files\nodejs\node.exe`，缺失才回退 `node`）+ **纯 ASCII**（cmd 用 OEM 代码页解析批处理，非 ASCII 注释易被读乱）+ `chcp 65001`。
+- 教训：**批处理不能是唯一路径依赖**；更稳的两条路 = ① pip wheel（exe 模式，连 node 都不要）② `DSH_RUNTIME_MODE=node`（官方 dev 路子，不用 .cmd）。
+
+**坑 B（重要，必改）：session id 不能复用** ⚠️
+- 实测（沙箱三连）：固定 id 第 1 次 ✅ → **同 id 第 2 次 ❌ `JsonRpcError: session "X" already exists`** → 换新 id ✅。
+- 即 **`harness.run(prompt, session_id=X)` 在 X 已存在于该 home 时会直接报错**（文档所述"复用 harness + session id 延续对话"在本版对跨进程路径不成立）。
+- **影响面（迁移必改）**：`m3_chat` 每岗固定 `session_id` 反复执行 → 第二次就废；`auto_job` 的**幂等续跑**（设计核心属性）、`m2_eval_run`/`greet_run` 的分批复用同理。
+- **对策（且与项目设计一致）**：**每次运行用新 session id**（如 `<job_session_id>-<步骤>-<时间戳>`）。项目铁律是"**不赌会话记忆**"（每轮注入状态卡 + 路径），人类侧的连续性由 `transcript.json` + 产物承载 → **零损失**，反而更干净。
+- 另：此现象疑似上游 bug（文档说复用应延续），可选上报 GitHub Discussions（参考 `dsh-session-surgeon` 的上报路径）。
+
+
 ### 8.5 顺带扔掉两个旧包袱
 
 - **不用再按任务切 cordis**（旧：`CORDIS_MINIMAL` 纯文件 / `CORDIS_PWSH` 采集）→ `sdk` profile 两个工具面都有（副作用：分析类任务也能看到 pwsh，可选收窄，非必须）；
