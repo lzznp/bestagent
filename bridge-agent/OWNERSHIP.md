@@ -22,6 +22,8 @@
 |---|---|
 | 起桥 | 双击 `start_bridge.bat`（**纯 ASCII**，含 chcp 65001 + 自动找 lzstudy 解释器 + 健康检查），或由参谋长在 DSH 会话里当后台 job 起 `python bridge\server.py` |
 | 查活没活 | `curl http://127.0.0.1:8080/api/health`（别信快照） |
+| **停（人工总闸）** | 扩展 popup 点 **「⛔ 停小猎跑腿」**（二次确认）= `POST /api/control/stop`：**清空待执行任务 + 让正在跑的采集在下一个动作前干净收尾**（已采数据照常写盘）。一次性刹车：**之后新发起的采集不受影响**，不需要"恢复"。脚本侧自查见 `collect_liepin.stop_requested()`（每关键字轮次前）与 `detail_collect`（每候选人前） |
+| 看任务状态 | `GET /api/control/state` → `{stopped_at, pending, inflight}`（popup 状态行用的就是它） |
 | 浏览器扩展 | 从本目录 `extension\` 加载（实测本机是 **Edge** 在连 8080 → `edge://extensions` → 开发者模式 → 加载解压缩的扩展） |
 | `.env` | 本目录 `.env`（DEEPSEEK_API_KEY）—— 全项目**唯一一份**，已被 `*.env` 忽略，不入库 |
 | 配方表 | `agent\page_recipes.json`（采集条件的权威定义；`execute_spec` 按 `group_id/value` 执行） |

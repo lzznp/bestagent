@@ -22,10 +22,25 @@ sys.stdout.reconfigure(encoding="utf-8", errors="replace")
 from framework_config import BROWSER_AGENT, BRIDGE_URL  # noqa: E402
 sys.path.insert(0, str(BROWSER_AGENT))
 
-from agent.core import submit_task  # noqa: E402
+from agent.core import submit_task, bridge_get  # noqa: E402
 from agent.recipe_exec import execute_spec, COND_URL, BRIDGE  # noqa: E402
 
 from quota import Quota  # noqa: E402
+
+
+def stop_requested(since: float) -> bool:
+    """人工停止自查（2026-09-11 A+B）：老板点「⛔ 停小猎跑腿」→ 本轮采集干净收尾。
+
+    机制：桥记 `stopped_at`；本脚本记自己的启动时间 `since`；`stopped_at > since` 即"停发生在本次运行期间"。
+    刻意做成**一次性刹车**：不影响之后新发起的采集（不需要"恢复"操作）。
+    桥查不到时不拦（桥挂了另有报错路径，不在这里吞掉）。
+    """
+    try:
+        st = bridge_get(BRIDGE, "/api/control/state")
+        ts = st.get("stopped_at")
+        return bool(ts) and float(ts) > since
+    except Exception:
+        return False
 
 
 def find_liepin_tab() -> int:
@@ -49,6 +64,7 @@ def collect(keywords: list[str], conds=None, out=None, no_quota: bool = False,
     out:   输出 JSON 路径（None 只打印前 5 条）
     返回:  合并去重后的 rows 列表
     """
+    started = time.time()  # 停止开关基准（见 stop_requested）
     q = None if no_quota else Quota()
     if q:
         print(f"▶ 限速: {q.stats()}")
@@ -71,7 +87,12 @@ def collect(keywords: list[str], conds=None, out=None, no_quota: bool = False,
 
     all_rows: list[dict] = []
     seen: set[str] = set()
+    stopped = False
     for i, kw in enumerate(keywords):
+        if stop_requested(started):
+            stopped = True
+            print(f"\n⛔ 人工停止（老板点了「停小猎跑腿」）—— 本轮采集在此收尾，已采 {len(all_rows)} 条照常写盘")
+            break
         if q and not q.check("search"):
             print(f"\n⚠ 今日搜索额度已用完，跳过「{kw}」")
             continue
@@ -107,12 +128,13 @@ def collect(keywords: list[str], conds=None, out=None, no_quota: bool = False,
             q.record("extract", len(rows))
             print(f"  本轮 {len(rows)} 条，新增 {added} 条（累计 {len(all_rows)}）| {q.stats()}")
 
-    print(f"\n✅ 合并去重后共 {len(all_rows)} 条")
+    print(f"\n{'⛔ 已人工停止，' if stopped else ''}✅ 合并去重后共 {len(all_rows)} 条")
     if out:
         out = Path(out)
         out.parent.mkdir(parents=True, exist_ok=True)
         out.write_text(
-            json.dumps({"keywords": keywords, "conds": cond_list, "count": len(all_rows), "rows": all_rows},
+            json.dumps({"keywords": keywords, "conds": cond_list, "count": len(all_rows),
+                        "stopped": stopped, "rows": all_rows},
                        ensure_ascii=False, indent=1),
             encoding="utf-8",
         )

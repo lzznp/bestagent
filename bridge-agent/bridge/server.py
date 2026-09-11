@@ -170,6 +170,38 @@ class TaskStore:
             ids = self._order[-limit:]
             return [json.loads(json.dumps(self._tasks[i])) for i in ids if i in self._tasks]
 
+    def pending_count(self):
+        """还没被扩展认领的任务数（popup 显示 + 能不能停判断）。"""
+        with self._lock:
+            return sum(1 for t in self._tasks.values() if t["status"] == "pending")
+
+    def inflight(self):
+        """当前正被扩展执行的任务（executing）—— popup 状态行 + "现在有活可停"判断。"""
+        with self._lock:
+            for tid in reversed(self._order):
+                t = self._tasks.get(tid)
+                if t is not None and t["status"] == "executing":
+                    picked = t["picked_at"] or time.time()
+                    return {"id": t["id"], "action": t["action"], "source": t["source"],
+                            "picked_at": picked, "age_s": round(time.time() - picked, 1)}
+            return None
+
+    def clear_pending(self):
+        """人工停止：把尚未被认领的 pending 任务全部作废（正在 executing 的那个由脚本自查收尾）。"""
+        with self._lock:
+            now = time.time()
+            n = 0
+            for tid in self._order:
+                t = self._tasks.get(tid)
+                if t is not None and t["status"] == "pending":
+                    t["status"] = "failed"
+                    t["finished_at"] = now
+                    t["error"] = "人工停止（清空待执行队列）"
+                    self._append_log(t)
+                    self._sync_db(t)
+                    n += 1
+            return n
+
     def _append_log(self, task):
         """JSONL 持久化（验证后台）。"""
         try:
@@ -180,6 +212,34 @@ class TaskStore:
 
 
 STORE = TaskStore()
+
+
+class ControlGate:
+    """人工总闸（2026-09-11 A+B「停止开关」）。
+
+    语义 = **一次性刹车，不做粘性封锁**：
+      - `POST /api/control/stop` → 记 `stopped_at`（并清空待执行队列）；
+      - 正在跑的脚本（`collect_liepin` / `detail_collect`）在**每个动作前** `GET /api/control/state`，
+        拿自己的启动时间 `t0` 比对：`stopped_at > t0` 说明"停"发生在本次运行期间 → **干净收尾**
+        （已采到的数据照常写盘，不留半截垃圾）；
+      - 之后的新任务 / 新采集**不受影响** → 不需要"恢复"按钮，也不会因忘了解除而卡死。
+    """
+
+    def __init__(self):
+        self._lock = threading.Lock()
+        self._stopped_at = None
+
+    def stop(self):
+        with self._lock:
+            self._stopped_at = time.time()
+            return self._stopped_at
+
+    def state(self):
+        with self._lock:
+            return self._stopped_at
+
+
+GATE = ControlGate()
 
 
 class AgentRunner:
@@ -480,6 +540,10 @@ class Handler(BaseHTTPRequestHandler):
                 self._send_json({"error": "run not found"}, status=404)
             else:
                 self._send_json({"run": r})
+        elif path == "/api/control/state":
+            # 停止开关状态：popup 显示用 + 采集脚本每轮自查用（见 ControlGate 说明）
+            self._send_json({"ok": True, "stopped_at": GATE.state(),
+                             "pending": STORE.pending_count(), "inflight": STORE.inflight()})
         elif path == "/api/task/poll":
             task = STORE.pick_pending()
             self._send_json({"task": task})
@@ -630,6 +694,13 @@ class Handler(BaseHTTPRequestHandler):
             else:
                 self._send_json({"ok": True, "draft": res.get("draft"),
                                  "sink_result": res.get("sink_result")})
+        elif path == "/api/control/stop":
+            # 人工总闸：置停止标志 + 清空待执行队列（正在 executing 的动作跑完后由脚本自查收尾）
+            ts = GATE.stop()
+            cleared = STORE.clear_pending()
+            self._send_json({"ok": True, "stopped_at": ts, "cleared": cleared,
+                             "inflight": STORE.inflight(),
+                             "note": "已置停止标志并清空待执行队列；正在跑的动作结束后收尾"})
         elif path == "/api/task":
             body = self._read_json()
             action = body.get("action")

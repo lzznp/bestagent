@@ -28,7 +28,7 @@ sys.path.insert(0, str(BROWSER_AGENT))
 
 from agent.core import submit_task  # noqa: E402
 from agent.recipe_exec import BRIDGE  # noqa: E402
-from collect_liepin import find_liepin_tab  # noqa: E402
+from collect_liepin import find_liepin_tab, stop_requested  # noqa: E402
 from quota import Quota  # noqa: E402
 
 CHAT = WORKSPACE / "data" / "chat"
@@ -190,6 +190,7 @@ def collect_all(job_code: str, limit: int | None = None, dry_run: bool = False,
         print("[dry-run] 未打开任何页面")
         return []
 
+    started = time.time()  # 停止开关基准（见 collect_liepin.stop_requested）
     q = None if no_quota else Quota()
     if q:
         print(f"▶ 查看量账本: {q.stats()}")
@@ -199,7 +200,12 @@ def collect_all(job_code: str, limit: int | None = None, dry_run: bool = False,
     tab = find_liepin_tab()
     print(f"\n用新 tab 逐个抓详情（每个 = 1 次查看量；抓完自动关 tab 回原页）…")
     results: list[dict] = []
+    stopped = False
     for it in items:
+        if stop_requested(started):
+            stopped = True
+            print(f"\n⛔ 人工停止（老板点了「停小猎跑腿」）—— 深采在此收尾（已采 {len(results)} 人，省下后续查看量）")
+            break
         if q and not q.check("detail"):
             print(f"⚠ 今日查看简历额度已用完（detail {q.config.get('detail_daily_limit')}/天），停止深采")
             break
@@ -213,7 +219,7 @@ def collect_all(job_code: str, limit: int | None = None, dry_run: bool = False,
         else:
             print(f"  ⚠️ {it['name']}: {r.get('error')}")
         results.append(r)
-    print("完成。")
+    print("⛔ 已人工停止。" if stopped else "完成。")
     return results
 
 

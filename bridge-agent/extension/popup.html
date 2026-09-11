@@ -11,11 +11,10 @@
     #status.bad { background: #fdecea; color: #b3261e; }
     #run-info { font-size: 13px; margin-bottom: 10px; padding: 6px 8px; border-radius: 6px; background: #f0f0f0; }
     #run-info.running { background: #fff3cd; color: #8a6d00; }
+    .hint { font-size: 11px; color: #777; margin: -4px 0 8px; line-height: 1.45; }
     button { width: 100%; margin: 4px 0; padding: 7px; font-size: 13px; cursor: pointer; }
     #btn-stop { background: #fdecea; color: #b3261e; border: 1px solid #e0b4ae; border-radius: 6px; }
     #btn-stop:disabled { background: #f5f5f5; color: #aaa; border-color: #eee; cursor: not-allowed; }
-    #btn-pause { background: #fff8e1; color: #8a6d00; border: 1px solid #e8d9a0; border-radius: 6px; }
-    #btn-pause:disabled { background: #f5f5f5; color: #aaa; border-color: #eee; cursor: not-allowed; }
     #result { margin-top: 10px; font-size: 12px; white-space: pre-wrap; word-break: break-all; background: #fafafa; border: 1px solid #eee; padding: 8px; max-height: 120px; overflow: auto; }
   </style>
 </head>
@@ -23,8 +22,8 @@
   <h1>🧭 小猎跑腿</h1>
   <div id="status">检查桥接服务…</div>
   <div id="run-info">查询运行状态…</div>
-  <button id="btn-pause" disabled>⏸ 暂停</button>
-  <button id="btn-stop" disabled>⛔ 紧急停止</button>
+  <button id="btn-stop" disabled>⛔ 停小猎跑腿</button>
+  <div class="hint">停止 = 清空待执行任务 + 让正在跑的采集在<strong>下一个动作前</strong>干净收尾（已采数据照常写盘）。之后重新发起不受影响。</div>
   <div id="result"></div>
   <script src="popup.js"></script>
 </body>

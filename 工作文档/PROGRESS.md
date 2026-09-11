@@ -38,6 +38,7 @@
 | 27 | 自由对话能力边界（2026-09-07） | 下发指令 ≠ 自由对话：自由对话 = **只读 + 受控追加**（发令「记到成长库/记到岗位资料」才有写）；**结构性修改**（删/改已有记录、动代码/脚本/配置）一律由人工/实施对话处理，小猎拒绝上手（技术能写≠设计上该开） | 自由对话里开放"临场动态修改"= 无模板无规则无审计（实测：让它删岗位资料条目撞 EIO 且无规矩可依）；删改=罕见操作留人最可控 |
 | 28 | 客户歧视性隐含需求（2026-09-07） | 客户/PM 提出的性别/年龄/婚育等歧视性要求 = **客户质量红旗信号**（合规意识/专业度差，结合挑人/慢流程等信号倾向建议放弃或先核实）；仅内部记录（job_profile.special_notes），绝不对外/绝不自动化执行；**区分**"客户直接提歧视要求（红旗）"vs"岗位客观条件（出差/倒班等，正常照常处理）" | 现实中直接提歧视要求的岗很少（背后多是客观条件，专业客户会写成客观条件）；处理成本高（不能自动化/要人把关/软核实）且留痕即证据（自动化筛选=歧视铁证）；这类客户后续回款/扯皮/牵连风险高，不做也罢 |
 | 29 | 运行环境归位（2026-09-11，老板拍板方案 A） | ① **SDK 换代**：运行环境 = `bestagent\requirements.txt` 锁 `deepseek-harness-sdk/-runtime-bin==0.1.5rc1`（pip 装、自带运行时 exe）；11 个调用点统一走 `framework_config.make_harness()`（`profile="sdk"` + 项目自带 `data\dsh_home` + persona patch 单源 + `DSH_PERMISSION_MODE=danger-full-access` + 不传 `dsh_bin`）；**彻底删除** `sys.path.insert(DSH 源码)` / cordis / `session_root` / `launch_args_override`；session id **每次唯一**。② **桥归位**：`D:\study\lietou-agent\browser-agent` → 仓库顶层 **`bridge-agent\`**（**2026-09-11 同日老板定名「小猎跑腿」**，扩展 v0.2.1；根因：`collect_liepin.py` 等要 `sys.path.insert` **直接 import** 它的 `agent.core`/`agent.recipe_exec`，留在仓库外 = 底座挂别人目录）；`.env` 收敛为唯一一份；扩展改从 `bridge-agent\extension` 加载。③ `bridge-agent\logs\`（93MB / 156 文件）清出 git | 2026-09-10 事故根因 = **底座挂在别人的目录上**（DSH 源码 checkout + 共享 `~/.dsh`）；桥是**同一种病**（外部目录 + 无 git + 我方无写权限），一并切除。**业务资产零改动**即可恢复 → 印证决策 9/25：护城河是资产，不是 SDK |
+| 30 | **命名约定**（2026-09-11 老板拍板） | **项目/产品 = 「小猎助手」**；谈及"他"就叫 **「小猎」**（项目与里面那个 agent 同一指代）；**浏览器手脚 = 「小猎跑腿」**（目录 `bridge-agent`，口语仍叫"桥"）；DSH GUI 里的 AI = 参谋长；DSH 那个**第三方**浏览器插件 = 参谋长的眼睛（不属项目）。旧名"浏览器助手"与插件撞名 → 全部弃用 | 原名混淆过一次（老板问"DSH 自带浏览器插件又是什么"）→ 两个"浏览器助手"必须分开；"小猎跑腿"沿用"桥=业务员的腿"这个既有比喻，名字自己说明用途 |
 
 ## DSH SDK 验证记录（2026-08-31）
 
@@ -472,6 +473,18 @@
   3. **中文输出会乱码**（控制台 GBK ↔ 捕获按 UTF-8）：需 `$env:PYTHONIOENCODING='utf-8'; [Console]::OutputEncoding=[System.Text.Encoding]::UTF8`。
      → 对 ②采集**影响可控**：`collect_liepin.py` 自身已 `sys.stdout.reconfigure(encoding="utf-8")`（第 21 行），采集汇报文字不会乱；只有 agent 自己写内联命令打印中文时才需要那行前缀。
 - 探针无残留（临时 `_pwsh_probe.py` 已被 agent 自行删除，工作区 `git status` 干净）；这次运行落第 7 个会话文件在 `data\dsh_home\sessions\`。
+
+### 停止开关（A+B，2026-09-11 老板拍板"按你的设计来"）—— 把"停"接到真实链路
+
+**问题（老板实测发现）**：小猎跑腿 popup 永远显示「当前无运行中的 Agent 任务」→ 暂停/急停**永远灰**。查根因（`popup.js:29-55`）：按钮只看 `/api/agent/runs` 里 `status=='running'` 的 **agent run**，而 agent run 只由**桥自带 LLM 循环**（控制台「▶ 运行 Agent」/`agent/agent.py`）创建；**小猎走的是 `/api/task` 单动作队列（`submit_task`），不创建 run** → 按钮管的是"上一个时代的东西"。
+→ **诚实修正**：我在讨论里说"暂停/急停是人在回路的安全阀"——对 2026-08 的 P0/P2 形态成立，**对我们现在的链路无效**。也就是说：**我们此前其实没有安全阀**。
+
+**设计（A：总闸 · B：UI 简化+正名）**
+- **A 总闸（一次性刹车，不做粘性封锁）**：`POST /api/control/stop` → 记 `stopped_at` + **清空待执行队列**；`GET /api/control/state` → `{stopped_at, pending, inflight}`。`collect_liepin.py` / `detail_collect.py` 各自记启动时间 `t0`，**在每个关键字轮次 / 每个候选人前**自查：`stopped_at > t0` → **干净收尾**（已采数据照常写盘、输出 JSON 里带 `"stopped": true`）。**之后新发起的采集不受影响** → 无需"恢复"按钮、也不会忘了解除而卡死。
+- **B UI**：popup **去掉「⏸ 暂停/继续」**（对确定性脚本无意义：没法"暂停后从中间续"，失败重跑即可）；「⛔ 紧急停止」→ **「⛔ 停小猎跑腿」**，使能条件改成**有任务在执行或排队**（不再只看 agent run）；状态行显示真实语义（`⏳ 正在执行：execute_spec（collect-v2）` / `⏳ 待执行 N 个` / `空闲`）；新增一行说明文案。服务端 `pause/resume` 端点**保留**（控制台那套 LLM 循环还用）。
+- **自测（参谋长，开 8081 测试桥，不碰老板的 8080）**：`data/_selftest_tmp/test_stop_switch.py` → **11 项断言全绿**，含两条核心语义：**停之前启动的运行会被拦（True）／停之后启动的新运行不受影响（False）**；被清任务标记 `failed + 人工停止（清空待执行队列）`。SQLite 用 `AGENT_DB_PATH` 重定向到临时文件（不写老板 38MB 的 agent.db）。
+- **⚠️ 生效条件（老板两下）**：① **重启桥**（关掉那个最小化窗口 → 重新双击 `start_bridge.bat`；`server.py` 改了必须重启）② **重载扩展**（`edge://extensions` → 重载「小猎跑腿」v0.2.1，popup 才变新样）。
+- **没验的（诚实）**：真实采集跑到一半点"停"的端到端，需要老板真跑一次采集时顺手验（我这边没有扩展在 8081 上轮询）。
 
 ### 附带修复：发岗 HTML「复制此格」全哑（2026-09-11，老板实测报告）
 

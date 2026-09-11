@@ -62,6 +62,7 @@
 | persona | `data\dsh_home\persona.patch.yml`（由 `make_harness(persona=…)` 从各脚本的 `PERSONA` 常量自动生成，单源） |
 | ⚠️ 沙箱 | `make_harness` 内置 `DSH_PERMISSION_MODE=danger-full-access`（无头跑 pwsh 类任务必须；否则 node spawn 子进程 EPERM） |
 | ⚠️ pwsh 工具（2026-09-11 实测） | `sdk` profile 自带，**实测可用**（echo / cmd / 跑 .py 并传参 / cmdlet / 文件读写全通）。三个坑：① 实际是 **Windows PowerShell 5.1**（无 `&&`/`\|\|`、无三元 `?:`）② **退出码被归一化为 `[exit code: 1]`**（`sys.exit(7)` 也报 1）→ 判成败看输出/`$LASTEXITCODE` ③ **中文输出乱码**需前缀 `$env:PYTHONIOENCODING='utf-8'; [Console]::OutputEncoding=[System.Text.Encoding]::UTF8`（`collect_liepin.py` 自身已强制 UTF-8，采集汇报不受影响） |
+| **停（人工总闸，2026-09-11）** | 扩展 popup「⛔ 停小猎跑腿」= `POST /api/control/stop`：清空待执行任务 + 正在跑的采集**在下一个动作前**干净收尾（已采数据照常写盘）；`collect_liepin`（每关键字轮次前）/ `detail_collect`（每候选人前）自查 `GET /api/control/state`。**一次性刹车**：之后新发起的采集不受影响。状态查询 `GET /api/control/state` → `{stopped_at, pending, inflight}` |
 | ⚠️ session id | **每次运行必须唯一**（`<岗位会话>-<动作>-<时间戳>`）：本版 SDK 对同一 home 复用同一 id 会直接报 `session "X" already exists`（跨版本一致）；与「不赌会话记忆」铁律一致 |
 | API key | `D:\study\bestagent\bridge-agent\.env`（只读，不打印；m3_chat 侧栏默认取此路径） |
 | 会话持久化 | 新版在 `bestagent\data\dsh_home\sessions\`（zstd）；`bestagent\.sessions\` 只留旧格式 JSONL（读不回来，留着当历史） |

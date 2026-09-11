@@ -118,14 +118,16 @@ browser-agent/
 | 端点 | 说明 |
 |---|---|
 | GET /api/health | 健康检查（含 agent 模块可用性） |
+| **POST /api/control/stop** | **人工总闸（2026-09-11 A+B）：置 `stopped_at` + 清空待执行队列。正在跑的采集脚本（`collect_liepin` / `detail_collect`）在每个动作前自查 → 干净收尾（已采数据照常写盘）。一次性刹车：不影响之后新发起的采集，无需"恢复"** |
+| **GET /api/control/state** | **`{stopped_at, pending, inflight}`——popup 状态行 + 脚本自查都用它** |
 | POST /api/task | 提交浏览器操作任务 {action, params, source?} |
 | GET /api/task/poll | 扩展轮询取任务 |
 | POST /api/task/result | 扩展回报结果 |
 | GET /api/task/{id} / GET /api/tasks | 查任务（写穿 SQLite tasks 表） |
 | POST /api/agent/run | 后台启动 agent 循环 {task, max_steps, tab_id?} |
-| POST /api/agent/cancel | 紧急停止 {run_id?}——省略 run_id 时停止当前运行中的任务 |
-| POST /api/agent/pause | 暂停 {run_id?}——省略时暂停当前运行中的任务（步骤边界生效） |
-| POST /api/agent/resume | 继续 {run_id?}——从暂停中恢复（人工处理后） |
+| POST /api/agent/cancel | 停止 agent 循环 {run_id?}——省略 run_id 时停止当前运行中的循环（**注意：只管桥自带 LLM 循环，管不到小猎的 /api/task 链路**） |
+| POST /api/agent/pause | 暂停 agent 循环 {run_id?}（步骤边界生效；控制台在用） |
+| POST /api/agent/resume | 继续 agent 循环 {run_id?}（控制台在用；**小猎链路不用暂停/继续**——确定性脚本失败重跑即可） |
 | **POST /api/agent/confirm** | **P3-T5 不可逆动作确认 {run_id?, approve: true/false}——approve=true 确认执行，false 拒绝（中止任务）** |
 | GET /api/agent/status/{run_id} | 实时状态 + 逐步事件 |
 | GET /api/agent/runs | 历史运行列表 |
