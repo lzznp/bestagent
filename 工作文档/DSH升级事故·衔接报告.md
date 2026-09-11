@@ -278,7 +278,29 @@ with DeepSeekHarness(
 - 即 **`harness.run(prompt, session_id=X)` 在 X 已存在于该 home 时会直接报错**（文档所述"复用 harness + session id 延续对话"在本版对跨进程路径不成立）。
 - **影响面（迁移必改）**：`m3_chat` 每岗固定 `session_id` 反复执行 → 第二次就废；`auto_job` 的**幂等续跑**（设计核心属性）、`m2_eval_run`/`greet_run` 的分批复用同理。
 - **对策（且与项目设计一致）**：**每次运行用新 session id**（如 `<job_session_id>-<步骤>-<时间戳>`）。项目铁律是"**不赌会话记忆**"（每轮注入状态卡 + 路径），人类侧的连续性由 `transcript.json` + 产物承载 → **零损失**，反而更干净。
-- 另：此现象疑似上游 bug（文档说复用应延续），可选上报 GitHub Discussions（参考 `dsh-session-surgeon` 的上报路径）。
+- 另：该行为在 **rc1（pip 版）复测同样存在** → 跨版本一致，**不是某一版的偶发 bug**，按"设计如此"对待即可（可选仍可上报上游确认）。
+
+### 8.9 pip wheel（rc1）实测结论 + **最终方案定稿**（2026-09-10 深夜，全部由参谋长实测）
+
+| 验证项 | 结果 |
+|---|---|
+| `pip install deepseek-harness-sdk` | ✅ 同时装 `deepseek-harness-runtime-bin 0.1.5rc1` = **229 MB 单文件 exe**（`…/site-packages/deepseek_harness_runtime/runtime/deepseek-harness-sdk-runtime-win-x64.exe`） |
+| **exe 模式**起运行时（**不传 `dsh_bin` / 不注入 `sys.path` / 不用 node / 不用 checkout**） | ✅ `finish=completed`、5.3 s、persona 前缀 `[小猎]` 生效、会话落项目 home |
+| persona patch 在 rc1 同样生效 | ✅（先排除过一次嫌疑：停用 patch 后报的是同一个沙箱错，与 patch 无关） |
+| session 复用（rc1 复测） | ❌ 同样 `already exists` → **必改项确认，与版本无关** |
+| profiles / patches / 沙箱 / 会话格式 | 与 alpha.2 checkout 一致（`profile="sdk"`、`DSH_PERMISSION_MODE`、`patches`、`<home>/sessions/<slug>/<sid>/session.v3.jsonl.zstd`） |
+| ⚠️ 交付细节 | **exe 首跑要把内置文件自解压到 `%USERPROFILE%\.cache\pkg\<hash>`**（实测约 20 MB）→ 目标机器该位置必须可写（受限/只读环境需注意）。参谋长本会话沙箱不允许写那里，是靠探针里把 `USERPROFILE` 重定向到工作区才验通的 |
+
+**最终方案（定稿，交实施场执行）**
+
+1. **首选（pip wheel / exe 模式）**：`requirements.txt` 固定 `deepseek-harness-sdk==0.1.5rc1`；
+   `framework_config.make_harness()` 内：`profile="sdk"`、`dsh_home=<项目>\data\dsh_home`、`patches=(persona patch,)`、`env={DEEPSEEK_API_KEY…, DSH_PERMISSION_MODE: "danger-full-access"}`、**不传 `dsh_bin`**；
+   同时**删掉全部 `sys.path.insert(…checkout…)`** —— 否则 checkout 源码会**遮蔽** pip 装的包。
+2. **兜底（checkout + `tools\dsh.cmd`）**：仅在目标机器不能 pip 时启用（已实测；`.cmd` 必须纯 ASCII + `chcp 65001` + 写死 node 路径）。
+3. **必改：session id 每次运行唯一**（如 `<job_session_id>-<step>-<ts>`），与"不赌会话记忆"铁律一致，零损失。
+4. 11 个调用点统一走工厂；`check_env()` 自检（SDK 版本 / 项目 home / profile / persona patch 是否存在）。
+5. **剩余风险**：目标机器 `%USERPROFILE%\.cache` 可写；pip 源可达（内网需镜像）；`.bat/.cmd` 一律 ASCII。
+
 
 
 ### 8.5 顺带扔掉两个旧包袱
