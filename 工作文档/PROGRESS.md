@@ -446,6 +446,7 @@
 ## 2026-09-11 实施对话 · 底座修复（方案已落地 + 桥归位，✅ 验收①②④通过）
 
 > 本场 = 实施工程师（修底座专场）。依据《DSH升级事故·衔接报告》§8.9 最终方案。提交：`af9fa01`（第一步）+ 本场第二个提交（桥归位 + 全部调用点）。
+> **本场完整战报（含实测证据、待办、新对话开场白）→ `工作文档\底座修复·衔接报告.md`**
 
 **① 手脚层换代（framework_config 一处收口）**
 - 新增 `make_harness(env, max_tokens, *, persona, cwd, …)`：`profile="sdk"` + `dsh_home=<项目>\data\dsh_home` + `patches=(persona patch,)` + `env[DSH_PERMISSION_MODE]=danger-full-access`；**不传 `dsh_bin`** → SDK 自动用 pip 装的 `deepseek-harness-runtime-bin`（自带 exe/node，**不要 DSH 源码 / 不要系统 node / 不要 `.dsh-staging`**）。
