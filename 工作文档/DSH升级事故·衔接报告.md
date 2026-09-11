@@ -265,11 +265,13 @@ with DeepSeekHarness(
 
 ### 8.8 实施中发现的两个必改项（2026-09-10 晚，老板在 PyCharm 实跑暴露）
 
-**坑 A：`.cmd` 包装依赖 PATH（已在探针里修掉）**
+**坑 A：`.cmd` 包装不能带非 ASCII 字符（已在探针里修掉）**
 - 现象：PyCharm 终端里跑 → 运行时**启动即死**，stderr 是**中文 GBK** 报错 → SDK 的 stderr 读取线程按 UTF-8 解码 → `UnicodeDecodeError` → 最终误报 `TransportClosedError: runtime stdout closed`。
-- 根因（高度可能）：**PyCharm 终端的环境变量是启动时缓存的**，里面没有 `C:\Program Files\nodejs\`（系统 PATH 里有）→ `dsh.cmd` 里的 `node` 找不到 → cmd 用中文报"不是内部或外部命令"。
-- 修复：`.cmd` 改为**写死 node 全路径**（`C:\Program Files\nodejs\node.exe`，缺失才回退 `node`）+ **纯 ASCII**（cmd 用 OEM 代码页解析批处理，非 ASCII 注释易被读乱）+ `chcp 65001`。
-- 教训：**批处理不能是唯一路径依赖**；更稳的两条路 = ① pip wheel（exe 模式，连 node 都不要）② `DSH_RUNTIME_MODE=node`（官方 dev 路子，不用 .cmd）。
+- ~~根因：PyCharm 终端环境变量缓存，里面没有 node~~ ⚠️ **该诊断已被证伪**：老板在**同一个 PyCharm 终端**里 `node -v` → `v24.13.0`（node 在）。
+- **纠正后的根因**：`.cmd` 文件里有**中文注释**，而 cmd.exe 按 **OEM 代码页（本机 GBK/936）** 解析批处理 → UTF-8 中文注释被读乱 → cmd 报错（中文、GBK）→ 运行时启动失败 + SDK 日志线程解码崩。我在自己会话里没复现，是因为 DSH 会话的控制台代码页是 UTF-8，同一份文件被正确解析了。
+- 修复（三保险，真正起作用的是前两条）：**纯 ASCII** + `chcp 65001` + 写死 node 全路径。
+- 教训：**`.cmd`/`.bat` 一律只写 ASCII**（本机 `start_bridge.bat` 也有中文注释，属同类隐患，建议一并纯 ASCII 化）。
+
 
 **坑 B（重要，必改）：session id 不能复用** ⚠️
 - 实测（沙箱三连）：固定 id 第 1 次 ✅ → **同 id 第 2 次 ❌ `JsonRpcError: session "X" already exists`** → 换新 id ✅。
