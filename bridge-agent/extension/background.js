@@ -1,5 +1,5 @@
 /**
- * background.js — 浏览器助手执行器
+ * background.js — 小猎跑腿 执行器（原 browser-agent / 桥）
  *
  * 职责：
  *  1. 轮询桥接服务 /api/task/poll 领取任务

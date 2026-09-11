@@ -65,7 +65,7 @@
 | ⚠️ session id | **每次运行必须唯一**（`<岗位会话>-<动作>-<时间戳>`）：本版 SDK 对同一 home 复用同一 id 会直接报 `session "X" already exists`（跨版本一致）；与「不赌会话记忆」铁律一致 |
 | API key | `D:\study\bestagent\bridge-agent\.env`（只读，不打印；m3_chat 侧栏默认取此路径） |
 | 会话持久化 | 新版在 `bestagent\data\dsh_home\sessions\`（zstd）；`bestagent\.sessions\` 只留旧格式 JSONL（读不回来，留着当历史） |
-| **浏览器桥** | **`D:\study\bestagent\bridge-agent\`**（2026-09-11 从 `D:\study\lietou-agent\browser-agent` **搬进仓库**：采集脚本要 `sys.path.insert` 直接 import 它的 `agent.core`/`agent.recipe_exec`，留在仓库外 = 底座挂别人目录）｜bridge `http://127.0.0.1:8080`（`curl /api/health` 现查）｜起桥 = 双击 `bridge-agent\start_bridge.bat`（**纯 ASCII**）或参谋长当后台 job；浏览器扩展须从 `bridge-agent\extension` 重新加载（**实测是 Edge 在连 8080**，故 `edge://extensions`） |
+| **小猎跑腿**（桥） | **`D:\study\bestagent\bridge-agent\`**（= 小猎的浏览器手脚；2026-09-11 从 `D:\study\lietou-agent\browser-agent` **搬进仓库**，同日老板定名「小猎跑腿」，扩展 v0.2.1：采集脚本要 `sys.path.insert` 直接 import 它的 `agent.core`/`agent.recipe_exec`，留在仓库外 = 底座挂别人目录）｜bridge `http://127.0.0.1:8080`（`curl /api/health` 现查）｜起桥 = 双击 `bridge-agent\start_bridge.bat`（**纯 ASCII**）或参谋长当后台 job；浏览器扩展须从 `bridge-agent\extension` 加载（**实测是 Edge 在连 8080**，故 `edge://extensions`） |
 | 猎聘 tab | `collect_liepin.py` 自动 list_tabs 现查（勿手写死 tab_id） |
 | 业务库 | `D:\study\bestagent\bestagent\data\business.db`（SQLite，wails 表设计） |
 | DSH Web | `http://127.0.0.1:3080`（**v0.1.5-alpha.2**，2026-09-10 被动升级；它升它的，项目自带 dsh_home，互不影响） |
