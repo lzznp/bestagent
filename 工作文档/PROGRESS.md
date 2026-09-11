@@ -37,6 +37,7 @@
 | 26 | 岗位底座形态（2026-09-07） | **岗位目录（data/chat/<job_code>/）为主 = 正式底座**（JD+分析+岗位资料+决策+产物+transcript），business.db 降级为可选归档/统计；`job_profile.json` = 岗位附加信息载体（pm_notes 口径 / special_notes 猎头关注 / events 变动时间线） | wails 用 db 是因为多页面 UI 查询；现系统=对话+产物文件形态，岗位活数据全在目录；db 的 UI 查询场景没了。candidate_events/跨岗统计（决策 24/25）留 db 或 P1 再定 |
 | 27 | 自由对话能力边界（2026-09-07） | 下发指令 ≠ 自由对话：自由对话 = **只读 + 受控追加**（发令「记到成长库/记到岗位资料」才有写）；**结构性修改**（删/改已有记录、动代码/脚本/配置）一律由人工/实施对话处理，小猎拒绝上手（技术能写≠设计上该开） | 自由对话里开放"临场动态修改"= 无模板无规则无审计（实测：让它删岗位资料条目撞 EIO 且无规矩可依）；删改=罕见操作留人最可控 |
 | 28 | 客户歧视性隐含需求（2026-09-07） | 客户/PM 提出的性别/年龄/婚育等歧视性要求 = **客户质量红旗信号**（合规意识/专业度差，结合挑人/慢流程等信号倾向建议放弃或先核实）；仅内部记录（job_profile.special_notes），绝不对外/绝不自动化执行；**区分**"客户直接提歧视要求（红旗）"vs"岗位客观条件（出差/倒班等，正常照常处理）" | 现实中直接提歧视要求的岗很少（背后多是客观条件，专业客户会写成客观条件）；处理成本高（不能自动化/要人把关/软核实）且留痕即证据（自动化筛选=歧视铁证）；这类客户后续回款/扯皮/牵连风险高，不做也罢 |
+| 29 | 运行环境归位（2026-09-11，老板拍板方案 A） | ① **SDK 换代**：运行环境 = `bestagent\requirements.txt` 锁 `deepseek-harness-sdk/-runtime-bin==0.1.5rc1`（pip 装、自带运行时 exe）；11 个调用点统一走 `framework_config.make_harness()`（`profile="sdk"` + 项目自带 `data\dsh_home` + persona patch 单源 + `DSH_PERMISSION_MODE=danger-full-access` + 不传 `dsh_bin`）；**彻底删除** `sys.path.insert(DSH 源码)` / cordis / `session_root` / `launch_args_override`；session id **每次唯一**。② **桥归位**：`D:\study\lietou-agent\browser-agent` → 仓库顶层 **`bridge-agent\`**（根因：`collect_liepin.py` 等要 `sys.path.insert` **直接 import** 它的 `agent.core`/`agent.recipe_exec`，留在仓库外 = 底座挂别人目录）；`.env` 收敛为唯一一份；扩展改从 `bridge-agent\extension` 加载。③ `bridge-agent\logs\`（93MB / 156 文件）清出 git | 2026-09-10 事故根因 = **底座挂在别人的目录上**（DSH 源码 checkout + 共享 `~/.dsh`）；桥是**同一种病**（外部目录 + 无 git + 我方无写权限），一并切除。**业务资产零改动**即可恢复 → 印证决策 9/25：护城河是资产，不是 SDK |
 
 ## DSH SDK 验证记录（2026-08-31）
 
@@ -440,5 +441,24 @@
 - **⚠️ 老板 PyCharm 实跑暴露两个必改项（报告 §8.8）**：**坑 A** `.cmd` 包装里写了**中文注释** → cmd.exe 按 GBK 解析批处理把它读乱 → 运行时启动即死且 stderr 是中文 GBK → SDK stderr 线程 UTF-8 解码崩 → 误报 `stdout closed`（我最初的"PyCharm 终端无 node"诊断**被老板 `node -v`=v24.13.0 证伪**，已在报告里纠正）；修复 = `.cmd` 纯 ASCII + `chcp 65001` + 写死 node 全路径；**教训：.bat/.cmd 一律只写 ASCII**（本机 `start_bridge.bat` 同隐患待改）。**坑 B（重要）session id 不能复用**：实测同 id 第二次 → `JsonRpcError: session "X" already exists`，新 id 则正常 → **`m3_chat` 每岗固定 id 反复执行会第二次就废、`auto_job` 的幂等续跑同受影响** → 对策 = **每次运行新 session id**（与"不赌会话记忆"铁律一致，人类侧连续性靠 transcript + 产物承载，零损失）；疑似上游 bug，可选上报。
 - **✅ 两条冒烟全过（2026-09-10 深夜，老板在 PyCharm 实跑）**：①**pwsh 工具真跑通**（`finish_reason=completed`、返回 `hello-from-agent`、persona 前缀 `[小猎]` 同时生效）→ **采集链路关键门槛已过**；②**PyPI 上有 `deepseek-harness-sdk 0.1.5rc1` 可装**（`pip install --dry-run` 实测 `Would install deepseek-harness-sdk-0.1.5rc1`）→ **首选交付路径改为 pip wheel**（自带原生运行时，**不要 node、不要 .cmd、不要 checkout、换电脑一条命令**）；注意其版本号 `0.1.5rc1` 与本机 checkout 的 `0.1.5-alpha.2` **不同代**，需实测行为差异（尤其 session 复用是否已修）。
 - **✅ rc1（pip 版）实测 + 最终方案定稿（报告 §8.9，全部由参谋长实测）**：老板装了 `deepseek-harness-sdk/-runtime-bin 0.1.5rc1`（**229MB 单文件 exe**）→ 实测 **exe 模式起运行时成功**（不传 `dsh_bin`/不注入 `sys.path`/不用 node/不用 checkout；`finish=completed`、5.3s、persona `[小猎]` 生效、会话落项目 home）。**session 复用 rc1 同样报 `already exists`** → 跨版本一致，**"每次运行新 session id"确认为必改项**（与"不赌会话记忆"一致，零损失）。交付细节：**exe 首跑自解压到 `%USERPROFILE%\.cache\pkg\<hash>`（约 20MB）→ 目标机器该位置须可写**（本会话沙箱不允许，靠探针重定向 `USERPROFILE` 才验通）。**最终方案**：①首选 pip wheel（`requirements.txt` 固定版本 + `make_harness()` 不传 dsh_bin + **删掉所有 `sys.path` 注入**，否则遮蔽 pip 包）②兜底 checkout+`tools\dsh.cmd`（纯 ASCII）③session id 每次唯一 ④11 调用点走工厂 ⑤`check_env()` 自检。
+
+## 2026-09-11 实施对话 · 底座修复（方案已落地 + 桥归位，✅ 验收①②④通过）
+
+> 本场 = 实施工程师（修底座专场）。依据《DSH升级事故·衔接报告》§8.9 最终方案。提交：`af9fa01`（第一步）+ 本场第二个提交（桥归位 + 全部调用点）。
+
+**① 手脚层换代（framework_config 一处收口）**
+- 新增 `make_harness(env, max_tokens, *, persona, cwd, …)`：`profile="sdk"` + `dsh_home=<项目>\data\dsh_home` + `patches=(persona patch,)` + `env[DSH_PERMISSION_MODE]=danger-full-access`；**不传 `dsh_bin`** → SDK 自动用 pip 装的 `deepseek-harness-runtime-bin`（自带 exe/node，**不要 DSH 源码 / 不要系统 node / 不要 `.dsh-staging`**）。
+- 新增 `write_persona_patch()`：人设**单源** = 各脚本的 `PERSONA` 常量 → 落 `data\dsh_home\persona.patch.yml`（patch 按 id 整行替换 config → 必须重述 `personaSuffix`，已在函数里固定）。
+- `check_env()` 换代：SDK 版本 + runtime-bin + **遮蔽检测**（hook 铁律 2：`deepseek_harness.__file__` 不在 site-packages 就报错）+ 项目 home/profile + persona patch + 桥目录完整性。
+- **删除**死常量 `DSH_ROOT / RUNTIME_BIN / CORDIS_MINIMAL / CORDIS_PWSH`（新版根本没有 `examples/`、`.dsh-staging` 也不用了）；新增 `requirements.txt` 固定 0.1.5rc1。
+- 11 个调用点全部改走工厂：`m3_chat / m1_run / m2_run / m2_eval_run / m3_auto_run / auto_job / publish_run / greet_run / probe_bash / sdk_verify`（+ `run_pipeline` 清掉两处 `DSH_SYSTEM_PROMPT` 空转注入、`selftest_v170_realtime` 跟随新返回值）。**session id 每次唯一**（`<岗位会话>-<动作>-<时间戳>`），命中并解决 §8.8 坑 B。
+- **实测（参谋长本会话）**：`check_env` 全部就绪；同一条命令连跑两次均 `finish=completed`（8.9s / 4.3s）且落 2 个独立 `session.v3.jsonl.zstd`（**验收④**）；`streamlit run m3_chat.py` 起服 HTTP 200（**验收①**）；AppTest 无头驱动真实 UI 一轮真模型回话（**验收②**，回复 `在，老板——JD 已读…`，persona 生效）；`sdk_verify.py` 走第二条调用点真跑 `finish=completed`（`收到`）；9 个 CLI `--help` 全 exit=0、`auto_job --dry-run` 正常。
+
+**② 桥归位（bridge-agent）**
+- `git mv 参考代码/lietou-agent/browser-agent → bridge-agent`（仓库顶层，历史保留）；`BROWSER_AGENT` 默认值改**相对路径** `WORKSPACE.parent/"bridge-agent"`（不再硬编码 `D:\`）；`m3_chat.DEFAULT_ENV` = `bridge-agent\.env`（全项目唯一一份 key）。
+- `start_bridge.bat` 按 §8.8 教训**重写为纯 ASCII** + `chcp 65001`；`bridge-agent\logs\`（93MB / 156 文件）`git rm --cached` + gitignore（跟踪文件 205 → 49）；新增 `bridge-agent\OWNERSHIP.md` 说明归属。
+- **实测**：`import collect_liepin, detail_collect` 正常（真从新路径 import 桥的 `agent.core`/`agent.recipe_exec`，`BRIDGE=http://127.0.0.1:8080`）。
+- ⚠️ **待老板两件事**：①在 `edge://extensions` 从 `bridge-agent\extension` 重新加载扩展（实测是 **Edge** 在连 8080；旧活体 `D:\study\lietou-agent\browser-agent` 已降级为备份，未删）②起桥后跑通 ②采集（**验收③**）。
+- ⚠️ **本机环境事实**：本会话沙箱**写不了** `%USERPROFILE%\.cache\pkg`（exe 首跑自解压点）→ 上述真跑均靠把 `USERPROFILE` 重定向到工作区（老板在 PyCharm 里**不需要**这层）。
 
 

@@ -188,8 +188,7 @@ def main() -> None:
     # ── ① 岗前分析 ────────────────────────────────────────────────
     if "analyze" in steps:
         print("\n════ ① 岗前分析 ════")
-        env_p = dict(env)
-        env_p["DSH_SYSTEM_PROMPT"] = m1_run.PERSONA
+        env_p = dict(env)  # persona 由 make_harness(persona=...) 注入
         r = m1_run.analyze_job(jd, report_path, f"pipe-analyze-{base}", env_p)
         print("\n📣 老板汇报（岗前分析）：")
         print(r.final_response)
@@ -232,8 +231,7 @@ def main() -> None:
             requirements = args.requirements or extract_requirements(report, m2_eval_run.DEFAULT_REQUIREMENTS)
             print(f"▶ 候选人 {n} 位，分批 ≤{args.batch}/批")
             print(f"▶ 岗位硬性条件: {requirements[:80]}…")
-            env_p = dict(env)
-            env_p["DSH_SYSTEM_PROMPT"] = m2_eval_run.PERSONA
+            env_p = dict(env)  # persona 由 make_harness(persona=...) 注入
             parts: list[Path] = []
             for batch_no, start in enumerate(range(1, n + 1, args.batch), start=1):
                 end = min(start + args.batch - 1, n)

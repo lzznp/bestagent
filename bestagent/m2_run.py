@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import argparse
 import sys
+from datetime import datetime
 from pathlib import Path
 
 try:
@@ -21,17 +22,8 @@ try:
 except Exception:
     pass
 
-DSH_ROOT = Path(r"C:\deepseek\deepseek-harness")
-sys.path.insert(0, str(DSH_ROOT / "python" / "sdk" / "src"))
-sys.path.insert(0, str(DSH_ROOT / "python" / "sdk-runtime" / "src"))
-
-from deepseek_harness import DeepSeekHarness  # noqa: E402
-
-RUNTIME_BIN = (
-    Path(r"D:\study\bestagent\bestagent\.dsh-staging")
-    / "node_modules/@deepseek-ai/dsh-sdk-jsonrpc-demo/lib/packaged-bin.js"
-)
-CORDIS = DSH_ROOT / "examples/jsonrpc-agent/minimal.cordis.yml"
+# 集中配置（2026-09-11 换代：pip 版 SDK + make_harness；不再挂 checkout 源码 / 不再传 cordis）
+from framework_config import WORKSPACE, ensure_dirs, make_harness
 
 PERSONA = (
     "你是猎头数字合伙人「小猎」，一位资深猎头助理，替老板（一位猎头顾问）做候选人池评估、"
@@ -93,33 +85,24 @@ def main() -> None:
     if "DEEPSEEK_API_KEY" not in env:
         print("❌ .env 里没有 DEEPSEEK_API_KEY")
         sys.exit(1)
-    env["DSH_SYSTEM_PROMPT"] = PERSONA
+    # persona 由 make_harness(persona=PERSONA) 注入（旧的 DSH_SYSTEM_PROMPT 方式已作废）
 
-    session_root = Path(r"D:\study\bestagent\bestagent\.sessions")
-    workspace = Path(r"D:\study\bestagent\bestagent")
+    workspace = WORKSPACE
+    ensure_dirs()
     (workspace / REPORT_PATH).parent.mkdir(parents=True, exist_ok=True)
-    session_root.mkdir(parents=True, exist_ok=True)
 
-    print(f"▶ runtime: {RUNTIME_BIN.name}")
+    print(f"▶ profile: sdk（pip 版 SDK 自带运行时；home = data/dsh_home）")
     print(f"▶ session: {args.session_id}")
     print(f"▶ jd     : {JD_PATH}")
     print(f"▶ pool   : {POOL_PATH} ({POOL_PATH.stat().st_size} 字节)")
     print(f"▶ report : {REPORT_PATH}")
     print("─" * 60)
 
-    with DeepSeekHarness(
-        provider="deepseek-official",
-        model="deepseek-v4-flash",
-        max_tokens=32768,
-        cwd=str(workspace),
-        session_root=str(session_root),
-        cordis=str(CORDIS),
-        launch_args_override=("node", str(RUNTIME_BIN)),
-        env=env,
-        request_timeout_seconds=900,
-        shutdown_timeout_seconds=10,
-    ) as harness:
-        result = harness.run(build_task(), session_id=args.session_id)
+    with make_harness(env, max_tokens=32768, persona=PERSONA, cwd=workspace,
+                      request_timeout_seconds=900) as harness:
+        # session id 每次唯一（同 id 复用会报 session already exists，见升级报告 §8.8 坑 B）
+        result = harness.run(build_task(),
+                             session_id=f"{args.session_id}-{datetime.now().strftime('%Y%m%d-%H%M%S')}")
 
     print("─" * 60)
     print("✅ final_response:")

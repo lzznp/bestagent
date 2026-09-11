@@ -16,6 +16,11 @@ bestagent/data/_probe_dshhome/
 # 项目自带 harness home（新版 SDK 的 dsh_home：profiles/ + sessions/ 运行时数据）
 bestagent/data/dsh_home/
 
+# 桥（bridge-agent）运行期数据：agent.db(38MB) + tasks.jsonl(45MB) + 截图/日志
+# 2026-09-11 搬家时顺手清出仓库（此前 156 个文件 93MB 被跟踪）；代码与配方表照常入库
+bridge-agent/logs/
+bridge-agent/__pycache__/
+
 # 密钥/环境文件
 *.env
 

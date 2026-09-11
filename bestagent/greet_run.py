@@ -27,14 +27,9 @@ except Exception:
     pass
 
 from framework_config import (  # noqa: E402
-    WORKSPACE, SESSIONS, PROMPTS, DSH_ROOT, RUNTIME_BIN, CORDIS_MINIMAL,
-    REQUEST_TIMEOUT, ensure_dirs,
+    WORKSPACE, PROMPTS, REQUEST_TIMEOUT, ensure_dirs, make_harness,
 )
-sys.path.insert(0, str(DSH_ROOT / "python" / "sdk" / "src"))  # noqa: E402
-sys.path.insert(0, str(DSH_ROOT / "python" / "sdk-runtime" / "src"))  # noqa: E402
-from deepseek_harness import DeepSeekHarness  # noqa: E402
 
-CORDIS = CORDIS_MINIMAL
 MAX_TOKENS_GREET = 16384
 KEEP_VERDICTS = ("推荐", "待定")
 CHAT = WORKSPACE / "data" / "chat"
@@ -212,7 +207,11 @@ def build_task(job_code: str, batch: dict, out_file: Path, first: bool) -> str:
 
 
 def run_batch(job_code: str, env: dict, start: int, end: int, session_id: str,
-              first: bool, workspace: Path = WORKSPACE, session_root: Path = SESSIONS):
+              first: bool, workspace: Path = WORKSPACE, session_root: Path | None = None):
+    """跑一批打招呼数据。
+
+    注（2026-09-11）：`session_root` 形参已废弃（新版会话落项目自带 dsh_home），保留仅为兼容调用点。
+    """
     ensure_dirs()
     reports = CHAT / job_code / "reports"
     reports.mkdir(parents=True, exist_ok=True)
@@ -220,13 +219,9 @@ def run_batch(job_code: str, env: dict, start: int, end: int, session_id: str,
     ts = datetime.now().strftime("%Y%m%d-%H%M%S")
     out_file = reports / f"greet_part_{start}-{end}_{ts}.json"
     task = build_task(job_code, batch, out_file, first)
-    with DeepSeekHarness(
-        provider="deepseek-official", model="deepseek-v4-flash",
-        max_tokens=MAX_TOKENS_GREET, cwd=str(workspace), session_root=str(session_root),
-        cordis=str(CORDIS), launch_args_override=("node", str(RUNTIME_BIN)),
-        env=env, request_timeout_seconds=REQUEST_TIMEOUT, shutdown_timeout_seconds=10,
-    ) as harness:
-        return harness.run(task, session_id=session_id), out_file
+    # session id 每次唯一（同 id 复用会报 session already exists，见升级报告 §8.8 坑 B）
+    with make_harness(env, max_tokens=MAX_TOKENS_GREET, persona=PERSONA, cwd=workspace) as harness:
+        return harness.run(task, session_id=f"{session_id}-{ts}"), out_file
 
 
 def merge_greet(job_code: str) -> Path:
@@ -327,7 +322,7 @@ def main() -> None:
     env = load_env_file(args.env_file)
     if "DEEPSEEK_API_KEY" not in env:
         raise SystemExit("❌ .env 里没有 DEEPSEEK_API_KEY")
-    env["DSH_SYSTEM_PROMPT"] = PERSONA
+    # persona 由 make_harness(persona=PERSONA) 注入（旧的 DSH_SYSTEM_PROMPT 方式已作废）
 
     n = len(shortlist(args.job_code))
     end = args.end or n

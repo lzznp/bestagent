@@ -56,18 +56,19 @@
 | 项 | 值 / 查法 |
 |---|---|
 | SDK 客户端 | `C:\Users\84005\miniconda3\envs\lzstudy\python.exe`（conda，已装 pydantic 2.12） |
-| SDK 源码 | `C:\deepseek\deepseek-harness\python\sdk\src`（旧版 0.1.0-rc.8，PYTHONPATH 注入） |
-| dev runtime | `D:\study\bestagent\bestagent\.dsh-staging`（pnpm deploy 闭包，已补 16 插件 + tool-pwsh ×2 包） |
-| 默认 cordis | `C:\deepseek\deepseek-harness\examples\jsonrpc-agent\minimal.cordis.yml`（fs/editor，无需执行命令的任务用） |
-| **pwsh cordis** | `D:\study\bestagent\bestagent\minimal-pwsh-nonpty.cordis.yml`（**需要执行命令的任务必须用它**；系统无 PowerShell 7，PTY 模式会崩 node-pty，勿用 minimal-pwsh.cordis.yml） |
-| ⚠️ 沙箱 | **SDK runtime 跑命令类任务（m3_auto_run.py / probe）必须在 danger-full-access**，否则 node spawn 子进程 EPERM；纯 fs/editor 任务（m1/m2）默认权限即可 |
-| API key | `D:\study\bestagent\参考代码\lietou-agent\browser-agent\.env`（只读，不打印） |
-| 会话持久化 | `D:\study\bestagent\bestagent\.sessions\`（JSONL） |
-| 浏览器桥 | 活体 `D:\study\lietou-agent\browser-agent`，bridge `http://127.0.0.1:8080`（curl /api/health 现查；不在则 `python bridge/server.py` 拉起，Chrome 扩展 + 猎聘登录态需用户在浏览器确认） |
+| **SDK（2026-09-11 换代）** | **pip 装** `deepseek-harness-sdk==0.1.5rc1` + `deepseek-harness-runtime-bin`（自带 229MB 单文件 exe 运行时，含 node）；**一律不再 `sys.path.insert` DSH 源码**（源码会遮蔽 pip 包）；装配入口唯一 = `framework_config.make_harness()` |
+| 运行 profile | `profile="sdk"`（文件工具 + pwsh 工具 + 会话落盘都在里面）→ **不再有 cordis 文件、不再按任务切 cordis** |
+| 项目自带 home | `bestagent\data\dsh_home\`（`dsh_home` 参数；与 GUI 的 `~/.dsh` **彻底隔离**）—— 会话落 `dsh_home\sessions\--D-study-bestagent-bestagent--\<sid>\session.v3.jsonl.zstd` |
+| persona | `data\dsh_home\persona.patch.yml`（由 `make_harness(persona=…)` 从各脚本的 `PERSONA` 常量自动生成，单源） |
+| ⚠️ 沙箱 | `make_harness` 内置 `DSH_PERMISSION_MODE=danger-full-access`（无头跑 pwsh 类任务必须；否则 node spawn 子进程 EPERM） |
+| ⚠️ session id | **每次运行必须唯一**（`<岗位会话>-<动作>-<时间戳>`）：本版 SDK 对同一 home 复用同一 id 会直接报 `session "X" already exists`（跨版本一致）；与「不赌会话记忆」铁律一致 |
+| API key | `D:\study\bestagent\bridge-agent\.env`（只读，不打印；m3_chat 侧栏默认取此路径） |
+| 会话持久化 | 新版在 `bestagent\data\dsh_home\sessions\`（zstd）；`bestagent\.sessions\` 只留旧格式 JSONL（读不回来，留着当历史） |
+| **浏览器桥** | **`D:\study\bestagent\bridge-agent\`**（2026-09-11 从 `D:\study\lietou-agent\browser-agent` **搬进仓库**：采集脚本要 `sys.path.insert` 直接 import 它的 `agent.core`/`agent.recipe_exec`，留在仓库外 = 底座挂别人目录）｜bridge `http://127.0.0.1:8080`（`curl /api/health` 现查）｜起桥 = 双击 `bridge-agent\start_bridge.bat`（**纯 ASCII**）或参谋长当后台 job；浏览器扩展须从 `bridge-agent\extension` 重新加载（**实测是 Edge 在连 8080**，故 `edge://extensions`） |
 | 猎聘 tab | `collect_liepin.py` 自动 list_tabs 现查（勿手写死 tab_id） |
 | 业务库 | `D:\study\bestagent\bestagent\data\business.db`（SQLite，wails 表设计） |
-| DSH Web | `http://127.0.0.1:3080`（旧版，勿动；升级决策=暂不升级） |
-| 框架配置 | `bestagent\framework_config.py`（所有路径集中；环境变量 DSP_WORKSPACE/DSH_ROOT/BROWSER_AGENT_PATH/BRIDGE_URL/DSP_MODEL 覆盖；自检：`python -c "import framework_config; print(framework_config.check_env())"`） |
+| DSH Web | `http://127.0.0.1:3080`（**v0.1.5-alpha.2**，2026-09-10 被动升级；它升它的，项目自带 dsh_home，互不影响） |
+| 框架配置 | `bestagent\framework_config.py`（所有路径集中；环境变量 DSP_WORKSPACE/DSP_DSH_HOME/DSP_DSH_PROFILE/BROWSER_AGENT_PATH/BRIDGE_URL/DSP_MODEL 覆盖；自检：`python -c "import framework_config; print(framework_config.check_env())"`） |
 | git | `D:\study\bestagent` 已 git init（.dsh-staging/.sessions/data/chat 运行时数据已 ignore），基线提交 2026-09-01 |
 | 限速（2026-09-05 老板拍板） | `bestagent\data\usage\quota_config.json` 已建：search **80**/天、extract **500**/天、轮间 **8-20s**、**detail（查看简历数=打开详情页）100/天 预埋**——平台「昨日数据」只统计查看简历/沟通/联系方式/云电话，**搜索次数不计**；quota.py 内置默认已同步同值 |
 | 新工具（2026-09-05） | `report_html.py`（**JSON→自包含 HTML 渲染器，0 token、永不截断**；输入 pool_report/greet/publish 结构 JSON，含发岗渲染 render_publish）；`greet_run.py`（打招呼数据：分批≤5人产 JSON→**按 link 的 res_id 校正合并**→渲染 HTML）；`detail_collect.py`（详情深采：pool_report 推荐/待定→开详情页抓全文，new_tab 开关不扰老板页面）；`auto_job.py` **v1.6.8 档1 新岗一条龙（2026-09-05 深夜交付）**：JD→①分析→②采集计划确认(闸门)→③分批评估自动合并+本地渲染匹配报告→④详情深采(可选,detail 100/天保险丝)→💬打招呼数据→本地渲染打招呼清单.html→到人工闸门停；同 JD 幂等续跑、缺啥补啥、--step 分步复用 |

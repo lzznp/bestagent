@@ -1,0 +1,416 @@
+{
+  "sites": {
+    "h.liepin.com": {
+      "version": 1,
+      "hint": "猎聘诚猎通（h.liepin.com）提示：候选人列表每张卡片以\"立即沟通\"按钮收尾，可用它做 extract 的 anchor_text；卡片内隐藏 input[name=res_id_encode] 的 value 即该候选人的唯一 source_id（extract 结果的 fields.res_id_encode 就是它，请据此去重并统计 total_count）；翻页点击分页区的\"下一页\"或页码数字（\"共/当前 N 页\"是信息，不可点击）。",
+      "source_id_field": "res_id_encode",
+      "anchor": "立即沟通",
+      "verify": [
+        {
+          "type": "text_anchor",
+          "value": "立即沟通",
+          "desc": "候选人卡片锚点（extract 依赖）"
+        },
+        {
+          "type": "input_name",
+          "value": "res_id_encode",
+          "desc": "source_id 隐藏字段（去重/入库依赖）"
+        },
+        {
+          "type": "selector",
+          "value": ".pager-next, .next-page, [class*=\"next\"]",
+          "desc": "分页控件（下一页，aria-label 形式，文本节点不含）"
+        }
+      ]
+    },
+    "h.liepin.com/search/getConditionItem": {
+      "version": 4,
+      "hint": "猎聘找简历条件页提示：本页是 React 动态页，每次点击后 DOM 重排、元素编号变化，每步操作前必须先 snapshot 拿最新编号；编号按元素屏幕位置（上→左）排序，与 DOM 顺序不同。① 城市设置（人工实测最优）：点击\"目前城市\"行后的\"其他\"打开城市选择面板（页面有多个\"其他\"：**目前城市行=occurrence 1，期望城市行=occurrence 2**）；面板顶部\"搜索城市\"输入框——用 type 输入完整城市名（如\"青岛\"），输入后**必须重新 snapshot**；过滤出的城市结果显示在输入框**正下方**（通常是一个 name=城市名的 span，如\"山东 · 青岛\"文本可能拆成多个节点，认 name='青岛' 的那个；编号不固定，一般比输入框编号大 10 以上，如输入框=28 时结果约=42）。⚠️ **致命坑**：面板打开时快照会把面板背后的条件页快捷城市 chip（成都/杭州/西安/北京/上海/深圳/秦皇岛/广州，label 元素，编号紧跟输入框，如 32-39）也编进来——**这些是页面 chip 不是面板过滤结果，点了会直接设错城市**！点击前必须核对元素 name 与目标城市名完全一致（找'青岛'就点 name='青岛' 的 span；看到 name='成都' 等 label 一律不点）；拿不准就重新快照。**必须点过滤结果，直接点\"确认\"不会选中**（已选仍为 0/9）。② 面板多选：点城市只加入\"已选(x/9)\"，**必须点底部\"确认\"按钮才关闭面板并保存条件**（URL 加 #session）且**自动触发搜索**，页面变\"条件区+候选人列表\"混合态。③ 其他条件多为 label/span 直点：工作年限（\"3-5年\"等）、教育经历（\"本科\"等）、院校要求（\"985\"\"211\"等）用编号或 click_by_text；⚠️ **活跃度是下拉框**（combobox/input，编号约 80+），要先点击展开选项再选（如\"今日活跃\"），不是直接 label；⚠️ 统招要求/当前行业/当前职位等控件的文字可能不在快照元素里，看不到就别硬点，必要时向上层确认。④ ⚠️ **多条件任务**：确认城市后面板会自动出结果，但**不要急着提取**——若任务还有其他条件未设置，继续设置其余条件，全部设完后再点\"搜 索\"按钮触发最终搜索；只有任务条件全部设置完毕且结果已出现，才用\"立即沟通\"做锚点 extract+finish。⑤ 结果为空（\"共0位\"等）时如实汇报，不编造数据。",
+      "source_id_field": "res_id_encode",
+      "anchor": "立即沟通",
+      "verify": [
+        {
+          "type": "text",
+          "value": "工作年限",
+          "desc": "条件区锚点"
+        },
+        {
+          "type": "text",
+          "value": "教育经历",
+          "desc": "条件区锚点"
+        },
+        {
+          "type": "text_anchor",
+          "value": "搜 索",
+          "desc": "搜索按钮"
+        }
+      ]
+    }
+  },
+  "experience": [
+    {
+      "id": "h-liepin-com-search-getconditionitem-按文本点击其他",
+      "site": "h.liepin.com/search/getConditionItem",
+      "path_key": "h.liepin.com/search/getConditionItem|click_by_text:其他",
+      "title": "关键路径沉淀（h.liepin.com/search/getConditionItem）",
+      "key_path": [
+        {
+          "action": "click_by_text",
+          "text": "其他",
+          "index": -1,
+          "occurrence": 1,
+          "url": "",
+          "anchor_text": "",
+          "direction": "",
+          "desc": "按文本点击 \"其他\""
+        },
+        {
+          "action": "type",
+          "text": "青岛",
+          "index": 28,
+          "occurrence": 1,
+          "url": "",
+          "anchor_text": "",
+          "direction": "",
+          "desc": "输入 \"青岛\" 到编号 28"
+        },
+        {
+          "action": "click",
+          "text": "",
+          "index": 42,
+          "occurrence": 1,
+          "url": "",
+          "anchor_text": "",
+          "direction": "",
+          "desc": "点击编号 42（编号以快照为准）"
+        },
+        {
+          "action": "click_by_text",
+          "text": "确认",
+          "index": -1,
+          "occurrence": 1,
+          "url": "",
+          "anchor_text": "",
+          "direction": "",
+          "desc": "按文本点击 \"确认\""
+        },
+        {
+          "action": "click_by_text",
+          "text": "其他",
+          "index": -1,
+          "occurrence": 1,
+          "url": "",
+          "anchor_text": "",
+          "direction": "",
+          "desc": "按文本点击 \"其他\""
+        },
+        {
+          "action": "type",
+          "text": "青岛",
+          "index": 28,
+          "occurrence": 1,
+          "url": "",
+          "anchor_text": "",
+          "direction": "",
+          "desc": "输入 \"青岛\" 到编号 28"
+        },
+        {
+          "action": "click_by_text",
+          "text": "青岛",
+          "index": -1,
+          "occurrence": 1,
+          "url": "",
+          "anchor_text": "",
+          "direction": "",
+          "desc": "按文本点击 \"青岛\""
+        },
+        {
+          "action": "click_by_text",
+          "text": "确认",
+          "index": -1,
+          "occurrence": 1,
+          "url": "",
+          "anchor_text": "",
+          "direction": "",
+          "desc": "按文本点击 \"确认\""
+        },
+        {
+          "action": "extract",
+          "text": "",
+          "index": -1,
+          "occurrence": 1,
+          "url": "",
+          "anchor_text": "立即沟通",
+          "direction": "",
+          "desc": "提取列表（锚点 \"立即沟通\"）"
+        }
+      ],
+      "anchors": [
+        "工作年限",
+        "教育经历",
+        "搜 索",
+        "其他",
+        "确认",
+        "青岛",
+        "立即沟通",
+        "请选择城市"
+      ],
+      "screenshots": [
+        {
+          "path_rel": "logs/screenshots/20260823_200202_fcc3712c4233.png",
+          "file": "20260823_200202_fcc3712c4233.png",
+          "type": "auto",
+          "desc": "检测到弹层/复杂交互，自动沉淀截图（V-T5）"
+        },
+        {
+          "path_rel": "logs/screenshots/20260823_195633_6e9d1402c00c.png",
+          "file": "20260823_195633_6e9d1402c00c.png",
+          "type": "auto",
+          "desc": "检测到弹层/复杂交互，自动沉淀截图（V-T5）"
+        },
+        {
+          "path_rel": "logs/screenshots/20260823_171252_43cbb487ca7a.png",
+          "file": "20260823_171252_43cbb487ca7a.png",
+          "type": "auto",
+          "desc": "检测到弹层/复杂交互，自动沉淀截图（V-T5）"
+        },
+        {
+          "path_rel": "logs/screenshots/20260823_154308_a6845168eeb6.png",
+          "file": "20260823_154308_a6845168eeb6.png",
+          "type": "auto",
+          "desc": "检测到弹层/复杂交互，自动沉淀截图（V-T5）"
+        },
+        {
+          "path_rel": "logs/screenshots/20260823_153100_b4de3625f14f.png",
+          "file": "20260823_153100_b4de3625f14f.png",
+          "type": "auto",
+          "desc": "检测到弹层/复杂交互，自动沉淀截图（V-T5）"
+        },
+        {
+          "path_rel": "logs/screenshots/20260823_152457_c99c57f1ea00.png",
+          "file": "20260823_152457_c99c57f1ea00.png",
+          "type": "auto",
+          "desc": "检测到弹层/复杂交互，自动沉淀截图（V-T5）"
+        },
+        {
+          "path_rel": "logs/screenshots/20260823_145157_587582b2ccce.png",
+          "file": "20260823_145157_587582b2ccce.png",
+          "type": "manual",
+          "desc": "条件页干净态（V-T2 r1，布局常态参考）"
+        },
+        {
+          "path_rel": "logs/screenshots/20260823_145633_6848efd4e861.png",
+          "file": "20260823_145633_6848efd4e861.png",
+          "type": "manual",
+          "desc": "城市面板打开态（V-T2 r2）"
+        },
+        {
+          "path_rel": "logs/screenshots/20260823_145755_db5566c0dd3f.png",
+          "file": "20260823_145755_db5566c0dd3f.png",
+          "type": "manual",
+          "desc": "已选浙江·杭州（V-T2 r3）"
+        },
+        {
+          "path_rel": "logs/screenshots/20260823_152022_1a9213ee2bde.png",
+          "file": "20260823_152022_1a9213ee2bde.png",
+          "type": "auto",
+          "desc": "自动截图：城市面板打开态（V-T5 沉淀）"
+        }
+      ],
+      "version": 8,
+      "confidence": "high",
+      "confidence_reasons": [],
+      "source": "auto",
+      "status": "active",
+      "history": [
+        {
+          "id": "h-liepin-com-search-getconditionitem-按文本点击其他",
+          "site": "h.liepin.com/search/getConditionItem",
+          "path_key": "h.liepin.com/search/getConditionItem|click_by_text:其他",
+          "title": "关键路径沉淀（h.liepin.com/search/getConditionItem）",
+          "key_path": [
+            {
+              "action": "click_by_text",
+              "text": "其他",
+              "index": -1,
+              "occurrence": 1,
+              "url": "",
+              "anchor_text": "",
+              "direction": "",
+              "desc": "按文本点击 \"其他\"（occurrence=1=目前城市行；期望城市行=occurrence 2）"
+            },
+            {
+              "action": "type",
+              "text": "青岛",
+              "index": 28,
+              "occurrence": 1,
+              "url": "",
+              "anchor_text": "",
+              "direction": "",
+              "desc": "输入 \"青岛\" 到编号 28（搜索城市框，编号以快照为准）"
+            },
+            {
+              "action": "click",
+              "text": "",
+              "index": 42,
+              "occurrence": 1,
+              "url": "",
+              "anchor_text": "",
+              "direction": "",
+              "desc": "点击过滤结果（输入框正下方 name=城市名的 span，编号需快照核对，本示例=42；⚠️ 勿点面板背后的页面 chip 如 32-39 的 成都/杭州 等 label）"
+            },
+            {
+              "action": "click_by_text",
+              "text": "确认",
+              "index": -1,
+              "occurrence": 1,
+              "url": "",
+              "anchor_text": "",
+              "direction": "",
+              "desc": "按文本点击 \"确认\" 关闭面板并保存条件（URL 加 #session，自动触发搜索）"
+            }
+          ],
+          "anchors": [
+            "工作年限",
+            "教育经历",
+            "搜 索",
+            "其他",
+            "确认",
+            "立即沟通",
+            "请选择城市"
+          ],
+          "screenshots": [
+            {
+              "path_rel": "logs/screenshots/20260823_195633_6e9d1402c00c.png",
+              "file": "20260823_195633_6e9d1402c00c.png",
+              "type": "auto",
+              "desc": "检测到弹层/复杂交互，自动沉淀截图（V-T5）"
+            },
+            {
+              "path_rel": "logs/screenshots/20260823_171252_43cbb487ca7a.png",
+              "file": "20260823_171252_43cbb487ca7a.png",
+              "type": "auto",
+              "desc": "检测到弹层/复杂交互，自动沉淀截图（V-T5）"
+            },
+            {
+              "path_rel": "logs/screenshots/20260823_154308_a6845168eeb6.png",
+              "file": "20260823_154308_a6845168eeb6.png",
+              "type": "auto",
+              "desc": "检测到弹层/复杂交互，自动沉淀截图（V-T5）"
+            },
+            {
+              "path_rel": "logs/screenshots/20260823_153100_b4de3625f14f.png",
+              "file": "20260823_153100_b4de3625f14f.png",
+              "type": "auto",
+              "desc": "检测到弹层/复杂交互，自动沉淀截图（V-T5）"
+            },
+            {
+              "path_rel": "logs/screenshots/20260823_152457_c99c57f1ea00.png",
+              "file": "20260823_152457_c99c57f1ea00.png",
+              "type": "auto",
+              "desc": "检测到弹层/复杂交互，自动沉淀截图（V-T5）"
+            },
+            {
+              "path_rel": "logs/screenshots/20260823_145157_587582b2ccce.png",
+              "file": "20260823_145157_587582b2ccce.png",
+              "type": "manual",
+              "desc": "条件页干净态（V-T2 r1，布局常态参考）"
+            },
+            {
+              "path_rel": "logs/screenshots/20260823_145633_6848efd4e861.png",
+              "file": "20260823_145633_6848efd4e861.png",
+              "type": "manual",
+              "desc": "城市面板打开态（V-T2 r2）"
+            },
+            {
+              "path_rel": "logs/screenshots/20260823_145755_db5566c0dd3f.png",
+              "file": "20260823_145755_db5566c0dd3f.png",
+              "type": "manual",
+              "desc": "已选浙江·杭州（V-T2 r3）"
+            },
+            {
+              "path_rel": "logs/screenshots/20260823_152022_1a9213ee2bde.png",
+              "file": "20260823_152022_1a9213ee2bde.png",
+              "type": "auto",
+              "desc": "自动截图：城市面板打开态（V-T5 沉淀）"
+            }
+          ],
+          "version": 7,
+          "confidence": "high",
+          "confidence_reasons": [],
+          "source": "auto",
+          "status": "active",
+          "created_at": "2026-08-23 15:10:00",
+          "updated_at": "2026-08-23 20:05:00",
+          "url": "https://h.liepin.com/search/getConditionItem#session"
+        }
+      ],
+      "created_at": "2026-08-23 15:10:00",
+      "updated_at": "2026-08-23 20:02:55",
+      "url": "https://h.liepin.com/search/getConditionItem#session"
+    },
+    {
+      "id": "h-liepin-com-search-getconditionitem-提取列表锚点立即沟通",
+      "site": "h.liepin.com/search/getConditionItem",
+      "path_key": "h.liepin.com/search/getConditionItem|extract:立即沟通",
+      "title": "混合态候选人列表提取（extract 锚点=立即沟通）",
+      "key_path": [
+        {
+          "action": "extract",
+          "anchor_text": "立即沟通",
+          "desc": "提取列表（锚点 \"立即沟通\"）：返回候选人卡片行 {text, fields}，fields.res_id_encode 为 source_id"
+        }
+      ],
+      "anchors": [
+        "立即沟通",
+        "共",
+        "智能排序"
+      ],
+      "screenshots": [
+        {
+          "path_rel": "logs/screenshots/20260823_145839_230a5df5ca4d.png",
+          "file": "20260823_145839_230a5df5ca4d.png",
+          "type": "manual",
+          "desc": "混合态 #session+候选人列表（V-T2 r4）"
+        }
+      ],
+      "version": 1,
+      "confidence": "high",
+      "source": "auto",
+      "status": "active",
+      "history": [],
+      "created_at": "2026-08-23 15:21:00",
+      "updated_at": "2026-08-23 15:21:00",
+      "url": "https://h.liepin.com/search/getConditionItem#session"
+    },
+    {
+      "id": "example-com-跳转httpsexamp",
+      "site": "example.com",
+      "path_key": "example.com|navigate:-1",
+      "title": "关键路径沉淀（example.com）",
+      "key_path": [
+        {
+          "action": "navigate",
+          "text": "",
+          "index": -1,
+          "occurrence": 1,
+          "url": "https://example.com/",
+          "anchor_text": "",
+          "direction": "",
+          "desc": "跳转 https://example.com/"
+        }
+      ],
+      "anchors": [],
+      "screenshots": [],
+      "version": 1,
+      "confidence": "high",
+      "confidence_reasons": [],
+      "source": "auto",
+      "status": "active",
+      "history": [],
+      "created_at": "2026-08-23 15:31:58",
+      "updated_at": "2026-08-23 15:31:58",
+      "url": "https://example.com/"
+    }
+  ]
+}

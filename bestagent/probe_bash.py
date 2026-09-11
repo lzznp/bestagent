@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import sys
+from datetime import datetime
 from pathlib import Path
 
 try:
@@ -12,17 +13,8 @@ try:
 except Exception:
     pass
 
-DSH_ROOT = Path(r"C:\deepseek\deepseek-harness")
-sys.path.insert(0, str(DSH_ROOT / "python" / "sdk" / "src"))
-sys.path.insert(0, str(DSH_ROOT / "python" / "sdk-runtime" / "src"))
-
-from deepseek_harness import DeepSeekHarness  # noqa: E402
-
-RUNTIME_BIN = (
-    Path(r"D:\study\bestagent\bestagent\.dsh-staging")
-    / "node_modules/@deepseek-ai/dsh-sdk-jsonrpc-demo/lib/packaged-bin.js"
-)
-CORDIS = DSH_ROOT / "examples/jsonrpc-agent/minimal.cordis.yml"
+# 2026-09-11 换代：统一走 framework_config.make_harness（pwsh 工具在 sdk profile 里自带）
+from framework_config import WORKSPACE, make_harness
 
 TASK = """请测试你的命令执行工具（pwsh/powershell）在 Windows 上的可用性，分三步做：
 1. 用命令执行工具执行最简单的命令：echo hello
@@ -35,7 +27,8 @@ def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--env-file", type=Path, required=True)
     parser.add_argument("--session-id", default="probe-bash-001")
-    parser.add_argument("--cordis", type=Path, default=CORDIS)
+    parser.add_argument("--cordis", type=Path, default=None,
+                        help="已废弃（新版不传 cordis；保留参数兼容旧命令）")
     args = parser.parse_args()
 
     env = {}
@@ -50,23 +43,13 @@ def main() -> None:
         print("❌ no key")
         sys.exit(1)
 
-    session_root = Path(r"D:\study\bestagent\bestagent\.sessions")
-    workspace = Path(r"D:\study\bestagent\bestagent")
-    session_root.mkdir(parents=True, exist_ok=True)
+    workspace = WORKSPACE
 
-    with DeepSeekHarness(
-        provider="deepseek-official",
-        model="deepseek-v4-flash",
-        max_tokens=4096,
-        cwd=str(workspace),
-        session_root=str(session_root),
-        cordis=str(args.cordis),
-        launch_args_override=("node", str(RUNTIME_BIN)),
-        env=env,
-        request_timeout_seconds=300,
-        shutdown_timeout_seconds=10,
-    ) as harness:
-        result = harness.run(TASK, session_id=args.session_id)
+    print(f"▶ profile: sdk（pip 版 SDK 自带运行时；home = data/dsh_home）")
+    with make_harness(env, max_tokens=4096, cwd=workspace, request_timeout_seconds=300) as harness:
+        # session id 每次唯一（同 id 复用会报 session already exists，见升级报告 §8.8 坑 B）
+        result = harness.run(TASK,
+                             session_id=f"{args.session_id}-{datetime.now().strftime('%Y%m%d-%H%M%S')}")
 
     print("─" * 60)
     print("✅ final_response:")

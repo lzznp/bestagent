@@ -104,10 +104,11 @@ from pathlib import Path
 import streamlit as st
 
 try:  # 集中配置（新版 SDK：pip wheel / exe 模式 + 项目自带 dsh_home，见 framework_config.make_harness）
-    from framework_config import WORKSPACE, PROMPTS, make_harness
+    from framework_config import WORKSPACE, PROMPTS, BROWSER_AGENT, make_harness
 except Exception:  # 兜底：极端情况下界面仍起得来（只读 + 假执行）
     WORKSPACE = Path(__file__).resolve().parent
     PROMPTS = WORKSPACE / "data" / "prompts"
+    BROWSER_AGENT = WORKSPACE.parent / "bridge-agent"
     make_harness = None
 
 CHAT_DIR = (Path(os.environ["M3CHAT_CHAT_DIR"]) if os.environ.get("M3CHAT_CHAT_DIR")
@@ -115,7 +116,7 @@ CHAT_DIR = (Path(os.environ["M3CHAT_CHAT_DIR"]) if os.environ.get("M3CHAT_CHAT_D
 GROWTH_DIR = WORKSPACE / "data" / "growth"
 RECORDS = GROWTH_DIR / "records.jsonl"
 RULES = PROMPTS / "rules.md"
-DEFAULT_ENV = WORKSPACE.parent / "参考代码" / "lietou-agent" / "browser-agent" / ".env"
+DEFAULT_ENV = BROWSER_AGENT / ".env"   # 桥家的一把钥匙：本项目唯一的 .env（见 工作模式·备忘 §6）
 
 # v1.7.1 成长沉淀：老板"教规则并让记进成长库"的触发词（build_free_task 检测后给写入指引）
 TEACH_WORDS = ("记到成长库", "记进成长库", "写进规则", "写入规则", "记住这条", "记下来",

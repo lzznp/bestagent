@@ -48,10 +48,14 @@ PERMISSION_MODE = os.environ.get("DSP_PERMISSION_MODE", "danger-full-access")
 INITIALIZE_TIMEOUT = 180.0                    # exe 首跑要自解压，给足时间
 SHUTDOWN_TIMEOUT = 10.0
 
-# ── 浏览器采集（browser-agent 活体；桥要老板/参谋长另起，见《工作模式·备忘》§3）──
+# ── 浏览器采集（桥 = 本仓库顶层 bridge-agent/，2026-09-11 从 D:\study\lietou-agent 搬入）──
+# 为什么必须搬进仓库：采集脚本要 `sys.path.insert(BROWSER_AGENT)` 直接 import
+#   `agent.core` / `agent.recipe_exec`（配方表执行器 = 我们自己的资产）→
+#   目录留在仓库外就是"底座挂在别人目录上"（同 DSH 源码那次的病，见《工作模式·备忘》§1.1）。
+# 桥要老板/参谋长另起 —— m3_chat/采集脚本只"连"它，不"拉"它（见《工作模式·备忘》§3）。
 BRIDGE_URL = os.environ.get("BRIDGE_URL", "http://127.0.0.1:8080")
 BROWSER_AGENT = Path(
-    os.environ.get("BROWSER_AGENT_PATH", r"D:\study\lietou-agent\browser-agent")
+    os.environ.get("BROWSER_AGENT_PATH") or (WORKSPACE.parent / "bridge-agent")
 )
 
 # ── 模型与 token（大池子评估分批 ≤72 人/批，32768 上限，见 HANDOFF 教训 5）─
@@ -213,9 +217,14 @@ def check_env() -> list[str]:
             f"persona patch 不存在：{PERSONA_PATCH}"
             "（调用一次 make_harness(persona=PERSONA) 即生成）")
 
-    # 5) 浏览器桥活体目录（起没起要另测 /api/health，见《工作模式·备忘》§4）
+    # 5) 浏览器桥（采集链路要 import 它的 agent.core / agent.recipe_exec；"起没起"要另测 /api/health）
     if not BROWSER_AGENT.exists():
-        problems.append(f"browser-agent 活体缺失：{BROWSER_AGENT}（设 BROWSER_AGENT_PATH）")
+        problems.append(
+            f"桥目录缺失：{BROWSER_AGENT}（默认 = 仓库顶层 bridge-agent/；可用 BROWSER_AGENT_PATH 覆盖）")
+    else:
+        for rel in ("agent/recipe_exec.py", "agent/page_recipes.json", "bridge/server.py"):
+            if not (BROWSER_AGENT / rel).exists():
+                problems.append(f"桥目录不完整，缺 {rel}：{BROWSER_AGENT}")
 
     return problems
 

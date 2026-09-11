@@ -14,6 +14,7 @@ from __future__ import annotations
 
 import argparse
 import sys
+from datetime import datetime
 from pathlib import Path
 
 try:
@@ -24,16 +25,8 @@ except Exception:
 
 # 集中配置（换电脑只改 framework_config.py 或环境变量）
 from framework_config import (
-    WORKSPACE, SESSIONS, PROMPTS, DSH_ROOT, RUNTIME_BIN, CORDIS_MINIMAL,
-    MAX_TOKENS_EVAL, REQUEST_TIMEOUT, ensure_dirs,
+    WORKSPACE, PROMPTS, MAX_TOKENS_EVAL, REQUEST_TIMEOUT, ensure_dirs, make_harness,
 )
-
-sys.path.insert(0, str(DSH_ROOT / "python" / "sdk" / "src"))
-sys.path.insert(0, str(DSH_ROOT / "python" / "sdk-runtime" / "src"))
-
-from deepseek_harness import DeepSeekHarness  # noqa: E402
-
-CORDIS = CORDIS_MINIMAL
 
 PERSONA = (
     "你是猎头数字合伙人「小猎」，一位资深猎头助理，替老板（一位猎头顾问）做候选人池评估、"
@@ -100,25 +93,19 @@ def eval_pool(jd: Path, collect: Path, report: Path, requirements: str,
               start: int = 1, end: int = 0, skip_pool: bool = False,
               max_tokens: int = MAX_TOKENS_EVAL,
               request_timeout: int = REQUEST_TIMEOUT,
-              workspace: Path = WORKSPACE, session_root: Path = SESSIONS):
-    """池子评估（可独立调用，供 run_pipeline 复用）：SDK agent 读 JD+采集+手册 → 写评估报告 → 返回 run 结果。"""
+              workspace: Path = WORKSPACE, session_root: Path | None = None):
+    """池子评估（可独立调用，供 run_pipeline / auto_job 复用）：SDK agent 读 JD+采集+手册 → 写报告 → 返回结果。
+
+    注（2026-09-11）：`session_root` 已废弃（新版会话落项目自带 dsh_home），保留形参兼容调用点。
+    每次运行 session id 唯一（同 id 复用会报 session already exists，见升级报告 §8.8 坑 B）。
+    """
     ensure_dirs()
     end = end or 10 ** 9
     (workspace / report).parent.mkdir(parents=True, exist_ok=True)
-    with DeepSeekHarness(
-        provider="deepseek-official",
-        model="deepseek-v4-flash",
-        max_tokens=max_tokens,
-        cwd=str(workspace),
-        session_root=str(session_root),
-        cordis=str(CORDIS),
-        launch_args_override=("node", str(RUNTIME_BIN)),
-        env=env,
-        request_timeout_seconds=request_timeout,
-        shutdown_timeout_seconds=10,
-    ) as harness:
+    with make_harness(env, max_tokens=max_tokens, persona=PERSONA, cwd=workspace,
+                      request_timeout_seconds=request_timeout) as harness:
         return harness.run(build_task(jd, collect, report, requirements, start, end, skip_pool),
-                           session_id=session_id)
+                           session_id=f"{session_id}-{datetime.now().strftime('%Y%m%d-%H%M%S')}")
 
 
 def main() -> None:
@@ -138,12 +125,12 @@ def main() -> None:
     if "DEEPSEEK_API_KEY" not in env:
         print("❌ .env 里没有 DEEPSEEK_API_KEY")
         sys.exit(1)
-    env["DSH_SYSTEM_PROMPT"] = PERSONA
+    # persona 由 make_harness(persona=PERSONA) 注入（旧的 DSH_SYSTEM_PROMPT 方式已作废）
 
-    workspace, session_root = WORKSPACE, SESSIONS
+    workspace = WORKSPACE
     ensure_dirs()
 
-    print(f"▶ runtime: {RUNTIME_BIN.name}")
+    print(f"▶ profile: sdk（pip 版 SDK 自带运行时；home = data/dsh_home）")
     print(f"▶ session: {args.session_id}")
     print(f"▶ jd     : {args.jd}")
     print(f"▶ collect: {args.collect} ({args.collect.stat().st_size} 字节)")

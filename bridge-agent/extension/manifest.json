@@ -1,0 +1,28 @@
+{
+  "manifest_version": 3,
+  "name": "浏览器助手 Browser Agent",
+  "version": "0.2.0",
+  "description": "浏览器 Agent 的执行器：桥接服务控制端通过它操作真实已登录浏览器（快照/点击/输入/滚动/提取）",
+  "minimum_chrome_version": "116",
+  "permissions": [
+    "tabs",
+    "scripting",
+    "activeTab",
+    "storage",
+    "alarms"
+  ],
+  "host_permissions": [
+    "http://127.0.0.1:8080/*",
+    "http://*/*",
+    "https://*/*",
+    "<all_urls>"
+  ],
+  "background": {
+    "service_worker": "background.js",
+    "type": "module"
+  },
+  "action": {
+    "default_title": "浏览器助手",
+    "default_popup": "popup.html"
+  }
+}

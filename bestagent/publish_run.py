@@ -36,8 +36,7 @@ except Exception:
     pass
 
 from framework_config import (
-    WORKSPACE, OUTBOX, SESSIONS, PROMPTS, DSH_ROOT, RUNTIME_BIN, CORDIS_MINIMAL,
-    ensure_dirs, load_env_file,
+    WORKSPACE, OUTBOX, PROMPTS, ensure_dirs, load_env_file, make_harness,
 )
 
 CHAT = WORKSPACE / "data" / "chat"
@@ -130,20 +129,12 @@ def generate(jd: Path, out_file: Path, env: dict, session_id: str,
     manual = MANUAL
     if not manual.exists():
         raise SystemExit(f"❌ 发岗手册不存在: {manual}")
-    sys.path.insert(0, str(DSH_ROOT / "python" / "sdk" / "src"))
-    sys.path.insert(0, str(DSH_ROOT / "python" / "sdk-runtime" / "src"))
-    from deepseek_harness import DeepSeekHarness
     ensure_dirs()
     task = build_task(jd, manual, analyze_hint, notes, out_file)
     env_p = dict(env)
-    env_p["DSH_SYSTEM_PROMPT"] = PERSONA
-    with DeepSeekHarness(
-        provider="deepseek-official", model="deepseek-v4-flash",
-        max_tokens=16384, cwd=str(WORKSPACE), session_root=str(SESSIONS),
-        cordis=str(CORDIS_MINIMAL), launch_args_override=("node", str(RUNTIME_BIN)),
-        env=env_p, request_timeout_seconds=1200, shutdown_timeout_seconds=10,
-    ) as harness:
-        result = harness.run(task, session_id=session_id)
+    with make_harness(env_p, max_tokens=16384, persona=PERSONA) as harness:
+        # session id 每次唯一（同 id 复用会报 session already exists，见升级报告 §8.8 坑 B）
+        result = harness.run(task, session_id=f"{session_id}-{now_ts()}")
     print("\n📣 老板汇报（发岗文字）：")
     print(result.final_response)
     if not out_file.exists():

@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>浏览器 Agent 控制台</title>
+<style>
+  * { box-sizing: border-box; }
+  body { font-family: system-ui, sans-serif; margin: 0; background: #f5f6f8; color: #222; }
+  .wrap { max-width: 1100px; margin: 0 auto; padding: 20px; }
+  h1 { font-size: 20px; margin: 0 0 4px; }
+  .hint { font-size: 13px; color: #666; margin-bottom: 14px; }
+  .row { display: flex; gap: 12px; }
+  .left { flex: 1; min-width: 0; }
+  .right { flex: 1; min-width: 0; }
+  textarea { width: 100%; height: 110px; font-size: 14px; padding: 10px; border: 1px solid #ccc; border-radius: 8px; resize: vertical; }
+  .btn { display: inline-block; margin-top: 8px; padding: 9px 22px; font-size: 14px; border: 0; border-radius: 8px; background: #1a73e8; color: #fff; cursor: pointer; }
+  .btn:disabled { background: #9bb8e0; cursor: not-allowed; }
+  .btn.ghost { background: #eef1f5; color: #333; margin-left: 8px; }
+  #status { margin-top: 10px; font-size: 13px; color: #555; }
+  #status .badge { display: inline-block; padding: 2px 10px; border-radius: 10px; font-size: 12px; }
+  .badge.running { background: #fff3cd; color: #8a6d00; }
+  .badge.done { background: #e6f7e6; color: #1a7f1a; }
+  .badge.failed { background: #fdecea; color: #b3261e; }
+  .badge.cancelled { background: #fde7e9; color: #b3261e; }
+  .badge.idle { background: #eef1f5; color: #555; }
+  #log { margin-top: 14px; background: #101418; color: #d7e0e7; font-family: Consolas, monospace; font-size: 13px; padding: 14px; border-radius: 10px; height: 480px; overflow-y: auto; white-space: pre-wrap; word-break: break-all; }
+  .l-snapshot { color: #7cc4ff; }
+  .l-think { color: #ffe08a; }
+  .l-act-ok { color: #8aff8a; }
+  .l-act-fail { color: #ff8a8a; }
+  .l-finish { color: #7dffb2; font-weight: bold; }
+  .l-error { color: #ff6b6b; font-weight: bold; }
+  .l-meta { color: #8b98a5; }
+  #examples { margin-top: 10px; font-size: 12px; color: #666; }
+  #examples span { cursor: pointer; color: #1a73e8; margin-right: 10px; }
+  #runs { margin-top: 14px; font-size: 12px; color: #555; }
+  #runs a { margin-right: 12px; cursor: pointer; color: #1a73e8; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>🧭 浏览器 Agent 控制台</h1>
+  <div class="hint">输入自然语言指令，Agent 将操作你浏览器中<strong>当前激活的标签页</strong>。请并排观察浏览器窗口的变化；下方日志实时显示 Agent 的每一步决策。</div>
+
+  <div class="row">
+    <div class="left">
+      <textarea id="task" placeholder="例如：当前页搜索 Python 岗位，翻 2 页，提取前 5 条候选人的姓名/公司/职位，汇总成列表"></textarea>
+      <button class="btn" id="run-btn">▶ 运行 Agent</button>
+      <button class="btn ghost" id="stop-btn" disabled>刷新状态</button>
+      <div id="examples">示例：
+        <span data-t="当前页搜索 Python 岗位，提取前 5 条候选人信息">① 提取候选人</span>
+        <span data-t="打开 https://www.liepin.com/zhaopin/?key=Python，采集前 3 页候选人卡片文本，告诉我一共多少条">② 采集翻页</span>
+        <span data-t="在当前页向下滚动两屏，然后告诉我页面底部有什么">③ 滚动观察</span>
+      </div>
+    </div>
+    <div class="right">
+      <div id="status"><span class="badge idle">空闲</span> <span id="run-meta"></span></div>
+      <div id="runs"></div>
+      <div id="drafts" style="margin-top:14px; font-size:12px; color:#555;">
+        <div><strong>🧠 经验草稿（待人工确认）</strong> <span id="drafts-count"></span></div>
+        <div id="drafts-list" style="margin-top:6px;"></div>
+      </div>
+    </div>
+  </div>
+
+  <div id="log">等待指令…</div>
+</div>
+
+<script>
+const BRIDGE = 'http://127.0.0.1:8080';
+let currentRun = null;
+let lastEventCount = 0;
+let pollTimer = null;
+
+const logEl = document.getElementById('log');
+const statusEl = document.getElementById('status');
+const runMetaEl = document.getElementById('run-meta');
+
+function appendLog(cls, text) {
+  const line = document.createElement('div');
+  line.className = 'l-' + cls;
+  line.textContent = text;
+  logEl.appendChild(line);
+  logEl.scrollTop = logEl.scrollHeight;
+}
+
+function renderEvent(ev) {
+  const t = ev.type;
+  const step = ev.step !== undefined ? `[第${ev.step}步] ` : '';
+  if (t === 'start') {
+    appendLog('meta', `🚀 任务开始：${ev.task}`);
+    appendLog('meta', `桥接 ${ev.bridge} | 模型 ${ev.model}`);
+  } else if (t === 'snapshot') {
+    appendLog('snapshot', `${step}📸 快照：${ev.title} (${ev.url})｜交互元素 ${ev.element_count} 个`);
+  } else if (t === 'think') {
+    const a = ev.action;
+    appendLog('think', `${step}🧠 决策：${JSON.stringify(a).slice(0, 300)}`);
+  } else if (t === 'act') {
+    if (ev.ok) appendLog('act-ok', `${step}🖱️ ${ev.action} 成功`);
+    else appendLog('act-fail', `${step}🖱️ ${ev.action} 失败：${ev.error}`);
+  } else if (t === 'retry') {
+    appendLog('act-fail', `${step}🔁 ${ev.action} 第 ${ev.attempt}/${ev.max_retries} 次重试（原因：${ev.error}）`);
+  } else if (t === 'finish') {
+    appendLog('finish', `\n✅ 任务完成：${ev.summary}`);
+    if (ev.data) appendLog('finish', `结果数据：${JSON.stringify(ev.data, null, 2)}`);
+  } else if (t === 'error') {
+    appendLog('error', `❌ ${ev.message}`);
+  } else if (t === 'risk_blocked') {
+    appendLog('error', `${step}⛔ 风控拦截：${ev.reason}（请转人工）`);
+  } else if (t === 'cancelled') {
+    appendLog('error', `${step}⛔ 紧急停止：${ev.message || '任务已被手动取消'}`);
+  } else if (t === 'site_verified') {
+    appendLog('meta', `${step}🏷️ 站点基线校验通过：${ev.domain}（知识库 v${ev.version}）`);
+  } else if (t === 'site_changed') {
+    appendLog('error', `${step}🚩 站点疑似改版（${ev.domain}）：缺失 ${(ev.missing || []).join('、')}。${ev.message || ''}`);
+    if (ev.visual_check) {
+      const v = ev.visual_check;
+      const vTag = v.same_layout === true ? '🟢 视觉复核=同类布局（疑似误报）' : v.same_layout === false ? '🔴 视觉复核=不同布局（真改版）' : '⚪ 视觉复核不可用';
+      appendLog('meta', `    ${vTag}：${v.detail || ''}`);
+    }
+  } else if (t === 'screenshot_auto') {
+    appendLog('snapshot', `${step}📷 自动截图（复杂交互）：${ev.path_rel || ev.file || ''} — ${ev.desc || ''}`);
+  } else if (t === 'experience_hit') {
+    appendLog('meta', `${step}🧠 经验命中：弹层与沉淀同类（entry=${ev.entry_id}）：${ev.detail || ''}`);
+  } else if (t === 'experience_miss') {
+    appendLog('warn', `${step}🧪 经验未命中：弹层与沉淀不同类（entry=${ev.entry_id}）：${ev.detail || ''}`);
+  } else if (t === 'experience_sunk') {
+    appendLog('meta', `🧠 经验已沉淀：${ev.message || ev.reason || ''}`);
+  } else if (t === 'experience_draft') {
+    appendLog('warn', `🧠 经验起草待人工确认：${ev.message || ev.reason || ''}`);
+  } else if (t === 'paused') {
+    appendLog('meta', `${step}⏸ 已暂停：${ev.message || ''}`);
+  } else if (t === 'resumed') {
+    appendLog('meta', `${step}▶ 已恢复：${ev.message || ''}`);
+  } else if (t === 'confirm_requested') {
+    appendLog('warn', `${step}⚠️ 不可逆动作待确认：${ev.message || ''}`);
+  } else if (t === 'confirm_granted') {
+    appendLog('meta', `${step}✅ 已确认执行：${ev.action}`);
+  } else if (t === 'confirm_denied') {
+    appendLog('error', `${step}⛔ 已拒绝/未确认：${ev.message || ''}`);
+  } else if (t === 'dry_run_blocked') {
+    appendLog('warn', `${step}🧪 dry-run 拦截：${ev.message || ''}`);
+  } else if (t === 'step_limit') {
+    appendLog('error', `⚠️ ${ev.message}`);
+  } else if (t === 'stuck') {
+    appendLog('error', `${step}🔄 无进展终止（卡死检测）：${ev.message}`);
+  }
+}
+
+async function fetchJson(url, opts) {
+  const r = await fetch(url, opts);
+  return r.json();
+}
+
+async function poll() {
+  if (!currentRun) return;
+  const data = await fetchJson(`${BRIDGE}/api/agent/status/${currentRun}`);
+  const run = data.run;
+  if (!run) { stopPolling(); return; }
+  const badge = document.querySelector('#status .badge');
+  const statusText = ({ running: '运行中', done: '已完成', failed: '失败', cancelled: '已取消' })[run.status] || '未知';
+  badge.className = 'badge ' + run.status;
+  badge.textContent = statusText;
+  runMetaEl.textContent = `｜ 任务：${run.task}｜ 步数：${run.events.length}`;
+  for (let i = lastEventCount; i < run.events.length; i++) renderEvent(run.events[i]);
+  lastEventCount = run.events.length;
+  if (run.status !== 'running') {
+    stopPolling();
+    document.getElementById('run-btn').disabled = false;
+    if (run.final) appendLog('meta', `\n（${statusText}：${run.final.summary}）`);
+    loadRuns();
+  }
+}
+
+function startPolling() {
+  stopPolling();
+  pollTimer = setInterval(poll, 1200);
+}
+
+function stopPolling() {
+  if (pollTimer) { clearInterval(pollTimer); pollTimer = null; }
+}
+
+async function runAgent() {
+  const task = document.getElementById('task').value.trim();
+  if (!task) { alert('请输入任务描述'); return; }
+  logEl.innerHTML = '';
+  lastEventCount = 0;
+  const data = await fetchJson(`${BRIDGE}/api/agent/run`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ task, max_steps: 25 }),
+  });
+  if (data.error) { appendLog('error', `❌ ${data.error}`); return; }
+  currentRun = data.run_id;
+  document.getElementById('run-btn').disabled = true;
+  const badge = document.querySelector('#status .badge');
+  badge.className = 'badge running';
+  badge.textContent = '运行中';
+  appendLog('meta', `任务已提交：${data.run_id}`);
+  startPolling();
+}
+
+async function loadRuns() {
+  try {
+    const data = await fetchJson(`${BRIDGE}/api/agent/runs`);
+    const box = document.getElementById('runs');
+    box.innerHTML = '';
+    if (!data.runs || !data.runs.length) return;
+    box.textContent = '历史运行：';
+    for (const r of data.runs.slice(-5)) {
+      const a = document.createElement('a');
+      const icon = r.status === 'done' ? '✅' : r.status === 'cancelled' ? '⛔' : r.status === 'failed' ? '❌' : '⏳';
+      a.textContent = `${icon} ${r.task.slice(0, 18)}`;
+      a.onclick = () => viewRun(r.id);
+      box.appendChild(a);
+    }
+  } catch (e) { /* bridge 未启动 */ }
+}
+
+async function viewRun(runId) {
+  const data = await fetchJson(`${BRIDGE}/api/agent/status/${runId}`);
+  const run = data.run;
+  if (!run) return;
+  currentRun = run.id;
+  lastEventCount = 0;
+  logEl.innerHTML = '';
+  for (const ev of run.events) renderEvent(ev);
+  lastEventCount = run.events.length;
+  const badge = document.querySelector('#status .badge');
+  const statusText = ({ running: '运行中', done: '已完成', failed: '失败', cancelled: '已取消' })[run.status] || '未知';
+  badge.className = 'badge ' + run.status;
+  badge.textContent = statusText;
+  runMetaEl.textContent = `｜ 历史任务：${run.task}`;
+}
+
+// ---------- 经验草稿（人工闸门：低置信沉淀待确认） ----------
+const draftsListEl = document.getElementById('drafts-list');
+const draftsCountEl = document.getElementById('drafts-count');
+
+async function loadDrafts() {
+  try {
+    const data = await fetchJson(`${BRIDGE}/api/experience/drafts?status=pending`);
+    draftsCountEl.textContent = `（${data.count} 条待确认）`;
+    draftsListEl.innerHTML = '';
+    if (!data.drafts || !data.drafts.length) return;
+    for (const d of data.drafts) {
+      const e = d.entry || {};
+      const box = document.createElement('div');
+      box.style.cssText = 'border:1px solid #ddd;border-radius:8px;padding:8px;margin-bottom:8px;background:#fff;';
+      const keyPath = (e.key_path || []).map(s => s.desc || s.action).join(' → ');
+      box.innerHTML = `<div style="color:#333;">${d.draft_id}<br><span style="color:#666;">${keyPath || e.site || ''}</span><br>
+        <span style="color:#b3261e;">${e.confidence === 'low' ? '低置信' : '未知置信度'}</span>
+        <span style="color:#666;">｜ ${(d.reason || '').slice(0, 60)}</span></div>
+        <div style="margin-top:6px;">
+          <button class="btn" style="padding:4px 14px;font-size:12px;" data-approve="true" data-id="${d.draft_id}">确认沉淀</button>
+          <button class="btn ghost" style="padding:4px 14px;font-size:12px;" data-approve="false" data-id="${d.draft_id}">拒绝</button>
+        </div>`;
+      draftsListEl.appendChild(box);
+    }
+    draftsListEl.querySelectorAll('button[data-id]').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const approve = btn.dataset.approve === 'true';
+        const res = await fetchJson(`${BRIDGE}/api/experience/confirm`, {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ draft_id: btn.dataset.id, approve }),
+        });
+        appendLog(res.ok ? 'meta' : 'error', res.ok
+          ? (approve ? `🧠 草稿已确认沉淀：${btn.dataset.id}` : `🗑 草稿已拒绝：${btn.dataset.id}`)
+          : `❌ 草稿处理失败：${res.error || ''}`);
+        loadDrafts();
+      });
+    });
+  } catch (e) { /* bridge 未启动 */ }
+}
+
+document.getElementById('run-btn').addEventListener('click', runAgent);
+document.getElementById('stop-btn').addEventListener('click', () => { if (currentRun) viewRun(currentRun); });
+document.querySelectorAll('#examples span').forEach(s => {
+  s.addEventListener('click', () => { document.getElementById('task').value = s.dataset.t; });
+});
+
+loadRuns();
+loadDrafts();
+// 桥接服务健康检查提示
+fetchJson(`${BRIDGE}/api/health`).then(d => {
+  if (d.ok) appendLog('meta', `桥接服务已连接 (:8080)${d.agent ? '，agent 模块可用' : '，agent 模块不可用'}`);
+}).catch(() => {
+  appendLog('error', '❌ 桥接服务未启动 — 请运行 python bridge/server.py 或 python agent/agent.py（自动拉起）');
+});
+</script>
+</body>
+</html>

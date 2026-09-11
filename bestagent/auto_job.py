@@ -48,10 +48,9 @@ except Exception:
     pass
 
 # 轻依赖顶层 import（m1_run/m2_eval_run/collect_liepin/detail_collect/greet_run 等在各步骤函数内延迟 import，
-# 使 --help/--dry-run/纯本地步骤不依赖 SDK 与 browser-agent）
+# 使 --help/--dry-run/纯本地步骤不依赖 SDK 与 bridge-agent）
 from framework_config import (
-    WORKSPACE, SESSIONS, DSH_ROOT, RUNTIME_BIN, CORDIS_MINIMAL,
-    EVAL_BATCH, check_env, ensure_dirs, load_env_file,
+    WORKSPACE, EVAL_BATCH, check_env, ensure_dirs, load_env_file, make_harness,
 )
 
 CHAT = WORKSPACE / "data" / "chat"
@@ -164,26 +163,27 @@ def job_title_of(job_code: str) -> str:
 
 
 def _env_with_persona(env_file: Path) -> dict:
+    """读 .env 并校验 key。
+
+    注（2026-09-11）：persona 不再走 `DSH_SYSTEM_PROMPT` 环境变量（旧方式已作废），
+    改由 `make_harness(persona=PERSONA)` 写 profile patch 注入 —— 函数名保留，避免动调用点。
+    """
     env = load_env_file(env_file)
     if "DEEPSEEK_API_KEY" not in env:
         raise SystemExit("❌ .env 里没有 DEEPSEEK_API_KEY")
-    env["DSH_SYSTEM_PROMPT"] = PERSONA
     return env
 
 
 def _run_harness(task: str, session_id: str, env: dict, max_tokens: int):
-    """起一个 headless agent（纯文件任务用 CORDIS_MINIMAL；模块延迟 import）。"""
-    sys.path.insert(0, str(DSH_ROOT / "python" / "sdk" / "src"))
-    sys.path.insert(0, str(DSH_ROOT / "python" / "sdk-runtime" / "src"))
-    from deepseek_harness import DeepSeekHarness
+    """起一个 headless agent（统一走 framework_config.make_harness，模块延迟 import）。
+
+    session id 每次运行唯一：本版 SDK 在同一 home 复用同一 id 会直接报
+    `session "X" already exists`（见《DSH升级事故·衔接报告》§8.8 坑 B）。
+    """
     ensure_dirs()
-    with DeepSeekHarness(
-        provider="deepseek-official", model="deepseek-v4-flash",
-        max_tokens=max_tokens, cwd=str(WORKSPACE), session_root=str(SESSIONS),
-        cordis=str(CORDIS_MINIMAL), launch_args_override=("node", str(RUNTIME_BIN)),
-        env=env, request_timeout_seconds=1200, shutdown_timeout_seconds=10,
-    ) as harness:
-        return harness.run(task, session_id=session_id)
+    run_sid = f"{session_id}-{now_ts()}"
+    with make_harness(env, max_tokens=max_tokens, persona=PERSONA) as harness:
+        return harness.run(task, session_id=run_sid)
 
 
 # ═══════════════════════ 步骤实现 ═══════════════════════
