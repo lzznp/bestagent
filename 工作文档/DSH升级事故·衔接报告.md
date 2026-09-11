@@ -167,11 +167,19 @@ RESULT: TypeError -> DeepSeekHarnessConfig.__init__() got an unexpected keyword 
 
 ### 7.2 浏览器助手插件（对我们项目的意义）
 
+> ⚠️ **措辞更正（2026-09-11 老板问"这个又是什么"后补）**：它是**老板自己安装的第三方插件** `@yuxianglin/dsh-bridge-browser`（作者 Yuxiang Lin，MIT；源码 `C:\deepseek\dsh-browser`；以 `link:` 挂进 `~/.dsh/profiles/web` 的 `dsh.profile.bundles`），**不是 DSH 基座/SDK 自带**（§7.5 实测：基座 49 个包里无任何 browser 包）。本节原标题里的"DSH 生态已有浏览器桥"应读作"**DSH 生态里可装的**第三方浏览器桥"。
+> **谁用它**：**参谋长**（DSH GUI 对话里的 AI）—— 临时侦察 / 看页面 / 应急；**小猎那边一个浏览器工具都没有**（项目 `sdk` profile 只有 `dsh-base` + `dsh-sdk-app`，其全量配置里 `browser` 命中 = 0）。
+
 - 形态：**token 认证的 WebSocket 载体 + Chrome 扩展 + `browser_*` 文本工具**（让 agent 驱动老板自己的 Chrome）。
 - token 落 `~/.dsh/ext-bridge-token`；WebSocket 走 **DSH 自己的 web 端口**（代码：`ws://127.0.0.1:${ctx.httpServer.port}/ext/bridge`）
   → **不占独立端口，与我们项目 `browser-agent` 的 8080 桥不冲突** ✅
 - ⚠️ 其 workspace / peerDependencies 钉在 dsh **0.1.2-rc.1**（最低支持），本机已 0.1.5-alpha.2（老板实测"插件好了"）。
-- **新增待讨论议题（未展开）**：DSH 生态已有浏览器桥 → 我们自研的 `browser-agent`（Python bridge + Chrome 扩展 + 配方表 `execute_spec`）与之**功能重叠**：继续自研 / 借力 / 混合，是后续设计议题。
+- ~~**新增待讨论议题（未展开）**~~ → **✅ 已讨论结案（2026-09-11）**：两者**能力重叠，但主人不同** ——
+  插件给**参谋长**当"眼睛"（模型即兴操作，属**主机环境**，随 DSH 升级可能坏）；我们自研的 `browser-agent`／`bridge-agent`
+  给**小猎**当"腿"（确定性：配方表 `group_id/value` + `execute_spec`，属**运行环境**，在仓库内、有 git 管，还带额度与风控节奏）。
+  **结论 = 两套并存、各司其职，不混合**：业务链路永远只走 `bridge-agent`（教训 #2：自然语言驱动浏览器会"条件没设上、抓到残留数据"）；
+  插件只作参谋长自己的侦察/应急/**对照**工具，**不进项目链路、不进任何代码**。
+  口径：**"插件是参谋长的眼睛，桥是小猎的腿。"**
 
 ### 7.3 `dsh-session-surgeon` 与「历史加载失败」（交叉验证）
 
