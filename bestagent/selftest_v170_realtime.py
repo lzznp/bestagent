@@ -29,10 +29,11 @@ def main() -> None:
     print(f"== 测试岗：{job['job_code']}（JD: {JD.name}，{len(jd_bytes)}B）")
     task = m3_chat.build_step1_task(job)
     print("== 跑 ① 岗前分析（真 agent，请等待，长任务）…")
-    reply, new_files = m3_chat.run_assistant(job, task, m3_chat.DEFAULT_ENV, stub=False,
-                                             max_tokens=16384)
+    reply, new_files, run_sid = m3_chat.run_assistant(job, task, m3_chat.DEFAULT_ENV, stub=False,
+                                                      max_tokens=16384, action="analyze")
     print("\n== 小猎回复 ==")
     print(reply)
+    print(f"\n== 本次运行 session id = {run_sid}（每次唯一，不复用）")
     print("\n== 新产物 ==")
     for f in new_files:
         print("  -", f.name, f.stat().st_size, "B")

@@ -1,0 +1,13 @@
+# 运行环境依赖（pip 锁版本 —— 见《工作模式·备忘》§1.1 三层运行边界）
+#
+# 为什么锁死：2026-09-10 DSH 被动升级把项目底座带崩（旧 cordis/session_root 调用方式作废）。
+# 从此"运行环境"由我们 pip 锁版本，跟主机上的 DSH 本体/GUI 彻底解耦。
+#   pip install -r requirements.txt
+#
+# deepseek-harness-sdk：Python SDK（DeepSeekHarness / profile / dsh_home / patches）
+# deepseek-harness-runtime-bin：SDK 自带的运行时（229MB 单文件 exe，含 node；首次启动自解压到
+#   %USERPROFILE%\.cache\pkg\<hash>，该位置必须可写）—— 由 sdk 自动带上，这里显式钉住以便换电脑可复现。
+deepseek-harness-sdk==0.1.5rc1
+deepseek-harness-runtime-bin==0.1.5rc1
+
+# 说明：业务侧的 streamlit 等依赖仍用现有 lzstudy 环境，暂不在此锁定（改这里只负责"运行环境"版本边界）。

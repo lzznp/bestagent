@@ -58,11 +58,11 @@ v1.6.5 变更（2026-09-04，③ 池子评估接入面板）：
 ③ 按钮按 ②采集完成点亮 / 聊天“评估一下这批人”类发令自动路由；agent 读 JD+最新 collected 池子
 +pool_quality/match_candidate 方法论 → 池评（优/良/中/差+分布+data_valid）→ 逐人紧凑评分
 （score/verdict/summary，≥60 加 match_points/concerns）→ 写 pool_report_*.json + HTML 过程 → 汇报 top；
-纯文件任务走 CORDIS_MINIMAL，max_tokens 提至 32768；state 新增 step3_done（按 pool_report 推断）。
+纯文件任务与采集任务同用 sdk profile（含 pwsh 工具），max_tokens 提至 32768；state 新增 step3_done（按 pool_report 推断）。
 
 v1.6.4 变更（2026-09-04，② 探索采集接入面板）：
-1. 执行通道按任务切换 cordis：纯文件任务（①/自由对话/导出）用 CORDIS_MINIMAL，
-   「② 采集执行」用 CORDIS_PWSH（带 pwsh 工具，可跑 collect_liepin.py 配方表脚本）
+1. 执行通道：2026-09-10 换代后**不再按任务切 cordis** —— 统一走 profile="sdk"
+   （文件工具 + pwsh 工具都有，见 framework_config.make_harness）；
 2. ② 探索采集 = 两步走（步骤制 + 授权确认）：
    发令（点按钮或聊天说“去猎聘跑一轮”）→ 第一步 agent 读 JD+analyze 拆关键字/条件，
    写 collect_plan_*.json 计划文件并请老板确认（不真跑、不耗额度）→ 老板确认（如“按计划跑”）
@@ -103,19 +103,12 @@ from pathlib import Path
 
 import streamlit as st
 
-try:  # 集中配置
-    from framework_config import WORKSPACE, SESSIONS, PROMPTS
-    from framework_config import DSH_ROOT, RUNTIME_BIN, CORDIS_MINIMAL, CORDIS_PWSH, REQUEST_TIMEOUT
-except Exception:
+try:  # 集中配置（新版 SDK：pip wheel / exe 模式 + 项目自带 dsh_home，见 framework_config.make_harness）
+    from framework_config import WORKSPACE, PROMPTS, make_harness
+except Exception:  # 兜底：极端情况下界面仍起得来（只读 + 假执行）
     WORKSPACE = Path(__file__).resolve().parent
-    SESSIONS = WORKSPACE / ".sessions"
     PROMPTS = WORKSPACE / "data" / "prompts"
-    DSH_ROOT = Path(r"C:\deepseek\deepseek-harness")
-    RUNTIME_BIN = WORKSPACE / ".dsh-staging" / "node_modules" / "@deepseek-ai" / \
-        "dsh-sdk-jsonrpc-demo" / "lib" / "packaged-bin.js"
-    CORDIS_MINIMAL = DSH_ROOT / "examples" / "jsonrpc-agent" / "minimal.cordis.yml"
-    CORDIS_PWSH = WORKSPACE / "minimal-pwsh-nonpty.cordis.yml"
-    REQUEST_TIMEOUT = 1200
+    make_harness = None
 
 CHAT_DIR = (Path(os.environ["M3CHAT_CHAT_DIR"]) if os.environ.get("M3CHAT_CHAT_DIR")
             else WORKSPACE / "data" / "chat")  # 环境变量覆盖：AppTest/多实例隔离用
@@ -914,45 +907,41 @@ def _env_from_file(env_path: Path) -> dict:
 
 
 def run_assistant(job: dict, prompt: str, env_path: Path, stub: bool = False,
-                  max_tokens: int = 8192, cordis: Path | None = None) -> tuple[str, list[Path]]:
-    """跑一次真 agent（阻塞式）。cordis 按任务切换：默认纯文件（CORDIS_MINIMAL）；
-    「② 采集执行」传 CORDIS_PWSH（带 pwsh 工具跑配方表脚本）。"""
+                  max_tokens: int = 8192, action: str = "",
+                  ) -> tuple[str, list[Path], str]:
+    """跑一次真 agent（阻塞式）。统一走 sdk profile（文件工具 + pwsh 工具都有）。
+
+    每次运行用**新的 session id**（`<岗位会话>-<动作>-<时间戳>`）：新版 SDK 对跨进程复用同一 id 会
+    直接报 `session "X" already exists`（§8.8 坑 B，rc1 复测一致）→ 与「不赌会话记忆」铁律一致，
+    每轮靠状态卡 + 产物续上下文，零损失。
+    返回 (回复, 新产物, 本次运行的 session id)。
+    """
     if stub:
         time.sleep(0.2)
         return (f"（假执行·界面自测）收到指令：{prompt[:60]}…\n"
-                "正式使用时请把执行模式切回「真执行」并配置 .env。"), []
-    sys.path.insert(0, str(DSH_ROOT / "python" / "sdk" / "src"))
-    sys.path.insert(0, str(DSH_ROOT / "python" / "sdk-runtime" / "src"))
-    from deepseek_harness import DeepSeekHarness  # noqa: E402
+                "正式使用时请把执行模式切回「真执行」并配置 .env。"), [], "stub"
+    if make_harness is None:
+        raise RuntimeError("framework_config 导入失败（make_harness 不可用）：请查 bestagent/framework_config.py")
 
     env = _env_from_file(env_path)
     if "DEEPSEEK_API_KEY" not in env:
         raise RuntimeError("没有找到 DEEPSEEK_API_KEY：请检查侧栏「运行设置」里的 .env 路径")
-    env["DSH_SYSTEM_PROMPT"] = PERSONA
 
     reports_dir = _job_dir(job) / "reports"
     reports_dir.mkdir(parents=True, exist_ok=True)
     before = {p.name for p in reports_dir.iterdir()}
 
-    with DeepSeekHarness(
-        provider="deepseek-official",
-        model="deepseek-v4-flash",
-        max_tokens=max_tokens,
-        cwd=str(WORKSPACE),
-        session_root=str(SESSIONS),
-        cordis=str(cordis or CORDIS_MINIMAL),
-        launch_args_override=("node", str(RUNTIME_BIN)),
-        env=env,
-        request_timeout_seconds=REQUEST_TIMEOUT,
-        shutdown_timeout_seconds=10,
-    ) as harness:
-        result = harness.run(prompt, session_id=job["session_id"])
+    base_sid = job.get("session_id") or f"m3chat-{job.get('job_code', 'job')}"
+    run_session_id = f"{base_sid}-{action or 'run'}-{int(time.time())}"
+
+    with make_harness(env, max_tokens=max_tokens, persona=PERSONA) as harness:
+        result = harness.run(prompt, session_id=run_session_id)
 
     reply = (getattr(result, "final_response", "") or "").strip()
     after = {p.name for p in reports_dir.iterdir()}
     new_files = [reports_dir / n for n in sorted(after - before)]
     new_files.sort(key=lambda p: p.stat().st_mtime, reverse=True)
-    return reply, new_files
+    return reply, new_files, run_session_id
 
 
 # ═══════════════════════ UI ═══════════════════════
@@ -1304,13 +1293,14 @@ def render_main(cfg: dict) -> None:
 
     if to_send:
         append_msg(job["job_code"], "user", to_send)
+        run_sid = "-"
         try:
             with st.status("小猎工作中（阻塞式，长任务请耐心等待）…", expanded=False) as status:
-                cordis = CORDIS_PWSH if action_kind == "collect_run" else None
                 max_tok = 32768 if action_kind == "eval" else (16384 if action_kind == "greet" else 8192)
-                reply, new_files = run_assistant(job, agent_prompt, cfg["env_path"],
-                                                 stub=cfg["stub"], max_tokens=max_tok, cordis=cordis)
-                status.update(label="小猎完成", state="complete")
+                reply, new_files, run_sid = run_assistant(job, agent_prompt, cfg["env_path"],
+                                                          stub=cfg["stub"], max_tokens=max_tok,
+                                                          action=action_kind)
+                status.update(label=f"小猎完成（本次会话 {run_sid}）", state="complete")
         except Exception as e:
             reply = f"⚠️ 执行出错：{e}\n\n（若是 .env/API 问题请检查侧栏运行设置；界面自测请开「假执行」）"
             new_files = []
@@ -1320,7 +1310,7 @@ def render_main(cfg: dict) -> None:
         label_map = {"analyze": "岗位分析", "report": "导出汇报", "chat": "自由对话",
                      "collect_plan": "②采集·出计划", "collect_run": "②采集·执行",
                      "eval": "③池子评估", "post_text": "发岗文字", "greet": "打招呼清单"}
-        upd = {"last_action": label_map.get(action_kind, action_kind)}
+        upd = {"last_action": label_map.get(action_kind, action_kind), "last_run_session": run_sid}
         if action_kind == "analyze":
             # v1.7.0：①分析完 → 进入「等你拍板」判断点（重跑清掉旧决策）
             upd["step1_analyzed"] = True

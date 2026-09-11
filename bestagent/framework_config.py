@@ -2,14 +2,18 @@
 """数字合伙人框架集中配置：所有环境路径/默认参数在此一处定义。
 
 换电脑/换环境时只需：
-  1) 目录摆放正确（本项目代码目录 + 兄弟目录 .dsh-staging 闭包 + DSH 源码 checkout）；
-  2) 或用环境变量覆盖：DSP_WORKSPACE / DSH_ROOT / BROWSER_AGENT_PATH / DSP_MODEL。
+  1) `pip install -r requirements.txt`（装 pinned 版 SDK + 自带运行时 exe，229MB）；
+  2) 或用环境变量覆盖：DSP_WORKSPACE / DSP_DSH_HOME / BROWSER_AGENT_PATH / DSP_MODEL。
 
-约定（相对本项目根，天然可移植）：
-  - 项目根 = 本文件所在目录（bestagent/）
-  - dev runtime 闭包 = <项目根>/.dsh-staging
-  - DSH SDK 源码 = DSH_ROOT（默认 C:\\deepseek\\deepseek-harness，可用环境变量覆盖）
-  - browser-agent 活体 = BROWSER_AGENT_PATH（默认 D:\\study\\lietou-agent\\browser-agent，可覆盖/复制进项目）
+三层运行边界（见《工作模式·备忘》§1.1）：
+  - 运行环境 = pip 锁版本的 deepseek-harness-sdk + deepseek-harness-runtime-bin + 项目自带 DSH_HOME；
+  - 项目绝不读 `~/.dsh`（GUI 的家），也绝不 `sys.path.insert(... DSH 源码 ...)`（否则源码遮蔽 pip 包）；
+  - 业务资产（data/ 下的岗位目录 / rules.md / 产物 / business.db）不依赖任何 SDK 版本。
+
+2026-09-10 换代要点（详见《DSH升级事故·衔接报告》§8.9）：
+  旧 = 手写 cordis 组合 + session_root + launch_args_override + 挂源码 checkout（已全部作废）；
+  新 = profile="sdk" + dsh_home（项目自带）+ patches（persona）+ DSH_PERMISSION_MODE；不传 dsh_bin（走 exe）。
+  调用方一律用 make_harness()，不要再自己拼 DeepSeekHarness(...)。
 """
 from __future__ import annotations
 
@@ -23,24 +27,28 @@ INBOX = DATA / "inbox"
 OUTBOX = DATA / "outbox"
 PROMPTS = DATA / "prompts"
 USAGE = DATA / "usage"
-SESSIONS = WORKSPACE / ".sessions"
 DB_PATH = DATA / "business.db"
 
-# ── SDK 运行环境（核心硬依赖，换电脑时核对）───────────────────────
-# DSH 源码 checkout（python/sdk/src + python/sdk-runtime/src 注入 PYTHONPATH）
-DSH_ROOT = Path(os.environ.get("DSH_ROOT", r"C:\deepseek\deepseek-harness"))
-# dev node carrier：pnpm deploy 生成的完整闭包（相对项目根）
-RUNTIME_BIN = (
-    WORKSPACE
-    / ".dsh-staging"
-    / "node_modules/@deepseek-ai/dsh-sdk-jsonrpc-demo/lib/packaged-bin.js"
-)
-# 纯文件工具 cordis（分析/评估类任务，无需执行命令）
-CORDIS_MINIMAL = DSH_ROOT / "examples/jsonrpc-agent/minimal.cordis.yml"
-# 带 pwsh 命令工具 cordis（采集/自主闭环类任务，Windows 非 PTY）
-CORDIS_PWSH = WORKSPACE / "minimal-pwsh-nonpty.cordis.yml"
+# ── 历史遗留：旧版 SDK 的会话落盘目录（新版改用 DSH_HOME/sessions，本目录只存旧 JSONL）──
+SESSIONS = WORKSPACE / ".sessions"
 
-# ── 浏览器采集（browser-agent 活体）────────────────────────────────
+# ── SDK 运行环境（pip wheel / exe 模式；换电脑时核对）───────────────
+SDK_VERSION = "0.1.5rc1"                      # 必须与 requirements.txt 一致
+REQUIREMENTS_FILE = WORKSPACE / "requirements.txt"
+# 项目自带 harness home（与 GUI 的 ~/.dsh 彻底隔离；已 gitignore）
+DSH_HOME = Path(os.environ.get("DSP_DSH_HOME", DATA / "dsh_home"))
+# 工具面（文件工具 + pwsh 工具 + 沙箱 + 会话落盘都在这个 profile 里）
+DSH_PROFILE = os.environ.get("DSP_DSH_PROFILE", "sdk")
+# persona patch：由 write_persona_patch() 从调用方的 PERSONA 常量单源生成
+PERSONA_PATCH = DSH_HOME / "persona.patch.yml"
+# sdk profile 原生的收尾提示（patch 是整行替换 config，必须一并重述）
+DEFAULT_PERSONA_SUFFIX = "Your working directory is {{cwd}}."
+# 无头运行：danger-full-access 时 approval 自动为 never（见 §8.2）
+PERMISSION_MODE = os.environ.get("DSP_PERMISSION_MODE", "danger-full-access")
+INITIALIZE_TIMEOUT = 180.0                    # exe 首跑要自解压，给足时间
+SHUTDOWN_TIMEOUT = 10.0
+
+# ── 浏览器采集（browser-agent 活体；桥要老板/参谋长另起，见《工作模式·备忘》§3）──
 BRIDGE_URL = os.environ.get("BRIDGE_URL", "http://127.0.0.1:8080")
 BROWSER_AGENT = Path(
     os.environ.get("BROWSER_AGENT_PATH", r"D:\study\lietou-agent\browser-agent")
@@ -56,7 +64,7 @@ REQUEST_TIMEOUT = 1200      # SDK 请求超时（秒）
 
 
 def ensure_dirs() -> None:
-    for d in (INBOX, OUTBOX, PROMPTS, USAGE, SESSIONS):
+    for d in (INBOX, OUTBOX, PROMPTS, USAGE, SESSIONS, DSH_HOME):
         d.mkdir(parents=True, exist_ok=True)
 
 
@@ -75,17 +83,143 @@ def load_env_file(path) -> dict[str, str]:
     return env
 
 
+# ═══════════════════════ SDK 启动（唯一入口）═══════════════════════
+
+def write_persona_patch(persona: str, suffix: str = DEFAULT_PERSONA_SUFFIX) -> Path:
+    """把 persona 文本渲染成 profile 的 system-prompt patch，返回 patch 路径。
+
+    用途：人设单源（调用方的 PERSONA 常量）→ 落一个 YAML 文件 → 交给 make_harness(patches=…)。
+    ⚠️ patch 按 id 定位会【整行替换 config】→ 必须重述要保留的每个键（故 personaSuffix 一并写）。
+    """
+    def block(text: str) -> str:
+        lines = (text or "").strip().splitlines() or [""]
+        return "\n".join(("      " + ln) if ln.strip() else "" for ln in lines)
+
+    PERSONA_PATCH.parent.mkdir(parents=True, exist_ok=True)
+    text = (
+        "# 自动生成，勿手改：人设单源在各脚本的 PERSONA 常量（framework_config.write_persona_patch）\n"
+        "- id: system-prompt\n"
+        "  config:\n"
+        "    personaPrefix: |-\n"
+        f"{block(persona)}\n"
+        "    personaSuffix: |-\n"
+        f"{block(suffix)}\n"
+    )
+    PERSONA_PATCH.write_text(text, encoding="utf-8")
+    return PERSONA_PATCH
+
+
+def make_harness(
+    env: dict[str, str] | None = None,
+    max_tokens: int = MAX_TOKENS_AUTO,
+    *,
+    persona: str | None = None,
+    cwd: Path | str | None = None,
+    initialize_timeout_seconds: float = INITIALIZE_TIMEOUT,
+    request_timeout_seconds: float = REQUEST_TIMEOUT,
+    shutdown_timeout_seconds: float = SHUTDOWN_TIMEOUT,
+    **overrides,
+):
+    """构造一次运行的 SDK 运行时（新版 API：profile + dsh_home + patches）。
+
+    - **exe 模式**：不传 dsh_bin → SDK 自动用 pip 装的 deepseek-harness-runtime-bin
+      （自带 node 运行时；不需要 DSH 源码 checkout / 不需要系统 node / 不需要 .dsh-staging）。
+    - **项目自带 home**：DSH_HOME=<项目>\data\dsh_home → 会话与 GUI 的 ~/.dsh 完全隔离。
+    - **persona**：传入则写 PERSONA_PATCH（单源）并注入；不传则沿用已有 patch（没有再报错）。
+    - **沙箱**：DSH_PERMISSION_MODE=danger-full-access（无头运行，approval 自动 never）。
+    - **session id**：本版对跨进程路径**不支持复用**（同 id 第二次报 `session "X" already exists`）
+      → 调用方每次运行都要用新 id（如 `<job_session_id>-<step>-<时间戳>`），与「不赌会话记忆」铁律一致。
+
+    用法：
+        with make_harness(env, max_tokens=8192, persona=PERSONA) as harness:
+            result = harness.run(prompt, session_id=f"{job_id}-{int(time.time())}")
+    """
+    from deepseek_harness import DeepSeekHarness  # 延迟 import：只做自检时不必载 SDK
+
+    run_env = dict(env or {})
+    run_env["DSH_PERMISSION_MODE"] = PERMISSION_MODE
+    if persona:
+        patches: tuple[str, ...] = (str(write_persona_patch(persona)),)
+    elif "patches" in overrides:
+        patches = tuple(overrides.pop("patches"))
+    elif PERSONA_PATCH.is_file():
+        patches = (str(PERSONA_PATCH),)
+    else:
+        raise RuntimeError(
+            f"persona patch 不存在且本次未传 persona：{PERSONA_PATCH}\n"
+            "调用 make_harness(persona=PERSONA) 一次即可生成（人设缺省会丢）。"
+        )
+
+    return DeepSeekHarness(
+        profile=DSH_PROFILE,
+        dsh_home=str(DSH_HOME),          # 项目自带 home（不碰 ~/.dsh）
+        patches=patches,
+        cwd=str(cwd or WORKSPACE),
+        provider="deepseek-official",
+        model=MODEL,
+        max_tokens=max_tokens,
+        env=run_env,
+        initialize_timeout_seconds=initialize_timeout_seconds,
+        request_timeout_seconds=request_timeout_seconds,
+        shutdown_timeout_seconds=shutdown_timeout_seconds,
+        **overrides,
+    )
+
+
 def check_env() -> list[str]:
     """环境自检：返回缺失/异常项列表（空 = 全部就绪）。"""
     problems: list[str] = []
-    if not DSH_ROOT.exists():
-        problems.append(f"DSH_ROOT 不存在: {DSH_ROOT}（设环境变量 DSH_ROOT）")
-    elif not (DSH_ROOT / "python" / "sdk" / "src").exists():
-        problems.append(f"DSH SDK 源码缺失: {DSH_ROOT / 'python' / 'sdk' / 'src'}")
-    if not RUNTIME_BIN.exists():
-        problems.append(f"dev runtime 闭包缺失: {RUNTIME_BIN}（需 .dsh-staging）")
-    if not CORDIS_PWSH.exists():
-        problems.append(f"pwsh cordis 缺失: {CORDIS_PWSH}")
+
+    # 1) SDK 与自带运行时（pip wheel / exe 模式）
+    try:
+        from importlib.metadata import version as _pkg_version
+        got = _pkg_version("deepseek-harness-sdk")
+        if got != SDK_VERSION:
+            problems.append(
+                f"deepseek-harness-sdk 版本不符：本机 {got}，应为 {SDK_VERSION}"
+                f"（pip install -r {REQUIREMENTS_FILE}）")
+    except Exception:
+        problems.append(
+            f"未安装 deepseek-harness-sdk=={SDK_VERSION}（pip install -r {REQUIREMENTS_FILE}）")
+    try:
+        import deepseek_harness_runtime  # noqa: F401
+    except Exception:
+        problems.append(
+            "未安装 deepseek-harness-runtime-bin（SDK 自带的运行时 exe；"
+            f"pip install -r {REQUIREMENTS_FILE}）")
+
+    # 2) 铁律：pip 装了就不能让 DSH 源码遮蔽它
+    try:
+        import deepseek_harness
+        where = str(getattr(deepseek_harness, "__file__", ""))
+        if "site-packages" not in where:
+            problems.append(
+                f"deepseek_harness 被非 pip 路径遮蔽：{where}"
+                "（脚本里的 sys.path.insert(… DSH 源码 …) 必须删掉）")
+    except Exception as exc:  # noqa: BLE001
+        problems.append(f"import deepseek_harness 失败：{exc}")
+
+    # 3) 项目自带 home + profile
+    if not DSH_HOME.exists():
+        problems.append(f"项目 harness home 不存在：{DSH_HOME}（首次 make_harness() 会自动建）")
+    elif not (DSH_HOME / "profiles" / DSH_PROFILE).exists():
+        problems.append(
+            f"home 里 profile『{DSH_PROFILE}』尚未生成：{DSH_HOME / 'profiles' / DSH_PROFILE}"
+            "（首次 make_harness() 会自动生成）")
+
+    # 4) persona patch（人设单源产物）
+    if not PERSONA_PATCH.is_file():
+        problems.append(
+            f"persona patch 不存在：{PERSONA_PATCH}"
+            "（调用一次 make_harness(persona=PERSONA) 即生成）")
+
+    # 5) 浏览器桥活体目录（起没起要另测 /api/health，见《工作模式·备忘》§4）
     if not BROWSER_AGENT.exists():
-        problems.append(f"browser-agent 活体缺失: {BROWSER_AGENT}（设 BROWSER_AGENT_PATH）")
+        problems.append(f"browser-agent 活体缺失：{BROWSER_AGENT}（设 BROWSER_AGENT_PATH）")
+
     return problems
+
+
+if __name__ == "__main__":
+    issues = check_env()
+    print("\n".join(issues) if issues else "OK：SDK / home / profile / persona / 桥目录 全部就绪")
