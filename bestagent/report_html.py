@@ -159,7 +159,7 @@ def render_publish(job_title: str, pub: dict) -> str:
         rows.append(f"""<div class="pub-row" data-key="{esc(key)}">
       <div class="pub-head"><span class="pub-label">{esc(label)}</span>
         <span class="pub-btns"><button class="pub-copy" data-key="{esc(key)}">📋 复制此格</button></span></div>
-      <textarea class="pub-input" data-key="{esc(key)}" rows="{6 if key == 'job_description' else 2}">{esc(val)}</textarea>
+      <textarea class="pub-input" data-key="{esc(key)}" rows="{6 if key == 'job_description' else 2}" ondblclick="this.select()">{esc(val)}</textarea>
       {f'<div class="pub-orig">{esc(orig)}</div>' if orig else ''}
     </div>""")
     rows_html = "\n".join(rows)
@@ -197,7 +197,7 @@ def render_publish(job_title: str, pub: dict) -> str:
 <div class="wrap">
   <h1>📤 {esc(job_title)} · 发岗助手</h1>
   <div class="meta">本地渲染（LLM 只产字段 JSON，本页可随时重生）· 生成 {esc(now)}</div>
-  <div class="tip">💡 打开猎聘「发布职位」页与此页并排：逐格点「复制此格」→ 粘贴到对应输入框；职位描述整段复制到正文框。</div>
+  <div class="tip">💡 打开猎聘「发布职位」页与此页并排：逐格点「复制此格」→ 粘贴到对应输入框；职位描述整段复制到正文框。若某格复制失败，双击输入框可全选，再按 Ctrl+C。</div>
   {warn}
   <div class="bar">
     <button class="btn-copy-all" id="copyAll">📋 一键复制全部字段（带标签）</button>
@@ -208,22 +208,24 @@ def render_publish(job_title: str, pub: dict) -> str:
 <script>
   function g(k){{ var el = document.querySelector('textarea[data-key="'+k+'"]'); return el ? el.value : ''; }}
   async function copy(t, msg) {{
-    try {{ await navigator.clipboard.writeText(t); }} catch(e) {{
+    var ok = false;
+    try {{ await navigator.clipboard.writeText(t); ok = true; }} catch(e) {{
       var ta = document.createElement('textarea'); ta.value = t; document.body.appendChild(ta);
-      ta.select(); try {{ document.execCommand('copy'); }} catch(_) {{}}
+      ta.select(); try {{ ok = document.execCommand('copy'); }} catch(_) {{ ok = false; }}
       document.body.removeChild(ta);
     }}
-    var b = msg && msg.parentElement ? msg : document.body;
-    var tip = document.createElement('div'); tip.textContent = '✅ 已复制'; tip.style.cssText =
-      'position:fixed;top:16px;right:16px;background:#10b981;color:#fff;padding:6px 14px;border-radius:8px;z-index:99;';
-    document.body.appendChild(tip); setTimeout(function(){{ tip.remove(); }}, 1200);
+    var tip = document.createElement('div');
+    tip.textContent = ok ? '✅ 已复制' : '❌ 复制失败：请双击输入框全选 → Ctrl+C';
+    tip.style.cssText = 'position:fixed;top:16px;right:16px;background:' + (ok ? '#10b981' : '#dc2626') +
+      ';color:#fff;padding:6px 14px;border-radius:8px;z-index:99;max-width:70vw;';
+    document.body.appendChild(tip); setTimeout(function(){{ tip.remove(); }}, ok ? 1200 : 4000);
   }}
   document.querySelectorAll('.pub-copy').forEach(function(btn){{
     btn.addEventListener('click', function(){{ var k = btn.getAttribute('data-key'); copy(g(k), btn); }});
   }});
   document.getElementById('copyAll').addEventListener('click', function(){{
     var keys = {json.dumps([d[0] for d in PUB_FIELD_DEFS], ensure_ascii=False)};
-    var labels = {{}}; {json.dumps({d[0]: d[1] for d in PUB_FIELD_DEFS}, ensure_ascii=False)};
+    var labels = {json.dumps({d[0]: d[1] for d in PUB_FIELD_DEFS}, ensure_ascii=False)};
     var parts = [];
     keys.forEach(function(k){{ var v = g(k); parts.push(labels[k] + '：' + (v || '未提供')); }});
     copy(parts.join('\\n'), this);
