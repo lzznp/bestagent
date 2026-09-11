@@ -461,6 +461,18 @@
 - ⚠️ **待老板两件事**：①在 `edge://extensions` 从 `bridge-agent\extension` 重新加载扩展（实测是 **Edge** 在连 8080；旧活体 `D:\study\lietou-agent\browser-agent` 已降级为备份，未删）②起桥后跑通 ②采集（**验收③**）。
 - ⚠️ **本机环境事实**：本会话沙箱**写不了** `%USERPROFILE%\.cache\pkg`（exe 首跑自解压点）→ 上述真跑均靠把 `USERPROFILE` 重定向到工作区（老板在 PyCharm 里**不需要**这层）。
 
+### 探针复检：pwsh 工具在 **exe 载体**下跑通（2026-09-11，老板在 PyCharm 实跑 ✅ → §8.7 风险 1 关闭）
+
+- 命令：`python probe_bash.py --env-file D:\study\bestagent\bridge-agent\.env`（0 副作用：不碰猎聘、不耗额度）。
+- **结果**：`finish_reason=completed`；`echo hello` ✅｜`python.exe --version` → **Python 3.11.14** ✅｜`cmd /c` ✅｜**跑 .py 文件并传参** ✅（cwd 正确落在 `bestagent\`）｜PowerShell cmdlet ✅｜文件读写（write/delete）✅ —— **无沙箱拒绝、无权限报错**。
+- **判定**：**②采集的前提成立** —— 底座换代后，替换成 `sdk` profile 自带的 `tool-pwsh`，命令执行能力与旧 cordis 时代等效。
+- **三条操作事实（写给以后的小猎/脚本，已同步 HANDOFF §4）**：
+  1. **实际是 Windows PowerShell 5.1（Desktop），不是 PowerShell 7** → 命令要 5.1 兼容写法（无 `&&`/`||`、无三元 `?:`）。
+  2. **退出码被归一化**：`sys.exit(7)` 实际退出 7，但工具只报 `[exit code: 1]` → **判断成败不能只看退出码**，要显式打印/读 `$LASTEXITCODE`。
+  3. **中文输出会乱码**（控制台 GBK ↔ 捕获按 UTF-8）：需 `$env:PYTHONIOENCODING='utf-8'; [Console]::OutputEncoding=[System.Text.Encoding]::UTF8`。
+     → 对 ②采集**影响可控**：`collect_liepin.py` 自身已 `sys.stdout.reconfigure(encoding="utf-8")`（第 21 行），采集汇报文字不会乱；只有 agent 自己写内联命令打印中文时才需要那行前缀。
+- 探针无残留（临时 `_pwsh_probe.py` 已被 agent 自行删除，工作区 `git status` 干净）；这次运行落第 7 个会话文件在 `data\dsh_home\sessions\`。
+
 ### 附带修复：发岗 HTML「复制此格」全哑（2026-09-11，老板实测报告）
 
 - **现象**：老板在最新岗（`J-CHAT-20260909-094907`）点了「📋 复制此格」，没反应。
