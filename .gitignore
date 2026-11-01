@@ -33,3 +33,7 @@ data/usage/*.tmp
 
 # 素材库内他人遗留的未跟踪红队文件（勿入库）
 参考代码/recruitment-wails/.redteam/
+
+# 备份时排除：别人的项目快照与本机旧系统副本（见 参考代码-说明.md）
+参考代码/
+*.xlsx
