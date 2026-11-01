@@ -1,0 +1,402 @@
+==============================================================================
+### D:\study\bestagent\bestagent\framework_config.py  [1-20]
+    1: #!/usr/bin/env python3
+    2: """数字合伙人框架集中配置：所有环境路径/默认参数在此一处定义。
+    3: 
+    4: 换电脑/换环境时只需：
+    5:   1) `pip install -r requirements.txt`（装 pinned 版 SDK + 自带运行时 exe，229MB）；
+    6:   2) 或用环境变量覆盖：DSP_WORKSPACE / DSP_DSH_HOME / BROWSER_AGENT_PATH / DSP_MODEL。
+    7: 
+    8: 三层运行边界（见《工作模式·备忘》§1.1）：
+    9:   - 运行环境 = pip 锁版本的 deepseek-harness-sdk + deepseek-harness-runtime-bin + 项目自带 DSH_HOME；
+   10:   - 项目绝不读 `~/.dsh`（GUI 的家），也绝不 `sys.path.insert(... DSH 源码 ...)`（否则源码遮蔽 pip 包）；
+   11:   - 业务资产（data/ 下的岗位目录 / rules.md / 产物 / business.db）不依赖任何 SDK 版本。
+   12: 
+   13: 2026-09-10 换代要点（详见《DSH升级事故·衔接报告》§8.9）：
+   14:   旧 = 手写 cordis 组合 + session_root + launch_args_override + 挂源码 checkout（已全部作废）；
+   15:   新 = profile="sdk" + dsh_home（项目自带）+ patches（persona）+ DSH_PERMISSION_MODE；不传 dsh_bin（走 exe）。
+   16:   调用方一律用 make_harness()，不要再自己拼 DeepSeekHarness(...)。
+   17: """
+   18: from __future__ import annotations
+   19: 
+   20: import os
+==============================================================================
+### D:\study\bestagent\bestagent\framework_config.py  [71-91]
+   71:     for d in (INBOX, OUTBOX, PROMPTS, USAGE, SESSIONS, DSH_HOME):
+   72:         d.mkdir(parents=True, exist_ok=True)
+   73: 
+   74: 
+   75: def load_env_file(path) -> dict[str, str]:
+   76:     """从 .env 读取 DEEPSEEK_API_KEY / DEEPSEEK_BASE_URL（不打印值）。"""
+   77:     from pathlib import Path as _P
+   78:     env: dict[str, str] = {}
+   79:     for line in _P(path).read_text(encoding="utf-8").splitlines():
+   80:         line = line.strip()
+   81:         if not line or line.startswith("#") or "=" not in line:
+   82:             continue
+   83:         k, _, v = line.partition("=")
+   84:         k = k.strip()
+   85:         if k in ("DEEPSEEK_API_KEY", "DEEPSEEK_BASE_URL") and v.strip():
+   86:             env[k] = v.strip().strip('"').strip("'")
+   87:     return env
+   88: 
+   89: 
+   90: # ═══════════════════════ SDK 启动（唯一入口）═══════════════════════
+   91: 
+==============================================================================
+### D:\study\bestagent\bestagent\framework_config.py  [166-195]
+  166: 
+  167: 
+  168: def make_harness(
+  169:     env: dict[str, str] | None = None,
+  170:     max_tokens: int = MAX_TOKENS_AUTO,
+  171:     *,
+  172:     persona: str | None = None,
+  173:     tool_profile: str | None = None,
+  174:     cwd: Path | str | None = None,
+  175:     initialize_timeout_seconds: float = INITIALIZE_TIMEOUT,
+  176:     request_timeout_seconds: float = REQUEST_TIMEOUT,
+  177:     shutdown_timeout_seconds: float = SHUTDOWN_TIMEOUT,
+  178:     **overrides,
+  179: ):
+  180:     """构造一次运行的 SDK 运行时（新版 API：profile + dsh_home + patches）。
+  181: 
+  182:     - **exe 模式**：不传 dsh_bin → SDK 自动用 pip 装的 deepseek-harness-runtime-bin
+  183:       （自带 node 运行时；不需要 DSH 源码 checkout / 不需要系统 node / 不需要 .dsh-staging）。
+  184:     - **项目自带 home**：DSH_HOME=<项目>\data\dsh_home → 会话与 GUI 的 ~/.dsh 完全隔离。
+  185:     - **persona**：传入则写 PERSONA_PATCH（单源）并注入；不传则沿用已有 patch（没有再报错）。
+  186:     - **tool_profile**：工具面分档（见 TOOL_PROFILES）。传了就按 row id 关掉用不到的工具插件，
+  187:       省下"每轮固定租金"；不传 = 沿用 profile 默认的全量工具面。
+  188:     - **沙箱**：DSH_PERMISSION_MODE=danger-full-access（无头运行，approval 自动 never）。
+  189:     - **session id**：本版对跨进程路径**不支持复用**（同 id 第二次报 `session "X" already exists`）
+  190:       → 调用方每次运行都要用新 id（如 `<job_session_id>-<step>-<时间戳>`），与「不赌会话记忆」铁律一致。
+  191: 
+  192:     用法：
+  193:         with make_harness(env, max_tokens=8192, persona=PERSONA, tool_profile="bare") as harness:
+  194:             result = harness.run(prompt, session_id=f"{job_id}-{int(time.time())}")
+  195:     """
+==============================================================================
+### D:\study\bestagent\bestagent\m3_chat.py  [528-546]
+  528: def load_transcript(job_code: str) -> list[dict]:
+  529:     p = job_dir(job_code) / "transcript.json"
+  530:     if p.exists():
+  531:         try:
+  532:             return json.loads(p.read_text(encoding="utf-8"))
+  533:         except Exception:
+  534:             return []
+  535:     return []
+  536: 
+  537: 
+  538: def append_msg(job_code: str, role: str, content: str, artifacts: list[str] | None = None) -> None:
+  539:     p = job_dir(job_code) / "transcript.json"
+  540:     msgs = load_transcript(job_code)
+  541:     msgs.append({"role": role, "content": content, "ts": now_str(),
+  542:                  "artifacts": artifacts or []})
+  543:     p.write_text(json.dumps(msgs, ensure_ascii=False, indent=2), encoding="utf-8")
+  544: 
+  545: 
+  546: def list_artifacts(job_code: str) -> list[Path]:
+==============================================================================
+### D:\study\bestagent\bestagent\m3_chat.py  [900-925]
+  900:     {"job_code", "pm_notes": [...], "special_notes": [...], "events": [{"ts","who","note"}]}"""
+  901:     return _job_dir(job) / "job_profile.json"
+  902: 
+  903: 
+  904: def _recent_boss_text(job_code: str, limit: int = 4) -> str:
+  905:     """本会话老板最近 limit 条非任务原话（注入用；v1.7.2：agent 无跨 run 记忆，
+  906:     老板在对话里给的口径/教学原文不注入它真看不到）。"""
+  907:     msgs = load_transcript(job_code)
+  908:     boss_lines = []
+  909:     for m in msgs:
+  910:         c = (m.get("content") or "").strip()
+  911:         if m.get("role") != "user" or not c:
+  912:             continue
+  913:         if c.startswith("老板要你") or c.startswith("老板已确认"):
+  914:             continue  # 任务注入文本，非老板原话
+  915:         boss_lines.append(c)
+  916:     recent = boss_lines[-limit:]
+  917:     if not recent:
+  918:         return "〔本会话暂无可引用的老板原话〕"
+  919:     return "\n\n".join(f"〔老板消息 {i + 1}〕{c}" for i, c in enumerate(recent))
+  920: 
+  921: 
+  922: def build_free_task(job: dict, user_msg: str) -> str:
+  923:     """自由讨论/追问：注入状态卡 + 能力边界 + 完整路径，先读文件再开口（禁 bash、禁列盘、读不到不许编）。
+  924: 
+  925:     v1.7.1：检测"老板教规则"意图 → 追加成长沉淀操作指引（小猎自助写 rules.md，只追加不改删）。
+==============================================================================
+### D:\study\bestagent\bestagent\m3_chat.py  [1257-1305]
+ 1257: def detect_decision_intent(msg: str) -> str:
+ 1258:     """识别老板对①岗前分析的拍板。返回 "accept"/"decline"/"clarify"/""（未命中=自由对话）。
+ 1259: 
+ 1260:     仅在 decision==pending 时由路由调用。保守规则：
+ 1261:     - 讨论/反问句（怎么/为什么/？/吗…）一律不触发 → 落自由对话（老板可追问理由）；
+ 1262:     - 「别放弃/别急着…」等反向表达不触发 decline；
+ 1263:     - 先查整句短词（"做"/"不做"/"可以"…），再查包含词；decline 先于 accept 查
+ 1264:       （"不值得做" 应判 decline 而非 accept）。
+ 1265:     """
+ 1266:     m = msg.strip()
+ 1267:     if not m:
+ 1268:         return ""
+ 1269:     if ("怎么" in m or "为什么" in m or "是啥" in m or "是什么" in m
+ 1270:             or "？" in m or "?" in m or m.endswith("吗") or m.endswith("么")):
+ 1271:         return ""
+ 1272:     if "别放弃" in m or "别急着" in m:
+ 1273:         return ""
+ 1274:     m_short = m.rstrip("。！!~ ")
+ 1275:     if m_short in ("做", "做吧", "可以", "可以做", "好", "行", "接", "干", "拿下"):
+ 1276:         return "accept"
+ 1277:     if m_short in ("不做", "别做", "算了", "放弃", "不接", "不干", "不做吧", "别做了"):
+ 1278:         return "decline"
+ 1279:     if any(w in m for w in DECLINE_WORDS):
+ 1280:         return "decline"
+ 1281:     if any(w in m for w in ACCEPT_WORDS):
+ 1282:         return "accept"
+ 1283:     if any(w in m for w in CLARIFY_WORDS):
+ 1284:         return "clarify"
+ 1285:     return ""
+ 1286: 
+ 1287: 
+ 1288: def detect_rejudge_intent(msg: str) -> bool:
+ 1289:     """老板想重跑①重新判断（decision 已非空时启用：decline 改主意 / 想再看一遍）。"""
+ 1290:     return any(w in msg for w in REJUDGE_WORDS)
+ 1291: 
+ 1292: 
+ 1293: def record_decision(job: dict, decision: str, note: str = "") -> None:
+ 1294:     """拍板落盘（本地动作，不调 agent）。note = 老板原话截断，留档可查。"""
+ 1295:     label = {"accept": "做", "decline": "不做", "clarify": "先核实"}.get(decision, decision)
+ 1296:     save_state(job["job_code"], decision=decision,
+ 1297:                decision_note=(note or "").strip()[:80] or None,
+ 1298:                decision_ts=now_str(), last_action=f"拍板：{label}")
+ 1299: 
+ 1300: 
+ 1301: def build_decision_reply(decision: str, note: str = "") -> str:
+ 1302:     """拍板确认消息（本地生成，留在对话里；理解错可纠正）。"""
+ 1303:     note_short = (note or "").strip()[:60]
+ 1304:     if decision == "accept":
+ 1305:         return ("✅ 收到：**这单咱做**。已记入岗位决策，②采集/③评估/发岗解锁。\n"
+==============================================================================
+### D:\study\bestagent\bestagent\m3_chat.py  [1866-1872]
+ 1866:                 else:
+ 1867:                     new_job = create_job(title)
+ 1868:                 st.session_state["job_pick_chat"] = new_job["job_code"]
+ 1869:                 st.success(f"已创建：{new_job['job_code']}")
+ 1870:                 st.rerun()
+ 1871: 
+ 1872:         st.divider()
+==============================================================================
+### D:\study\bestagent\bestagent\m3_chat.py  [1903-1909]
+ 1903:                         st.warning("请先选择岗位会话。")
+ 1904:                     else:
+ 1905:                         append_record(job, rec_step, note, tags)
+ 1906:                         st.success("已记入成长账（待消化）。")
+ 1907:                         st.rerun()
+ 1908:             recents = list_records()[-5:][::-1]
+ 1909:             if recents:
+==============================================================================
+### D:\study\bestagent\bestagent\m3_chat.py  [2060-2066]
+ 2060:                                "逐格复制到猎聘发岗页（发布动作人工）。",
+ 2061:                                artifacts=[p.name for p in files])
+ 2062:                     save_state(job["job_code"], last_action="发岗助手")
+ 2063:                     st.success("✅ 发岗助手已生成：见对话里最新一条消息（点「打开 ↗」直接看）。")
+ 2064:                     st.rerun()
+ 2065:                 else:
+ 2066:                     st.warning("发岗助手未生成：看上方汇报定位问题（可重跑/纠错）。")
+==============================================================================
+### D:\study\bestagent\bestagent\m3_chat.py  [2310-2316]
+ 2310:     if st.button("💾 保存短名", key=f"dn_save_{code}"):
+ 2311:         save_meta(code, display_name=(st.session_state.get(f"dn_{code}") or "").strip())
+ 2312:         st.success("已保存（左侧列表与标题会立刻更新）")
+ 2313:         st.rerun()
+ 2314:     st.divider()
+ 2315:     st.markdown("**① 岗前分析摘要（本地渲染，0 花费）**")
+ 2316:     st.markdown("\n".join(analyze_summary(job)))
+==============================================================================
+### D:\study\bestagent\bestagent\m3_chat.py  [2343-2358]
+ 2343:         if st.button("💾 记下这条发布", key=f"pub_save_{code}"):
+ 2344:             append_publish_post(code, {"hjob_id": _hj, "title": _ti, "city": _ci,
+ 2345:                                        "published_at": _pa, "source": "老板口述（面板录入）", "note": ""})
+ 2346:             st.success("已记下（发布状态 → 已发布）")
+ 2347:             st.rerun()
+ 2348:     _cb1, _cb2 = st.columns(2)
+ 2349:     _warn = f"⚠️ 会**一并清掉上面 {len(_posts)} 条发布记录**（要保留就别点）" if _posts else "（当前没有记录可清）"
+ 2350:     if _cb1.button("⭕ 标为「未发布到猎聘」", key=f"pub_no_{code}", help=_warn):
+ 2351:         set_publish_status(code, "not_published")
+ 2352:         st.rerun()
+ 2353:     if _cb2.button("❓ 清回「未知」", key=f"pub_unk_{code}", help=_warn):
+ 2354:         set_publish_status(code, "unknown")
+ 2355:         st.rerun()
+ 2356:     st.divider()
+ 2357:     st.markdown("**你原来粘贴的 JD 原文**（逐字未改）")
+ 2358:     jd_p = _job_dir(job) / "jd.txt"
+==============================================================================
+### D:\study\bestagent\bestagent\m3_chat.py  [2426-2455]
+ 2426:             if dec_action:
+ 2427:                 append_msg(job["job_code"], "user", to_send)
+ 2428:                 record_decision(job, dec_action, prompt)
+ 2429:                 append_msg(job["job_code"], "assistant", build_decision_reply(dec_action, prompt))
+ 2430:                 st.rerun()
+ 2431:                 return
+ 2432:             # v1.8.5：**疑似拍板 → 面板本地处理**（0 花费）。治两次实测漏拍板：
+ 2433:             # 「直接往下走吧，把这个岗位写入岗位」(09-09) / 「我们做这个岗位吧」(09-15) 都落进了自由对话，
+ 2434:             # 而自由对话里它**没有记决策的手** → 只能说"我记为 accept"（假事实）。
+ 2435:             _awaiting = last_pending_ask(job["job_code"])
+ 2436:             _conf = confirmed_intent(prompt, _awaiting)
+ 2437:             if _conf:
+ 2438:                 append_msg(job["job_code"], "user", to_send)
+ 2439:                 if _conf == "cancel":
+ 2440:                     append_msg(job["job_code"], "assistant", CANCEL_REPLY)
+ 2441:                 else:
+ 2442:                     record_decision(job, _conf, prompt)
+ 2443:                     append_msg(job["job_code"], "assistant",
+ 2444:                                build_decision_reply(_conf, prompt)
+ 2445:                                + "\n（这次是**面板先问、你点头**才记的——不是它替你猜的。）")
+ 2446:                 st.rerun()
+ 2447:                 return
+ 2448:             _hint = detect_decision_hint(prompt)
+ 2449:             if _hint:
+ 2450:                 append_msg(job["job_code"], "user", to_send)
+ 2451:                 append_msg(job["job_code"], "assistant", build_decision_ask(_hint, prompt))
+ 2452:                 st.rerun()
+ 2453:                 return
+ 2454:         # 已拍板（decline/clarify）后想重跑①重新判断 → 走 analyze（decision 自动回 pending）
+ 2455:         if (stt_now.get("step1_analyzed") and stt_now.get("decision") in ("decline", "clarify")
+==============================================================================
+### D:\study\bestagent\bestagent\m3_chat.py  [2634-2640]
+ 2634:                            f"但**系统里没有发生**——`state.decision` 仍是 `{_after_dec}`。\n"
+ 2635:                            "原因：**拍板只能由你亲口说的精确词触发**（做吧 / 不做 / 先核实），"
+ 2636:                            "它手里没有「记决策」这只手（结构性修改不在自由对话授权内）。\n"
+ 2637:                            "→ 想落盘就回一句「**做吧**」（或 不做 / 先核实）；它刚才那段判断不用重跑。")
+ 2638:         st.rerun()
+ 2639: 
+ 2640: 
+==============================================================================
+### D:\study\bestagent\工作文档\PROGRESS.md  [440-448]
+  440: - **方案候选（未拍板）**：①手脚层（必修；先只读调研 profile 组装 / 会话落盘 / pwsh+沙箱权限，再报工作量）②壳层（可选后置，等老板摸过新版 GUI 能力）③根因治理（项目自带 `dsh_home`）。老板立场：升级是**被动点的**，目标 = **恢复能干活**，不是"用上新功能"。
+  441: - **环境事实（新增）**：**`npm.ps1` 被执行策略禁止 → 必须用 `npm.cmd`**；本沙箱内 `Get-NetTCPConnection` 不可用；本机无 PowerShell 7（延续教训 #4）。
+  442: - **✅ 只读调研完成（同日晚，结论见 `DSH升级事故·衔接报告.md` §8）**：新版 SDK = **"选 profile + 打 patch"**（不再手写 cordis）。实测跑通：①最小一轮（`profile="sdk"`，`finish_reason=completed`）②项目自带 `dsh_home`（会话落 `<home>\sessions\<workspace-slug>\<session-id>\session.v3.jsonl.zstd`，**与 GUI 的 `~/.dsh` 彻底隔离**）③启动载体 `dsh_bin=<.cmd 包装>` 可被 SDK 直接 Popen ④**persona 注入（`patches=` 覆盖 `system-prompt`）实测生效**（回复真带 `[小猎]` 前缀）⑤沙箱靠 `DSH_PERMISSION_MODE`（=danger-full-access 时 approval 自动 never）。两个坑：**`sdk-minimal` 本机必崩**（内置 `terminal-pwsh + shellDialect: pwsh` → node-pty `reading 'destroy'`，正教训 #4）→ **用 `sdk`**；**旧会话格式换代**（旧无压缩 `session.jsonl` vs 新 `session.v3.jsonl.zstd`）读不回来。**修复方案**：`framework_config.py` 加 `make_harness()` 工厂 + 项目内 `tools\dsh.cmd` + persona patch 单源 → 11 个调用点机械替换（先 4 个主链路 m3_chat/auto_job/publish_run/greet_run）；**工作量估计：主链路恢复半天到一天**（不含跑真单）。**唯一验不了**：pwsh 工具（我这边沙箱必 EPERM）需老板在 PyCharm 冒烟。
+  443: - **顺带可扔的旧包袱**：按任务切 cordis（CORDIS_MINIMAL / CORDIS_PWSH）不再需要（`sdk` profile 两工具面都有）；`.dsh-staging` 闭包退休（新版自带 runtime）；`.gitignore` 增 `bestagent/data/_probe_dshhome/` 与 `bestagent/data/dsh_home/`。
+  444: - **⚠️ 老板 PyCharm 实跑暴露两个必改项（报告 §8.8）**：**坑 A** `.cmd` 包装里写了**中文注释** → cmd.exe 按 GBK 解析批处理把它读乱 → 运行时启动即死且 stderr 是中文 GBK → SDK stderr 线程 UTF-8 解码崩 → 误报 `stdout closed`（我最初的"PyCharm 终端无 node"诊断**被老板 `node -v`=v24.13.0 证伪**，已在报告里纠正）；修复 = `.cmd` 纯 ASCII + `chcp 65001` + 写死 node 全路径；**教训：.bat/.cmd 一律只写 ASCII**（本机 `start_bridge.bat` 同隐患待改）。**坑 B（重要）session id 不能复用**：实测同 id 第二次 → `JsonRpcError: session "X" already exists`，新 id 则正常 → **`m3_chat` 每岗固定 id 反复执行会第二次就废、`auto_job` 的幂等续跑同受影响** → 对策 = **每次运行新 session id**（与"不赌会话记忆"铁律一致，人类侧连续性靠 transcript + 产物承载，零损失）；疑似上游 bug，可选上报。
+  445: - **✅ 两条冒烟全过（2026-09-10 深夜，老板在 PyCharm 实跑）**：①**pwsh 工具真跑通**（`finish_reason=completed`、返回 `hello-from-agent`、persona 前缀 `[小猎]` 同时生效）→ **采集链路关键门槛已过**；②**PyPI 上有 `deepseek-harness-sdk 0.1.5rc1` 可装**（`pip install --dry-run` 实测 `Would install deepseek-harness-sdk-0.1.5rc1`）→ **首选交付路径改为 pip wheel**（自带原生运行时，**不要 node、不要 .cmd、不要 checkout、换电脑一条命令**）；注意其版本号 `0.1.5rc1` 与本机 checkout 的 `0.1.5-alpha.2` **不同代**，需实测行为差异（尤其 session 复用是否已修）。
+  446: - **✅ rc1（pip 版）实测 + 最终方案定稿（报告 §8.9，全部由参谋长实测）**：老板装了 `deepseek-harness-sdk/-runtime-bin 0.1.5rc1`（**229MB 单文件 exe**）→ 实测 **exe 模式起运行时成功**（不传 `dsh_bin`/不注入 `sys.path`/不用 node/不用 checkout；`finish=completed`、5.3s、persona `[小猎]` 生效、会话落项目 home）。**session 复用 rc1 同样报 `already exists`** → 跨版本一致，**"每次运行新 session id"确认为必改项**（与"不赌会话记忆"一致，零损失）。交付细节：**exe 首跑自解压到 `%USERPROFILE%\.cache\pkg\<hash>`（约 20MB）→ 目标机器该位置须可写**（本会话沙箱不允许，靠探针重定向 `USERPROFILE` 才验通）。**最终方案**：①首选 pip wheel（`requirements.txt` 固定版本 + `make_harness()` 不传 dsh_bin + **删掉所有 `sys.path` 注入**，否则遮蔽 pip 包）②兜底 checkout+`tools\dsh.cmd`（纯 ASCII）③session id 每次唯一 ④11 调用点走工厂 ⑤`check_env()` 自检。
+  447: 
+  448: ## 2026-09-11 实施对话 · 底座修复（方案已落地 + 桥归位，✅ 验收①②④通过）
+==============================================================================
+### D:\study\bestagent\工作文档\DSH升级事故·衔接报告.md  [282-300]
+  282: - 教训：**`.cmd`/`.bat` 一律只写 ASCII**（本机 `start_bridge.bat` 也有中文注释，属同类隐患，建议一并纯 ASCII 化）。
+  283: 
+  284: 
+  285: **坑 B（重要，必改）：session id 不能复用** ⚠️
+  286: - 实测（沙箱三连）：固定 id 第 1 次 ✅ → **同 id 第 2 次 ❌ `JsonRpcError: session "X" already exists`** → 换新 id ✅。
+  287: - 即 **`harness.run(prompt, session_id=X)` 在 X 已存在于该 home 时会直接报错**（文档所述"复用 harness + session id 延续对话"在本版对跨进程路径不成立）。
+  288: - **影响面（迁移必改）**：`m3_chat` 每岗固定 `session_id` 反复执行 → 第二次就废；`auto_job` 的**幂等续跑**（设计核心属性）、`m2_eval_run`/`greet_run` 的分批复用同理。
+  289: - **对策（且与项目设计一致）**：**每次运行用新 session id**（如 `<job_session_id>-<步骤>-<时间戳>`）。项目铁律是"**不赌会话记忆**"（每轮注入状态卡 + 路径），人类侧的连续性由 `transcript.json` + 产物承载 → **零损失**，反而更干净。
+  290: - 另：该行为在 **rc1（pip 版）复测同样存在** → 跨版本一致，**不是某一版的偶发 bug**，按"设计如此"对待即可（可选仍可上报上游确认）。
+  291: 
+  292: ### 8.9 pip wheel（rc1）实测结论 + **最终方案定稿**（2026-09-10 深夜，全部由参谋长实测）
+  293: 
+  294: | 验证项 | 结果 |
+  295: |---|---|
+  296: | `pip install deepseek-harness-sdk` | ✅ 同时装 `deepseek-harness-runtime-bin 0.1.5rc1` = **229 MB 单文件 exe**（`…/site-packages/deepseek_harness_runtime/runtime/deepseek-harness-sdk-runtime-win-x64.exe`） |
+  297: | **exe 模式**起运行时（**不传 `dsh_bin` / 不注入 `sys.path` / 不用 node / 不用 checkout**） | ✅ `finish=completed`、5.3 s、persona 前缀 `[小猎]` 生效、会话落项目 home |
+  298: | persona patch 在 rc1 同样生效 | ✅（先排除过一次嫌疑：停用 patch 后报的是同一个沙箱错，与 patch 无关） |
+  299: | session 复用（rc1 复测） | ❌ 同样 `already exists` → **必改项确认，与版本无关** |
+  300: | profiles / patches / 沙箱 / 会话格式 | 与 alpha.2 checkout 一致（`profile="sdk"`、`DSH_PERMISSION_MODE`、`patches`、`<home>/sessions/<slug>/<sid>/session.v3.jsonl.zstd`） |
+==============================================================================
+### D:\study\bestagent\工作文档\省token第一刀与岗位认人·衔接报告.md  [215-232]
+  215: ### 6.2 工具面分档（【已实测】）
+  216: 
+  217: - `bare` 档关掉这 14 个 row：`tool-pwsh / tool-jobs / tool-fs-search / tool-skill / tool-todo / tool-goal / tool-ralph / tool-workflow / tool-subagent / tool-subagent-fork / tool-subagent-control / tool-subagent-list-agents / plan-mode / tool-web`
+  218: - 结果：**25 → 4**（read/write/edit/read_image）；tools JSON **25,907 → 3,050 字符**
+  219: - 探针实测（9 字符用户消息）：**首轮 7,439 → 1,268**（其中工具部分 ≈ −5,700/次问话）
+  220: - **`toolFilter` 机制要纠正**：SDK 文档里的 `toolFilter` 只作用于 **subagent 子 agent**；顶层 headless run 用不了它。
+  221:   我们用的是 **profile patch 按 row id `disabled: true`**（dsh-base 的 cordis.patch.yml 是**按行挂载**工具插件的）
+  222: - ⚠️ **`edit`/`read_image` 与 `read`/`write` 同包，行级分档关不掉**（只占 1,832 字符，无害）
+  223: 
+  224: ### 6.3 本场动过的文件（全在 `bestagent\`）
+  225: 
+  226: | 文件 | 性质 | 说明 |
+  227: |---|---|---|
+  228: | `framework_config.py` | 改 | 新增 `TOOL_PROFILES` / `write_tool_patch()` / `make_harness(tool_profile=…)` |
+  229: | `local_checks.py` | **新** | 纯本地产物校验（`check_analyze`，支持 `expect_html=False` 给 auto_job 那条路） |
+  230: | `probe_tools.py` | **新** | 工具面分档预飞（`--tool-profile bare`；`--stub-patch-only` 只出 patch 不调 API） |
+  231: | `m3_chat.py` | 改 | 现状卡 `job_brief_block` / ①任务重写 / bare 档接线 / 本地校验贴对话 / `LAST_RUN` / **不许假成功** / 岗位认人四件（`job_display_name` `save_meta` `analyze_summary` `job_info_dialog` + 记住上次的岗）/ CAPABILITIES 搬走状态段 |
+  232: | `_apply_patch.py` | **新** | 原地文本补丁器（见 §8） |
+==============================================================================
+### D:\study\bestagent\工作文档\省token第一刀与岗位认人·衔接报告.md  [274-280]
+  274: | 6 | `load_state` 那处"双向对齐"硬化是**过度改动**，被测试拦下并撤回（§2.7） |
+  275: | 7 | **上下文诊断里的"归因"是近似分摊**（把某轮增量算给上一轮调用的工具），同一段上下文会在后续每轮重复计入 → 单项数字**不能相加当真值**，只看量级排序 |
+  276: | 8 | PyCharm 的 **`.dsh-staging` 我没有物理移动/删除**，只让老板"排除"；它**仍在盘上**（22,735 文件） |
+  277: | 9 | 我自己的 **42 个工具**按动作收窄 = 【讨论中，未做】，要动 `~/.dsh` 的 profile |
+  278: | 10 | `tool_bare.patch.yml` 里 14 个 row 名是**按 dsh-base 的 cordis.patch.yml 抄的**；若 DSH 升级改了 row id，**patch 会静默不生效**（不会报错）→ **升级后要重跑 `probe_tools.py` 复核工具数** |
+  279: 
+  280: ---
+==============================================================================
+### D:\study\bestagent\工作文档\搜索体检与一岗一库·衔接报告.md  [408-422]
+  408: |---|---|
+  409: | `python/sdk` 的 `__init__/api/client/errors/models` | **旧仓库 / 新仓库 / pip 三处逐字节相同** |
+  410: | `packages/sdk/protocol/src/types.ts` | 逐字节相同 |
+  411: | `make_harness` 参数（`profile`/`patches`/`max_tokens`/`cwd`/`dsh_home`） | 不变；argv 仍 `--profile … --patch …` |
+  412: | `sdk` profile 的 `packages/bundle/sdk-app/cordis.patch.yml` | 两版**完全相同** |
+  413: | **base 的 row id** | **只增不减** → `framework_config.TOOL_PROFILES["bare"]` 关掉的 **14 个 id 全部还在**；`tool-fs`/`tool-fs-search`/`tool-pwsh` 未变 |
+  414: | base 默认模型 | `deepseek-v4-flash` → `deepseek-flash`；**两个 id 都在目录里**，我们显式传的 `MODEL` 不受影响 |
+  415: 
+  416: → **§2/§7 里我担心的"工具面补丁静默失效"这一条，静态比对下来是安全的**（实跑一次才算数）。
+  417: 
+  418: ### A.5 升级前必验三件（顺序即优先级）
+  419: 
+  420: 1. **工具面 row id** —— 静态已过；实跑一次确认补丁仍生效（**若不生效 = 每轮白付 ~6,481 token 租金，且不报错**）。
+  421: 2. **会话落盘格式 / `token_meter.py`** —— 新版有 session-format 迁移机制，且 `docs/persistence-changes/releases/` **只到 `dsh-v0.1.5-rc.2`，没有 0.1.6 那篇** → 只能实跑验「`session_projcache/sessions/*.json` 的 `tokenUsage.val.totals` 还读不读得到」。
+  422: 3. ⚠️ **`2026-09-14-session-log-upload-default`（会话日志默认上传）** —— 我们会话里有老板的 JD / PM 口径 / 候选人信息。**升级前必须确认这个默认行为与"数据只落本地"的口径冲不冲突。这条最要紧。**
+==============================================================================
+### dsh_home 下的 cordis*.yml
+  D:\study\bestagent\bestagent\data\dsh_home\profiles\sdk\cordis.patch.yml  (217 B)
+  D:\study\bestagent\bestagent\data\dsh_home\profiles\sdk\cordis.yml  (223 B)
+==============================================================================
+### D:\study\bestagent\bestagent\probe_tools.py
+  （全文 79 行）
+    1: #!/usr/bin/env python3
+    2: # -*- coding: utf-8 -*-
+    3: """probe_tools.py — 工具面分档预飞（不改任何业务文件，只量一件事：这一档下模型看到几个工具）
+    4: 
+    5: 为什么要它：工具面是"每轮固定租金"（25 个 = 25,907 字符 ≈ 6,481 token/轮）。
+    6: 改分档属于动底座，**改错了所有动作一起坏**，所以先孤立验一次：能不能起来 + 工具数对不对。
+    7: 
+    8: 跑法（cwd = bestagent\\，解释器 lzstudy）：
+    9:   python probe_tools.py                       # 全量（对照，25 个）
+   10:   python probe_tools.py --tool-profile bare   # 分档（预期 read/write/edit/read_image 4 个）
+   11:   python probe_tools.py --tool-profile bare --env-file <path/.env>
+   12: 
+   13: 读法：工具清单与首轮 inputTokens 都印出来；同时把这次会话 id 印出来，
+   14:       可再用 token_ledger 从会话日志里复核（`request/header.tools` 是权威口径）。
+   15: """
+   16: from __future__ import annotations
+   17: 
+   18: import argparse
+   19: import json
+   20: import sys
+   21: from datetime import datetime
+   22: from pathlib import Path
+   23: 
+   24: try:
+   25:     sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+   26: except Exception:
+   27:     pass
+   28: 
+   29: from framework_config import (  # noqa: E402
+   30:     BROWSER_AGENT, TOOL_PROFILES, TOOL_PATCHES_DIR, WORKSPACE, ensure_dirs,
+   31:     load_env_file, make_harness, write_tool_patch,
+   32: )
+   33: 
+   34: DEFAULT_ENV = BROWSER_AGENT / ".env"
+   35: PERSONA = "你是猎头数字合伙人「小猎」。只回一个字，不要调用任何工具。"
+   36: TASK = "回一个字：好"
+   37: 
+   38: 
+   39: def main() -> None:
+   40:     ap = argparse.ArgumentParser(description="工具面分档预飞：量这一档下模型看到几个工具")
+   41:     ap.add_argument("--tool-profile", default=None,
+   42:                     help=f"分层名（{sorted(TOOL_PROFILES)}）；不传=全量对照")
+   43:     ap.add_argument("--env-file", type=Path, default=DEFAULT_ENV)
+   44:     ap.add_argument("--stub-patch-only", action="store_true",
+   45:                     help="只生成 patch 文件并打印内容，不调 API（0 花费）")

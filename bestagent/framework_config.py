@@ -113,11 +113,64 @@ def write_persona_patch(persona: str, suffix: str = DEFAULT_PERSONA_SUFFIX) -> P
     return PERSONA_PATCH
 
 
+# ═══════════════════════ 工具面分档（按动作给"手"）═══════════════════════
+# 2026-09-14 实测依据（一次①岗位分析 8 轮）：
+#   · 25 个 tool schema = 25,907 字符 ≈ 6,481 token，**每轮都付**；
+#   · 8 轮里实际只调用了 read/write/glob；全项目 10 个会话只调用过 4 个工具；
+#   · 首轮固定前缀 ≈ 7,430 token（system 4,627 字符 + 25 工具），与用户消息长短几乎无关。
+# 机制：dsh-base 的 cordis.patch.yml 是**按 row id 分行挂载**工具插件的，
+#   later layer 可按 id 覆盖/关闭 → 关掉的插件不挂载 = 工具从模型侧消失且调用被拒。
+#   （注：SDK 文档里的 `toolFilter` 只作用于 subagent 子 agent，顶层 headless run 用不了它。）
+# 约束：同一 npm 包里的工具是"整包"的（tool-fs 同时提供 read/write/edit/read_image），
+#   所以行级分档关不掉 edit/read_image —— 无害，它俩不会被调用，只占 1,832 字符。
+TOOL_PROFILES: dict[str, tuple[str, ...]] = {
+    # bare：纯文件任务（①岗位分析 / ②出计划 / ③池子评估 / 打招呼 / 发岗文字 / 自由对话）
+    #   保留 tool-fs（read/write）+ 文件系统底座；关掉命令/搜索/网页/分身/工作流/目标/待办等。
+    "bare": (
+        "tool-pwsh",                  # 跑命令（②采集执行才需要）
+        "tool-jobs",                  # job_list / job_output / job_kill
+        "tool-fs-search",             # glob / grep（任务里路径已写全 → 用不到，且能物理堵住"列目录找路"）
+        "tool-skill",                 # 技能目录还不存在
+        "tool-todo",                  # todo_write
+        "tool-goal",                  # create_goal / get_goal / update_goal
+        "tool-ralph",                 # ralph
+        "tool-workflow",              # workflow（第二贵，3,986 字符，从没用过）
+        "tool-subagent",              # subagent
+        "tool-subagent-fork",         # subagent_fork
+        "tool-subagent-control",      # send_message
+        "tool-subagent-list-agents",  # list_agents
+        "plan-mode",                  # exit_plan_mode
+        "tool-web",                   # web_search / web_fetch（§2.2 点名的"只有 persona 一句话防线"）
+    ),
+}
+TOOL_PATCHES_DIR = DSH_HOME  # 与 persona.patch.yml 同处（DSH_HOME 已 gitignore，本目录内容由本模块生成）
+
+
+def write_tool_patch(profile: str) -> Path:
+    """把工具面分档渲染成 profile 的 patch 文件，返回路径。
+
+    单源 = 本模块 TOOL_PROFILES（同 write_persona_patch：自动生成，勿手改）。
+    """
+    rows = TOOL_PROFILES.get(profile)
+    if rows is None:
+        raise ValueError(f"未知工具面分档 '{profile}'；可选：{sorted(TOOL_PROFILES)}")
+    out = TOOL_PATCHES_DIR / f"tool_{profile}.patch.yml"
+    TOOL_PATCHES_DIR.mkdir(parents=True, exist_ok=True)
+    text = (
+        "# 自动生成，勿手改：工具面分档单源在 framework_config.TOOL_PROFILES\n"
+        "# 按 row id 关闭 dsh-base 挂载的工具插件（关掉 = 不挂载 = 工具从模型侧消失且拒绝执行）\n"
+        + "".join(f"- id: {rid}\n  disabled: true\n" for rid in rows)
+    )
+    out.write_text(text, encoding="utf-8")
+    return out
+
+
 def make_harness(
     env: dict[str, str] | None = None,
     max_tokens: int = MAX_TOKENS_AUTO,
     *,
     persona: str | None = None,
+    tool_profile: str | None = None,
     cwd: Path | str | None = None,
     initialize_timeout_seconds: float = INITIALIZE_TIMEOUT,
     request_timeout_seconds: float = REQUEST_TIMEOUT,
@@ -130,29 +183,36 @@ def make_harness(
       （自带 node 运行时；不需要 DSH 源码 checkout / 不需要系统 node / 不需要 .dsh-staging）。
     - **项目自带 home**：DSH_HOME=<项目>\data\dsh_home → 会话与 GUI 的 ~/.dsh 完全隔离。
     - **persona**：传入则写 PERSONA_PATCH（单源）并注入；不传则沿用已有 patch（没有再报错）。
+    - **tool_profile**：工具面分档（见 TOOL_PROFILES）。传了就按 row id 关掉用不到的工具插件，
+      省下"每轮固定租金"；不传 = 沿用 profile 默认的全量工具面。
     - **沙箱**：DSH_PERMISSION_MODE=danger-full-access（无头运行，approval 自动 never）。
     - **session id**：本版对跨进程路径**不支持复用**（同 id 第二次报 `session "X" already exists`）
       → 调用方每次运行都要用新 id（如 `<job_session_id>-<step>-<时间戳>`），与「不赌会话记忆」铁律一致。
 
     用法：
-        with make_harness(env, max_tokens=8192, persona=PERSONA) as harness:
+        with make_harness(env, max_tokens=8192, persona=PERSONA, tool_profile="bare") as harness:
             result = harness.run(prompt, session_id=f"{job_id}-{int(time.time())}")
     """
     from deepseek_harness import DeepSeekHarness  # 延迟 import：只做自检时不必载 SDK
 
     run_env = dict(env or {})
     run_env["DSH_PERMISSION_MODE"] = PERMISSION_MODE
+    patch_list: list[str] = []
     if persona:
-        patches: tuple[str, ...] = (str(write_persona_patch(persona)),)
+        patch_list.append(str(write_persona_patch(persona)))
     elif "patches" in overrides:
-        patches = tuple(overrides.pop("patches"))
+        patch_list.extend(str(p) for p in overrides.pop("patches"))
     elif PERSONA_PATCH.is_file():
-        patches = (str(PERSONA_PATCH),)
+        patch_list.append(str(PERSONA_PATCH))
     else:
         raise RuntimeError(
             f"persona patch 不存在且本次未传 persona：{PERSONA_PATCH}\n"
             "调用 make_harness(persona=PERSONA) 一次即可生成（人设缺省会丢）。"
         )
+    # 工具面分档（可选）：按 row id 关掉用不到的工具插件 → 工具从模型侧消失（省每轮固定租金）
+    if tool_profile:
+        patch_list.append(str(write_tool_patch(tool_profile)))
+    patches: tuple[str, ...] = tuple(patch_list)
 
     return DeepSeekHarness(
         profile=DSH_PROFILE,

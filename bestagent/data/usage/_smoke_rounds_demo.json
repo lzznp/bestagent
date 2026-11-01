@@ -1,0 +1,95 @@
+{
+  "job_code": "J-CHAT-20260914-172253",
+  "plan_file": "（示例·假数据，不是真跑出来的）",
+  "tab_id": 1890030095,
+  "searches_estimate": 9,
+  "elapsed_sec": 118.6,
+  "ts": "2026-09-15 18:20:00",
+  "rounds": [
+    {
+      "n": 1,
+      "keyword": "电气设计 输送线",
+      "conds": ["city_current=南京", "education=本科"],
+      "reason": "先按 JD 两条硬门槛（南京 base + 本科及以上）跑一轮，看基础池子有多厚",
+      "changed": "",
+      "found": true,
+      "total": 360,
+      "total_raw": "共360位人选",
+      "is_plus": false,
+      "ok": true,
+      "searches": 3,
+      "anchors_immediate_chat": 20,
+      "steps": [
+        {"group_id": "keyword", "value": "电气设计 输送线", "type": "input", "verify": true,
+         "found": true, "total": 3000, "total_raw": "共3000+位人选", "is_plus": true, "stale": true},
+        {"group_id": "city_current", "value": "南京", "type": "chips+panel", "verify": true,
+         "found": true, "total": 1200, "total_raw": "共1200位人选"},
+        {"group_id": "education", "value": "本科", "type": "chips", "verify": true,
+         "found": true, "total": 360, "total_raw": "共360位人选"}
+      ]
+    },
+    {
+      "n": 2,
+      "keyword": "电控设计 输送线",
+      "conds": ["city_current=南京", "education=本科", "activity=今天活跃"],
+      "changed": "换职能叫法（电控设计）+ 加活跃度",
+      "reason": "看「电控设计」这个叫法能捞到多少人，以及活跃度会砍掉多少",
+      "found": true,
+      "total": 142,
+      "total_raw": "共142位人选",
+      "delta_vs_prev": -218,
+      "ok": true,
+      "searches": 4,
+      "anchors_immediate_chat": 20,
+      "steps": [
+        {"group_id": "city_current", "value": "南京", "type": "chips+panel", "verify": true,
+         "found": true, "total": 980, "total_raw": "共980位人选"},
+        {"group_id": "education", "value": "本科", "type": "chips", "verify": true,
+         "found": true, "total": 290, "total_raw": "共290位人选"},
+        {"group_id": "activity", "value": "今天活跃", "type": "dropdown", "verify": true,
+         "found": true, "total": 142, "total_raw": "共142位人选"}
+      ]
+    },
+    {
+      "n": 3,
+      "keyword": "音飞储存 电气",
+      "conds": ["city_current=南京"],
+      "changed": "改打竞品公司名（它自己提到的第二轮备选）",
+      "reason": "竞品打法：直接捞在南京同行里干过的人",
+      "found": true,
+      "total": 58,
+      "total_raw": "共58位人选",
+      "delta_vs_prev": -84,
+      "ok": true,
+      "searches": 2,
+      "anchors_immediate_chat": 58,
+      "steps": [
+        {"group_id": "city_current", "value": "南京", "type": "chips+panel", "verify": true,
+         "found": true, "total": 58, "total_raw": "共58位人选"}
+      ]
+    },
+    {
+      "n": 4,
+      "keyword": "EPLAN 输送线",
+      "conds": ["city_current=南京", "activity=今天活跃"],
+      "changed": "回到技能词，试「不叠同义词」那条经验",
+      "reason": "捞简历里不写『电气设计』但用 EPLAN 画输送线图纸的同行",
+      "found": false,
+      "total": null,
+      "total_raw": "",
+      "ok": false,
+      "verify_failed": true,
+      "error": "条件未生效（verify=False）：activity=今天活跃 —— 常见原因：该档位在页面上不存在 / 选项文字不匹配 / 点击落到了别的元素",
+      "steps": []
+    }
+  ],
+  "notes": [
+    "第 4 轮条件没生效，命中总数也没读到（不猜）"
+  ],
+  "conclusion": "基础盘：『电气设计 输送线 + 南京 + 本科』命中 360；换成职能叫法『电控设计』再加『今天活跃』后掉到 142（活跃度砍得最狠，砍掉约一半）；竞品打法『音飞储存 电气 + 南京』只有 58 —— 说明这条更适合做第二轮补捞，不适合打头阵。第 4 轮白跑：活跃度这个条件没生效（页面 verify 硬失败），需要重跑一次再下结论。",
+  "highlights": [
+    "南京+本科+电气设计 输送线 = 360 人，池子够厚，可以开工",
+    "活跃度是最狠的筛子（290 → 142），非必要不加",
+    "竞品关键词『音飞储存 电气』只有 58 人，适合补捞"
+  ]
+}

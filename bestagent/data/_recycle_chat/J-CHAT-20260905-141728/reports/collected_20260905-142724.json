@@ -1,0 +1,20 @@
+{
+ "keywords": [
+  "数字后端设计工程师",
+  "物理设计工程师",
+  "PR工程师 Innovus",
+  "海思 数字后端"
+ ],
+ "conds": [
+  {
+   "group_id": "years",
+   "value": "1-3年"
+  },
+  {
+   "group_id": "education",
+   "value": "本科及以上"
+  }
+ ],
+ "count": 0,
+ "rows": []
+}

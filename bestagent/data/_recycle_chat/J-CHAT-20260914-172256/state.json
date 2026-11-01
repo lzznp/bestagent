@@ -1,0 +1,14 @@
+{
+  "job_code": "J-CHAT-20260914-172256",
+  "jd_provided": true,
+  "step1_analyzed": true,
+  "step2_collected": false,
+  "step3_done": false,
+  "last_action": "岗位分析",
+  "decision": "pending",
+  "decision_note": null,
+  "decision_ts": null,
+  "updated_at": "2026-09-15 09:16:35",
+  "job_title": "岗位 J-CHAT-20260914-172256",
+  "last_run_session": "m3chat-J-CHAT-20260914-172256-analyze-1789434942"
+}

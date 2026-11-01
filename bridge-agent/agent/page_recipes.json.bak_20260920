@@ -1,0 +1,515 @@
+{
+  "schema": 2,
+  "recipe_version": 1,
+  "default_page": "h.liepin.com/search/getConditionItem",
+  "note": "配方表 schema2：多页面配方库。pages 按 URL 键组织，匹配规则同 knowledge_config.json（路径子串优先→域名兜底）。load_recipes(url) 按 URL 取对应页面配方。",
+  "pages": {
+    "h.liepin.com/search/getConditionItem": {
+      "page_name": "猎聘找简历条件页",
+      "note": "找简历页配方表（B 计划：结构化枚举 + 校验 + 修正的地基）。status=confirmed 已实测；pending 待进一步实测。来源：2026-08-23 实测（快照/探针/视觉/扩展 mousedown 修复后）。",
+      "updated_at": "2026-08-23 22:10",
+      "groups": [
+        {
+          "id": "keyword",
+          "name": "包含全部关键词",
+          "type": "input",
+          "locate": {
+            "pos": {
+              "top_min": 100,
+              "top_max": 200,
+              "min_width": 400
+            },
+            "note": "Ant Select 搜索框 name 为空，按位置定位（搜索按钮同行的最宽输入框）"
+          },
+          "action": "type 到关键词输入框（placeholder≈'搜职位/公司/行业等'）",
+          "options": "自由文本",
+          "verify": "快照中该 input 的 value = 输入值",
+          "pits": [
+            "中文用空格分隔 = 全部命中（AND）",
+            "英文用逗号分隔"
+          ],
+          "status": "confirmed"
+        },
+        {
+          "id": "job_title",
+          "name": "职位名称",
+          "type": "input+dropdown",
+          "locate": {
+            "pos": {
+              "top_min": 200,
+              "top_max": 230,
+              "left_min": 100,
+              "left_max": 500
+            }
+          },
+          "action": "type 到'搜索职位'输入框；'全部'下拉可选限定",
+          "options": "自由文本 / 全部",
+          "verify": "value 核对",
+          "pits": [
+            "'全部' 文本页内出现 2 处（职位名称/公司名称各一）"
+          ],
+          "status": "confirmed"
+        },
+        {
+          "id": "company",
+          "name": "公司名称",
+          "type": "input+dropdown",
+          "locate": {
+            "pos": {
+              "top_min": 200,
+              "top_max": 230,
+              "left_min": 500,
+              "left_max": 900
+            }
+          },
+          "action": "type 到'搜索公司'输入框",
+          "options": "自由文本",
+          "verify": "value 核对",
+          "pits": [],
+          "status": "confirmed"
+        },
+        {
+          "id": "clear",
+          "name": "清空筛选条件",
+          "type": "button",
+          "action": "click_by_text '清空筛选条件'（重置全部条件）",
+          "options": "-",
+          "verify": "条件区恢复默认（不限/无选中标签）",
+          "pits": [],
+          "status": "confirmed"
+        },
+        {
+          "id": "city_current",
+          "name": "目前城市",
+          "type": "chips+panel",
+          "locate": {
+            "other_occ": 1,
+            "panel_input_contains": "搜索城市"
+          },
+          "action": "快捷 chip 直接点；不在快捷列表的点'其他'(occurrence=1) 开面板 → type 城市名到'搜索城市'框 → 重新快照 → 点输入框正下方 name=城市名 的 span → 点底部'确认'",
+          "options": "快捷列表动态（页面记忆最近选择，实测出现过 青岛/成都/杭州/西安/北京/上海/深圳/秦皇岛）+ 面板全量",
+          "verify": "选中后该行出现目标城市 chip；确认后 URL 含 #session",
+          "pits": [
+            "面板打开时背后页面快捷 chip 会混入快照编号（视觉排序），点前必须核对 name 与目标城市一致",
+            "过滤结果文本可能拆节点（'山东·青岛' 认 name='青岛' 的 span）",
+            "必须点过滤结果，直接点'确认'不选中（已选0/9）",
+            "面板多选（已选x/9）",
+            "确认后自动触发搜索（中间态，非最终结果）"
+          ],
+          "status": "confirmed"
+        },
+        {
+          "id": "city_expected",
+          "name": "期望城市",
+          "type": "chips+panel",
+          "locate": {
+            "other_occ": 2,
+            "panel_input_contains": "搜索城市"
+          },
+          "action": "同目前城市，但'其他'用 occurrence=2",
+          "options": "快捷列表（许昌/武汉/广州/北京/无锡/大连/郑州/杭州 等动态）+ 面板全量",
+          "verify": "同 city_current",
+          "pits": [
+            "同 city_current",
+            "'其他' occurrence=2（页面共 2 个城市行'其他'）"
+          ],
+          "status": "confirmed"
+        },
+        {
+          "id": "years",
+          "name": "工作年限",
+          "type": "chips",
+          "locate": {
+            "click_text_map": {
+              "1-3年": "1-3",
+              "3-5年": "3-5",
+              "5-10年": "5-10",
+              "10年以上": "10"
+            },
+            "note": "文本拆节点：'3-5年'=em'3-5'+label'年'，click_by_text 用映射后的短文本"
+          },
+          "action": "click_by_text '不限'/'应届生'/'1-3'/'3-5'/'5-10'/'10'/'自定义'",
+          "options": [
+            "不限",
+            "应届生",
+            "1-3年",
+            "3-5年",
+            "5-10年",
+            "10年以上",
+            "自定义"
+          ],
+          "verify": "结果页顶部已选标签区出现如'3-5年'标签",
+          "pits": [
+            "⚠️ 文本拆节点：'3-5年'在 DOM 里是 em'3-5' + label'年'，click_by_text 必须用'3-5'（不带'年'）",
+            "⚠️ 即点即搜：点击年限 chip 会选中并自动触发搜索（URL #session + 结果页），不是纯选中",
+            "搜索结果刷新有延迟，点后需等待结果更新再校验",
+            "⚠️ 待确认：点 chip 后搜索结果疑似未按年限过滤（实测结果混入 20 年经验者），需验证等待时长或过滤是否生效"
+          ],
+          "status": "confirmed"
+        },
+        {
+          "id": "education",
+          "name": "教育经历",
+          "type": "chips",
+          "action": "click_by_text '不限'/'本科'/'硕士'/'博士/博士后'/'大专'/'中专/中技'/'高中及以下'",
+          "options": [
+            "不限",
+            "本科",
+            "硕士",
+            "博士/博士后",
+            "大专",
+            "中专/中技",
+            "高中及以下"
+          ],
+          "verify": "已选标签区出现对应标签",
+          "pits": [
+            "疑似同年限'即点即搜'，待确认"
+          ],
+          "status": "confirmed"
+        },
+        {
+          "id": "tongzhao",
+          "name": "统招要求",
+          "type": "dropdown",
+          "locate": {
+            "open_text": "统招",
+            "open_occ": 1
+          },
+          "action": "click_by_text '统招'（或 '不限' occurrence=5）展开下拉，再点目标选项",
+          "options": [
+            "统招/非统招（不限）",
+            "统招本科",
+            "统招硕士",
+            "统招博士",
+            "统招大专"
+          ],
+          "verify": "下拉展开后选项出现（body 文本）；选中后已选标签区出现",
+          "pits": [
+            "⚠️ 必须扩展支持 mousedown 事件序列（P5-2 已修 zClick/zClickByText），否则打不开",
+            "快照元素 name 为空，但 click_by_text 的 TreeWalker 能找到文本",
+            "'不限' occurrence=5（document order）"
+          ],
+          "status": "confirmed"
+        },
+        {
+          "id": "school",
+          "name": "院校要求",
+          "type": "chips",
+          "action": "click_by_text '不限'/'211'/'985'/'双一流'/'海外留学'",
+          "options": [
+            "不限",
+            "211",
+            "985",
+            "双一流",
+            "海外留学"
+          ],
+          "verify": "已选标签区出现对应标签",
+          "pits": [],
+          "status": "confirmed"
+        },
+        {
+          "id": "industry_current",
+          "name": "当前行业",
+          "type": "input+dropdown",
+          "action": "⚠️ 待测：placeholder='不限'（input 的 placeholder 不是文本节点，click_by_text 匹配不到）；点击 input 无反应。可能需 type 触发联想或点击 selector 区域。低优先级",
+          "options": "待测",
+          "verify": "待定",
+          "pits": [
+            "input placeholder 不是文本节点",
+            "依赖 mousedown 修复后仍无反应，交互方式特殊"
+          ],
+          "status": "pending"
+        },
+        {
+          "id": "position_current",
+          "name": "当前职位",
+          "type": "input+dropdown",
+          "action": "⚠️ 待测：同当前行业",
+          "options": "待测",
+          "verify": "待定",
+          "pits": [],
+          "status": "pending"
+        },
+        {
+          "id": "age",
+          "name": "年龄",
+          "type": "input×2",
+          "locate": {
+            "pair_pos": {
+              "top_min": 520,
+              "top_max": 560,
+              "left_min": 100,
+              "left_max": 350
+            }
+          },
+          "action": "type 起/止岁数到两个输入框",
+          "options": "自由数字",
+          "verify": "value 核对",
+          "pits": [],
+          "status": "confirmed"
+        },
+        {
+          "id": "activity",
+          "name": "活跃度",
+          "type": "dropdown",
+          "locate": {
+            "open_text": "不限",
+            "open_occ": 8
+          },
+          "action": "click_by_text '不限' occurrence=8 展开下拉，再点目标选项",
+          "options": [
+            "不限",
+            "今天活跃",
+            "3天内活跃",
+            "7天内活跃",
+            "30天内活跃",
+            "最近三个月活跃",
+            "最近半年活跃",
+            "最近一年活跃"
+          ],
+          "verify": "下拉展开后选项出现（body 文本含'今天活跃'等）",
+          "pits": [
+            "⚠️ 依赖 mousedown 修复（P5-2）",
+            "⚠️ 是'今天活跃'不是'今日活跃'",
+            "'不限' occurrence=8（document order）",
+            "点 input(combobox) 无效，要点可见文本 span"
+          ],
+          "status": "confirmed"
+        },
+        {
+          "id": "gender",
+          "name": "性别",
+          "type": "dropdown",
+          "locate": {
+            "open_text": "不限",
+            "open_occ": 9
+          },
+          "action": "click_by_text '不限' occurrence=9 展开下拉，再点 男/女",
+          "options": [
+            "不限",
+            "男",
+            "女"
+          ],
+          "verify": "下拉展开后出现 男/女",
+          "pits": [
+            "依赖 mousedown 修复",
+            "'不限' occurrence=9"
+          ],
+          "status": "confirmed"
+        },
+        {
+          "id": "jobhop",
+          "name": "跳槽频率",
+          "type": "dropdown",
+          "locate": {
+            "open_text": "（不限）",
+            "open_occ": 2
+          },
+          "action": "click_by_text '跳槽频率（不限）' 或 '（不限）' occurrence=2 展开下拉",
+          "options": "待补（下拉可开，选项文字未捕获）",
+          "verify": "下拉展开后选项出现",
+          "pits": [
+            "依赖 mousedown 修复",
+            "'（不限）' occurrence=2"
+          ],
+          "status": "confirmed"
+        },
+        {
+          "id": "expand",
+          "name": "展开更多条件",
+          "type": "toggle",
+          "action": "内容已在 DOM/快照中可见（语言/年薪/期望行业/职位/毕业院校/专业/求职状态/简历语言/海外/管理 元素均有 rect），无需点击即可操作；如需折叠展开再确认",
+          "options": "展开/折叠",
+          "verify": "目标条件组元素可见即可",
+          "pits": [
+            "body_preview 永远包含全部文本（textContent 含隐藏元素），不能据此判断可见性；以元素是否有 rect/编号为准"
+          ],
+          "status": "confirmed"
+        },
+        {
+          "id": "language",
+          "name": "语言",
+          "type": "chips",
+          "action": "click_by_text '不限'/'普通话'/'英语'/'日语'/'法语'/'粤语'/'其他'",
+          "options": [
+            "不限",
+            "普通话",
+            "英语",
+            "日语",
+            "法语",
+            "粤语",
+            "其他"
+          ],
+          "verify": "已选标签区出现对应标签",
+          "pits": [
+            "可能在折叠区，需先展开更多条件"
+          ],
+          "status": "confirmed"
+        },
+        {
+          "id": "salary_expected",
+          "name": "期望年薪",
+          "type": "input×2",
+          "locate": {
+            "pair_pos": {
+              "top_min": 630,
+              "top_max": 665,
+              "left_min": 100,
+              "left_max": 350
+            }
+          },
+          "action": "type 起/止（万）到两个输入框（值如 '15-20万' 自动拆 min/max）",
+          "options": "自由数字",
+          "verify": "value 核对",
+          "pits": [],
+          "status": "confirmed"
+        },
+        {
+          "id": "salary_current",
+          "name": "目前年薪",
+          "type": "input×2",
+          "locate": {
+            "pair_pos": {
+              "top_min": 630,
+              "top_max": 665,
+              "left_min": 400,
+              "left_max": 650
+            }
+          },
+          "action": "同期望年薪",
+          "options": "自由数字",
+          "verify": "value 核对",
+          "pits": [],
+          "status": "confirmed"
+        },
+        {
+          "id": "industry_expected",
+          "name": "期望行业",
+          "type": "input+dropdown",
+          "action": "⚠️ 待测",
+          "options": "待测",
+          "verify": "待定",
+          "pits": [],
+          "status": "pending"
+        },
+        {
+          "id": "position_expected",
+          "name": "期望职位",
+          "type": "input+dropdown",
+          "action": "⚠️ 待测",
+          "options": "待测",
+          "verify": "待定",
+          "pits": [],
+          "status": "pending"
+        },
+        {
+          "id": "school_name",
+          "name": "毕业院校",
+          "type": "input",
+          "action": "type（placeholder='请输入学校名称'）",
+          "options": "自由文本",
+          "verify": "value 核对",
+          "pits": [],
+          "status": "confirmed"
+        },
+        {
+          "id": "major",
+          "name": "专业名称",
+          "type": "input",
+          "action": "type（placeholder='请输入专业名称'）",
+          "options": "自由文本",
+          "verify": "value 核对",
+          "pits": [],
+          "status": "confirmed"
+        },
+        {
+          "id": "jobstatus",
+          "name": "求职状态",
+          "type": "dropdown",
+          "locate": {
+            "open_text": "求职状态（不限）",
+            "open_occ": 1
+          },
+          "action": "click_by_text '求职状态（不限）' 展开下拉，再点目标选项",
+          "options": [
+            "离职，正在找工作",
+            "在职，急寻新工作",
+            "在职，看看新机会",
+            "在职，暂无跳槽打算"
+          ],
+          "verify": "下拉展开后选项出现（body 文本）",
+          "pits": [
+            "依赖 mousedown 修复",
+            "'（不限）' occurrence=3"
+          ],
+          "status": "confirmed"
+        },
+        {
+          "id": "resume_lang",
+          "name": "简历语言",
+          "type": "dropdown",
+          "action": "⚠️ 待测",
+          "options": "待测",
+          "verify": "待定",
+          "pits": [],
+          "status": "pending"
+        },
+        {
+          "id": "abroad",
+          "name": "海外工作经验",
+          "type": "checkbox",
+          "locate": {
+            "checkbox_name": "workAbroad"
+          },
+          "action": "click input[name=workAbroad]（或其 label）",
+          "options": "开/关",
+          "verify": "input value/checked 状态",
+          "pits": [],
+          "status": "confirmed"
+        },
+        {
+          "id": "manage",
+          "name": "管理经验",
+          "type": "checkbox",
+          "locate": {
+            "checkbox_name": "managerial"
+          },
+          "action": "click input[name=managerial]",
+          "options": "开/关",
+          "verify": "input value/checked 状态",
+          "pits": [],
+          "status": "confirmed"
+        },
+        {
+          "id": "search",
+          "name": "搜索按钮",
+          "type": "button",
+          "action": "click_by_text '搜 索'（触发最终搜索）",
+          "options": "-",
+          "verify": "URL 含 #session + 候选人列表出现",
+          "pits": [
+            "注意'搜 索'中间有空格",
+            "部分 chip（年限等）会即点即搜，搜索按钮用于收齐条件后统一触发"
+          ],
+          "status": "confirmed"
+        }
+      ],
+      "behaviors": {
+        "即点即搜": "工作年限/教育经历/院校要求 等 chip 点击后选中并自动触发搜索（URL #session + 结果页）——不是纯选中，点完需等待结果刷新（实测 8 秒后过滤正确，2.5 秒不够）再校验",
+        "下拉展开方式": "Ant Design Select 控件（统招/活跃度/性别/跳槽/求职状态等）监听 mousedown——必须点其可见文本 span（click_by_text），扩展需支持 mousedown 事件序列（P5-2 已修 zClick/zClickByText）；点 input(combobox) 无效",
+        "'不限' occurrence 映射": "document order 参考：occ=5 统招 / occ=8 活跃度 / occ=9 性别 / occ=10 跳槽频率；'（不限）' occ=2 跳槽 / occ=3 求职状态（页面稳定但建议现查）",
+        "城市面板": "多选+必须点确认+确认后自动搜索（详见 city_current pits）",
+        "结果页结构": "混合态：顶部条件区 + 已选标签区（可删除）+ 候选人列表（锚点'立即沟通'，source_id=res_id_encode）+ 分页（li 编号/下一页）",
+        "页面记忆": "页面会记住最近选择的城市（快捷列表动态变化），配方不要假设快捷列表固定",
+        "元素数波动": "干净页元素数 139/141 波动 → 编号不稳定，操作一律用文本定位（click_by_text），不要按编号"
+      },
+      "pending_items": [
+        "当前行业/当前职位/期望行业/期望职位：input placeholder 型，交互方式特殊（type 联想？点 selector？）——低优先级",
+        "简历语言下拉（'（不限）' occ=4？）——低优先级",
+        "跳槽频率选项文字（下拉可开未捕获）——低优先级",
+        "扩展 mousedown 修复后回归：全量 6 套测试（test_experience 等）",
+        "执行骨架：配方表 + 校验 → JD→设条件→搜索 确定性链路"
+      ]
+    }
+  }
+}

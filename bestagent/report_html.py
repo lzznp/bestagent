@@ -389,6 +389,766 @@ def render(job_title: str, pool: dict, candidates: list[dict],
 </html>"""
 
 
+# ── ① 岗前分析 · 过程文档：本地渲染（2026-09-15 第二刀）──────────────────────────
+# 背景（【已实测】，见 省token第一刀·衔接报告 §4.1-A / §7-4）：
+#   · 这份过程网页原先由 LLM **手写整份 HTML**，而且**没有长度上限**——
+#     盘上 8 份真网页 9,389 ~ 24,148 字节；同一次重跑里它自己从 9,439 涨到 13,065 字符（+38%）；
+#     结果是第一刀省下的 token 被 output 涨回去（8,923 → 10,200）。
+#   · 改法与 render_publish 同一套路：**LLM 只交内容字段，页面本地渲染**。
+#     事实层面（读了什么/来源/字节数）本地代码就知道；判断层面（评分/风险/结论）已在 analyze JSON 里；
+#     真正只有它知道的只剩「关键字怎么选的 / 要核实什么 / 下一步」→ 这正是 process 块（有硬预算）。
+# 边界（与 local_checks 同一条纪律）：**本模块只搬运与排版，不判断内容好坏、不改判断结论**；
+#   长度预算只掐「过程叙述」这块新增内容，**评分/风险/建议一个字不截**。
+
+ANALYZE_BUDGET = {
+    "keyword_reasoning": 250,  # 字符串上限（字符）
+    "verify_item": 50,         # 待核实清单：单条上限
+    "verify_list": 5,          # 待核实清单：条数上限
+    "next_step": 100,          # 字符串上限
+    "total": 600,              # process 块合计硬顶（= 250 + 5×50 + 100）
+}
+
+ANALYZE_REC_META = {
+    "接单": {"cls": "rec", "label": "建议接单"},
+    "沟通": {"cls": "hold", "label": "先沟通再定"},
+    "放弃": {"cls": "no", "label": "建议别做"},
+}
+ANALYZE_DIM_LABELS = (
+    ("commission", "佣金"), ("hc_count", "HC 数量"), ("freshness", "新鲜度"),
+    ("upstream", "上游靠谱度"), ("difficulty", "匹配难度"),
+)
+
+
+def _analyze_ts(name: str) -> str:
+    """从 analyze_YYYYMMDD-HHMMSS.json 文件名还原产出时间（老命名带下划线也认）。"""
+    import re
+    m = re.search(r"(\d{8})[-_](\d{6})", str(name or ""))
+    if not m:
+        return ""
+    d, t = m.group(1), m.group(2)
+    return f"{d[:4]}-{d[4:6]}-{d[6:8]} {t[:2]}:{t[2:4]}:{t[4:6]}"
+
+
+def _clip(x, limit: int) -> tuple[str, bool]:
+    """硬约束到 limit 字符（省略号本身也算进去）——预算是硬顶，不是"大约"。
+
+    2026-09-15 冒烟实测：原写法 `s[:limit] + "…"` 会返回 limit+1 个字符，
+    于是「超预算已截断」的字段反而**越过了上限**（251/250、607/600）→ 预算形同虚设，已修。
+    """
+    s = str(x or "").strip()
+    if len(s) <= limit:
+        return s, False
+    return s[: max(0, limit - 1)].rstrip() + "…", True
+
+
+def clip_process(data: dict) -> tuple[dict, dict]:
+    """把 analyze JSON 的 process 块按 ANALYZE_BUDGET 收敛（本地强制）。返回 (收敛后, 用量)。
+
+    老报告（2026-09-15 之前）没有 process 块 → 返回空块 + present=False，页面照渲染（不报错）。
+    """
+    raw = data.get("process") if isinstance(data.get("process"), dict) else {}
+    usage = {"present": bool(raw), "chars": {}, "truncated": [], "total": 0,
+             "budget": ANALYZE_BUDGET["total"]}
+    kr, c1 = _clip(raw.get("keyword_reasoning"), ANALYZE_BUDGET["keyword_reasoning"])
+    if c1:
+        usage["truncated"].append("keyword_reasoning")
+    ns, c2 = _clip(raw.get("next_step"), ANALYZE_BUDGET["next_step"])
+    if c2:
+        usage["truncated"].append("next_step")
+    items = raw.get("verify_list") or []
+    if isinstance(items, str):
+        items = [items]
+    vl = []
+    for i, it in enumerate(items):
+        if i >= ANALYZE_BUDGET["verify_list"]:
+            usage["truncated"].append("verify_list 条数")
+            break
+        s, cut = _clip(it, ANALYZE_BUDGET["verify_item"])
+        if cut:
+            usage["truncated"].append("verify_list 单条")
+        if s:
+            vl.append(s)
+    usage["chars"] = {"keyword_reasoning": len(kr), "verify_list": sum(len(x) for x in vl),
+                      "next_step": len(ns)}
+    usage["total"] = sum(usage["chars"].values())
+    return {"keyword_reasoning": kr, "verify_list": vl, "next_step": ns}, usage
+
+
+def render_analyze(job_title: str, data: dict, meta: dict | None = None) -> str:
+    """① 岗前分析 · 过程文档（本地渲染，0 token、确定性、有长度预算）。
+
+    meta（全可选）：job_code / created_at / first_time / jd_bytes / artifacts_count / rules_used
+    """
+    meta = meta or {}
+    now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    je = data.get("jd_extracted") or {}
+    sc = data.get("score") or {}
+    pg = data.get("progress") or {}
+    rec = str(data.get("recommendation") or "")
+    rmeta = ANALYZE_REC_META.get(rec, {"cls": "hold", "label": rec or "（无结论）"})
+    proc, usage = clip_process(data)
+    title = job_title or je.get("job_title") or meta.get("job_code") or "（未命名岗位）"
+
+    # 一、输入与来源（本地事实，0 token）
+    inputs = [
+        ("岗位 JD（唯一事实输入）",
+         f"<code>jd.txt</code>（{esc(meta.get('jd_bytes') or '—')} 字节）",
+         "本次分析的全部事实来源；JD 非空即不应再向老板索要"),
+        ("方法论手册", "<code>data/prompts/analyze_job.txt</code>",
+         "决定输出 JSON 的字段与五维评分标准（本页排版也按它）"),
+        ("成长规则库",
+         f"<code>data/prompts/rules.md</code>{'（本次已读）' if meta.get('rules_used') else '（本次未读）'}",
+         "历史纠错沉淀的规则，同一条错不重犯"),
+    ]
+    inputs_rows = "".join(
+        f"<tr><td>{esc(a)}</td><td>{b}</td><td>{esc(c)}</td></tr>" for a, b, c in inputs)
+
+    # 二、JD 提取
+    jd_rows = "".join(
+        f"<tr><td>{esc(label)}</td><td>{esc(je.get(key) or '—')}</td></tr>"
+        for label, key in (("岗位名称", "job_title"), ("公司", "company"), ("城市", "city"),
+                           ("薪资", "salary"), ("核心要求", "requirements"), ("岗位描述", "description")))
+
+    # 三、逐项评分（判断结论原样搬，不截断）
+    det = sc.get("details") or {}
+    dim_rows = ""
+    for key, label in ANALYZE_DIM_LABELS:
+        d = det.get(key) or {}
+        dim_rows += (f"<tr><td>{esc(label)}</td><td class='num'>{esc(d.get('score'))}</td>"
+                     f"<td>{esc(d.get('value') or '—')}</td></tr>")
+    dim_sum = 0
+    for key, _l in ANALYZE_DIM_LABELS:
+        v = (det.get(key) or {}).get("score")
+        if isinstance(v, int) and not isinstance(v, bool):
+            dim_sum += v
+
+    # 六、搜索关键字
+    kw = data.get("search_keywords") or {}
+    kw_rows = "".join(f"<tr><td>{esc(k)}</td><td>{esc(v)}</td></tr>" for k, v in kw.items()) \
+        or "<tr><td colspan='2'>（无）</td></tr>"
+    kr_html = (f'<div class="box"><b>选词思路</b><p>{esc(proc["keyword_reasoning"])}</p></div>'
+               if proc["keyword_reasoning"] else "")
+
+    # 七、待核实 + 下一步
+    vl_html = ("<ol>" + "".join(f"<li>{esc(x)}</li>" for x in proc["verify_list"]) + "</ol>"
+               if proc["verify_list"] else '<p class="dim">（本次没给待核实清单）</p>')
+    nx_html = (f'<div class="box">{esc(proc["next_step"])}</div>' if proc["next_step"]
+               else '<p class="dim">（本次没给下一步建议）</p>')
+
+    # 风险（判断结论原样搬，不截断）
+    risks = [x for x in (sc.get("risks") or []) if str(x).strip()]
+    risks_html = ("<ol>" + "".join(f"<li>{esc(x)}</li>" for x in risks) + "</ol>"
+                  if risks else '<p class="dim">（无）</p>')
+
+    # 页脚：长度预算用量（本地量，看得见的确认）
+    if usage["present"]:
+        bud = (f'过程叙述 {usage["total"]}/{usage["budget"]} 字'
+               f'（选词思路 {usage["chars"]["keyword_reasoning"]}'
+               f'｜待核实 {usage["chars"]["verify_list"]}'
+               f'｜下一步 {usage["chars"]["next_step"]}）')
+        if usage["truncated"]:
+            bud += "（<b>超预算已本地截断</b>：" + "、".join(usage["truncated"]) + "）"
+    else:
+        bud = ("本份报告是老版本（analyze JSON 里还没有 process 叙述块）：页面内容仍全部可渲染，"
+               "只少「选词思路 / 待核实 / 下一步」三小节；下一次①分析会自动带上")
+
+    return f"""<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>岗前分析过程 · {esc(title)}</title>
+<style>
+  body{{font-family:-apple-system,"Segoe UI","Microsoft YaHei",sans-serif;background:#fbfbfa;margin:0;padding:26px 30px;color:#222;line-height:1.7;max-width:1000px;}}
+  h1{{font-size:21px;border-bottom:3px solid #2e6fdb;padding-bottom:8px;margin:0 0 6px;}}
+  h2{{font-size:16px;color:#1b4f9c;margin-top:26px;border-left:5px solid #2e6fdb;padding-left:9px;}}
+  .meta{{font-size:13px;color:#666;margin:0 0 16px;}}
+  .badge{{display:inline-block;padding:2px 10px;border-radius:10px;font-size:13px;color:#fff;}}
+  .b-rec{{background:#2e9e5b;}} .b-hold{{background:#e08a00;}} .b-no{{background:#c0392b;}}
+  table{{border-collapse:collapse;width:100%;margin:10px 0;font-size:13.5px;background:#fff;}}
+  th,td{{border:1px solid #d7dbe0;padding:6px 9px;text-align:left;vertical-align:top;}}
+  th{{background:#eef3fb;font-weight:600;}}
+  td.num{{text-align:center;font-weight:700;width:56px;}}
+  .box{{background:#fff;border:1px solid #e2e5ea;border-radius:6px;padding:10px 14px;margin:10px 0;}}
+  .box p{{margin:6px 0 0;}}
+  .warn{{background:#fff7e6;border-left:4px solid #e08a00;padding:10px 14px;margin:10px 0;border-radius:0 5px 5px 0;}}
+  .dim{{color:#999;font-size:13px;}}
+  code{{background:#f2f4f7;padding:1px 5px;border-radius:3px;font-size:12.5px;}}
+  ol,ul{{margin:6px 0;padding-left:22px;}} li{{margin:4px 0;}}
+  .foot{{margin-top:30px;font-size:12.5px;color:#888;border-top:1px dashed #ccc;padding-top:10px;}}
+</style>
+</head>
+<body>
+
+<h1>岗前分析过程文档 · {esc(title)}</h1>
+<p class="meta">
+岗位号：{esc(meta.get("job_code") or "—")} ｜ 岗位目录建档：{esc(meta.get("created_at") or "—")} ｜
+分析产出：{esc(meta.get("analyzed_at") or _analyze_ts(meta.get("json_name") or "") or "—")} ｜
+本次性质：{esc("首次分析" if meta.get("first_time") else "重跑（覆盖旧结论）")}<br>
+执行步骤：① 岗前分析 ｜ 结论：<span class="badge b-{esc(rmeta['cls'])}">{esc(rmeta['label'])}（recommendation = {esc(rec or '—')}）</span>
+｜ 总分 {esc(sc.get("total"))}/25 · 等级「{esc(sc.get("level") or "—")}」（五项之和 {esc(dim_sum)}）
+</p>
+
+<h2>一、这次读了什么（输入与来源）</h2>
+<table>
+  <tr><th>输入</th><th>文件</th><th>用途</th></tr>
+  {inputs_rows}
+</table>
+<p class="dim">以上为本岗分析时的盘上事实（本地读盘写入本页，0 token）。本岗 reports 目录分析前已有产物
+{esc(meta.get("artifacts_count", 0))} 个。</p>
+
+<h2>二、JD 信息提取</h2>
+<table>
+  <tr><th style="width:120px">字段</th><th>内容</th></tr>
+  {jd_rows}
+</table>
+
+<h2>三、逐项评分（判断结论原样呈现）</h2>
+<table>
+  <tr><th style="width:120px">维度</th><th>得分</th><th>依据</th></tr>
+  {dim_rows}
+  <tr><td><b>总分</b></td><td class="num">{esc(sc.get("total"))}</td>
+      <td><b>{esc(sc.get("level") or "")}</b>　{esc(sc.get("advice") or "")}</td></tr>
+</table>
+
+<h2>四、进展判断</h2>
+<div class="box">
+<p><b>状态：</b>{esc(pg.get("status") or "—")}　<b>已推荐：</b>{esc(pg.get("recommended_count", 0))}　
+<b>面试中：</b>{esc(pg.get("interviewing_count", 0))}　<b>已发 offer：</b>{esc(pg.get("offer_count", 0))}</p>
+<p><b>进展影响：</b>{esc(sc.get("progress_impact") or "—")}</p>
+</div>
+
+<h2>五、风险清单</h2>
+{risks_html}
+
+<h2>六、猎聘搜索关键字（4 组）</h2>
+<table>
+  <tr><th style="width:120px">分组</th><th>关键词</th></tr>
+  {kw_rows}
+</table>
+{kr_html}
+
+<h2>七、要核实的 & 下一步</h2>
+<p><b>必须先跟 PM 核实的口径</b></p>
+{vl_html}
+<p><b>下一步建议</b></p>
+{nx_html}
+
+<div class="foot">
+本地渲染：本页全部内容来自 <code>{esc(meta.get("json_name") or "analyze_*.json")}</code> 与盘上事实，
+小猎<b>没有手写本页 HTML</b>（可随时由 <code>report_html.render_analyze</code> 重生）· 渲染时间 {esc(now)}<br>
+长度预算：{bud}。<b>判断结论（评分／风险／建议）不设上限、不被截断</b>——预算只掐「过程叙述」。
+</div>
+</body>
+</html>"""
+
+
+# ── ② 搜索体检 · 过程报告（本地渲染；2026-09-15 老板口径："几轮搜索 → 一份过程报告"）────
+# 与 render_analyze 同一条纪律：本模块**只搬运与排版，不判断内容好坏**；
+#   长度预算只掐「小猎的叙述」，**命中人数 / 校验结果这些事实一个数字都不截**。
+SEARCH_BUDGET = {
+    "reason": 80,       # 每轮"为什么这么设"（字符上限）
+    "changed": 60,      # 每轮"改了什么"
+    "conclusion": 300,  # 小猎的总结论
+    "highlight": 60,    # 要点单条
+    "highlights": 5,    # 要点条数
+    "total": 440,       # 合计硬顶
+}
+
+
+def clip_search_text(trace: dict) -> tuple[dict, dict]:
+    """把 trace 里**小猎写的叙述**按 SEARCH_BUDGET 收敛（本地强制）。返回 (收敛后, 用量)。"""
+    usage = {"chars": {}, "truncated": [], "total": 0, "budget": SEARCH_BUDGET["total"]}
+    concl, c1 = _clip(trace.get("conclusion"), SEARCH_BUDGET["conclusion"])
+    if c1:
+        usage["truncated"].append("总结论")
+    hs, hcut = [], False
+    for i, h in enumerate(trace.get("highlights") or []):
+        if i >= SEARCH_BUDGET["highlights"]:
+            usage["truncated"].append("要点条数")
+            break
+        s, cut = _clip(h, SEARCH_BUDGET["highlight"])
+        hcut = hcut or cut
+        if s:
+            hs.append(s)
+    if hcut:
+        usage["truncated"].append("要点单条")
+    rounds = []
+    for r in trace.get("rounds") or []:
+        rr = dict(r)
+        rr["reason"], a = _clip(r.get("reason"), SEARCH_BUDGET["reason"])
+        rr["changed"], b = _clip(r.get("changed"), SEARCH_BUDGET["changed"])
+        if a:
+            usage["truncated"].append(f"第{r.get('n')}轮理由")
+        if b:
+            usage["truncated"].append(f"第{r.get('n')}轮改动")
+        rounds.append(rr)
+    usage["chars"] = {"总结论": len(concl), "要点": sum(len(x) for x in hs),
+                      "各轮理由": sum(len(r["reason"]) for r in rounds),
+                      "各轮改动": sum(len(r["changed"]) for r in rounds)}
+    usage["total"] = sum(usage["chars"].values())
+    return {"conclusion": concl, "highlights": hs, "rounds": rounds}, usage
+
+
+def _delta_cell(cur, prev) -> str:
+    """相对上一轮的变化（本地算，不判断好坏）。"""
+    if cur is None or prev is None:
+        return "<span class='dim'>—</span>"
+    d = cur - prev
+    if d == 0:
+        return "<span class='dim'>持平</span>"
+    pct = f"（{d / prev * 100:+.0f}%）" if prev else ""
+    return f"<span class='{'drop' if d < 0 else 'rise'}'>{d:+d}{pct}</span>"
+
+
+def _killer_rows(rounds: list) -> list:
+    """本地算「哪个条件砍人最多」——只用**真读数**做减法，**不做任何业务判断**。
+
+    ⚠️ 2026-09-15 **真跑实测踩到的坑**：`input` 类条件（关键字）**不触发搜索**，它那一步读到的数是
+    **上一次搜索的旧状态**。实测 5 轮的"关键字那一步"读数完全一样（`共3000+位人选`／27 个锚点，
+    与关键字内容无关）→ **铁证它不是"关键字池"，而是个常量**（清空条件后的页面残留）。
+    若拿它当基线，就会算出"加城市砍掉 2858 人"这种**假因果**（真跑那份报告里当场就出现了）。
+    所以：`stale` 的读数**一律不参与减法**（页面上仍如实列出，只是不算进"砍人最多"）。
+    """
+    out = []
+    for r in rounds:
+        seq = [(f"{s.get('group_id')}={s.get('value')}", s.get("total"))
+               for s in (r.get("steps") or [])
+               if s.get("found") and s.get("total") is not None and not s.get("stale")]
+        if r.get("found") and r.get("total") is not None:
+            seq.append(("本轮定稿（点「搜 索」后）", r["total"]))
+        best = None
+        for i in range(1, len(seq)):
+            lx, lv = seq[i - 1]
+            cx, cv = seq[i]
+            d = cv - lv
+            if best is None or d < best[0]:
+                best = (d, cx, lx, lv, cv)
+        if best and best[0] < 0:
+            out.append((r.get("n"), best[1], best[0], f"{best[2]} {best[3]} → {best[4]}"))
+    return out
+
+
+def render_search_rounds(job_title: str, trace: dict, meta: dict | None = None) -> str:
+    """② 搜索体检 · 过程文档（本地渲染，0 token、确定性、有长度预算）。
+
+    trace = `search_rounds.py` 落盘的《轮次轨迹》JSON（每轮关键字 / 条件 / 每步命中人数）。
+    meta（全可选）：job_code / plan_file / json_name / html_name
+    """
+    meta = meta or {}
+    now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    conv, usage = clip_search_text(trace)
+    rounds = conv["rounds"] or []
+    title = job_title or trace.get("job_code") or "（未命名岗位）"
+    dry = bool(trace.get("dry_run"))
+    found_n = len([r for r in rounds if r.get("found")])
+
+    main_rows, prev = "", None
+    for r in rounds:
+        tot = r.get("total")
+        if r.get("found") and tot is not None:
+            shown = (r.get("total_raw") or str(tot)).replace("共", "").replace("位人选", "")
+            tot_cell = f"<b class='big'>{esc(shown)}</b>"
+        else:
+            tot_cell = "<span class='miss'>读不到</span>"
+        main_rows += (
+            f"<tr><td class='num'>{esc(r.get('n'))}</td><td>{esc(r.get('keyword'))}</td>"
+            f"<td>{esc('、'.join(r.get('conds') or []) or '（无）')}</td>"
+            f"<td class='num'>{tot_cell}</td><td>{_delta_cell(tot, prev)}</td>"
+            f"<td>{esc(r.get('changed') or '—')}"
+            f"<div class='dim'>{esc(r.get('reason') or '')}</div></td></tr>")
+        if tot is not None:
+            prev = tot
+
+    step_rows = ""
+    for r in rounds:
+        for s in (r.get("steps") or []):
+            if "group_id" not in s:
+                continue
+            v = s.get("verify")
+            mark = "✅" if v else ("⚠️" if v is None else "❌")
+            note = ("未触发搜索：读数是「上一次搜索」的旧状态" if s.get("stale")
+                    else "即点即搜后的读数")
+            step_rows += (
+                f"<tr><td class='num'>{esc(r.get('n'))}</td>"
+                f"<td>{esc(s.get('group_id'))}={esc(s.get('value'))}</td>"
+                f"<td>{esc(s.get('type'))}</td><td>{mark}</td>"
+                f"<td class='num'>{esc(s.get('total_raw') or '读不到')}</td>"
+                f"<td class='dim'>{note}</td></tr>")
+
+    kill_rows = "".join(
+        f"<tr><td class='num'>{esc(n)}</td><td>{esc(cur)}</td>"
+        f"<td class='num drop'>{d:+d}</td><td class='dim'>{esc(chain)}</td></tr>"
+        for n, cur, d, chain in _killer_rows(rounds))
+
+    miss = [f"第 {r.get('n')} 轮（{esc(r.get('keyword'))}）" for r in rounds if not r.get("found")]
+    bad = [f"第 {r.get('n')} 轮：{esc(r.get('error'))}" for r in rounds if r.get("verify_failed")]
+    warn_html = ""
+    if miss:
+        warn_html += ("<div class='warn'><b>读不到命中总数的轮次</b>：" + "、".join(miss) +
+                      "——页面文本里没出现「共N位人选」（可能没刷新完，或文本被截掉）。"
+                      "<b>这里不猜</b>：这几轮就是空的。</div>")
+    if bad:
+        warn_html += "<div class='warn'><b>条件没生效（verify=False，硬失败）</b>：" + "<br>".join(bad) + "</div>"
+    if dry:
+        warn_html += "<div class='warn'>这是一份 <b>dry-run 计划稿</b>：只体检了计划本身，<b>没有真开浏览器</b>，没有命中人数。</div>"
+
+    concl_html = (f"<div class='box'>{esc(conv['conclusion'])}</div>" if conv["conclusion"] else
+                  "<div class='warn'>小猎没有给结论（轨迹里没有 <code>conclusion</code>）——"
+                  "本页只有事实，没有它的判断。</div>")
+    hl_html = ("<ul>" + "".join(f"<li>{esc(h)}</li>" for h in conv["highlights"]) + "</ul>"
+               if conv["highlights"] else "<p class='dim'>（未给要点）</p>")
+    bud = (f"小猎的叙述共 {usage['total']}/{usage['budget']} 字"
+           + (f"（已截断：{'、'.join(usage['truncated'])}）" if usage["truncated"] else "（未触顶）"))
+
+    return f"""<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>搜索体检过程 · {esc(title)}</title>
+<style>
+  body{{font-family:-apple-system,"Segoe UI","Microsoft YaHei",sans-serif;background:#fbfbfa;margin:0;padding:26px 30px;color:#222;line-height:1.7;max-width:1000px;}}
+  h1{{font-size:21px;border-bottom:3px solid #2e6fdb;padding-bottom:8px;margin:0 0 6px;}}
+  h2{{font-size:16px;color:#1b4f9c;margin-top:26px;border-left:5px solid #2e6fdb;padding-left:9px;}}
+  .meta{{font-size:13px;color:#666;margin:0 0 16px;}}
+  table{{border-collapse:collapse;width:100%;margin:10px 0;font-size:13.5px;background:#fff;}}
+  th,td{{border:1px solid #d7dbe0;padding:6px 9px;text-align:left;vertical-align:top;}}
+  th{{background:#eef3fb;font-weight:600;}}
+  td.num{{text-align:center;font-weight:700;width:76px;}}
+  td.num b.big{{font-size:17px;color:#1b4f9c;}}
+  .miss{{color:#c0392b;font-weight:700;}}
+  .drop{{color:#c0392b;font-weight:700;}} .rise{{color:#2e9e5b;font-weight:700;}}
+  .box{{background:#fff;border:1px solid #e2e5ea;border-radius:6px;padding:10px 14px;margin:10px 0;}}
+  .warn{{background:#fff7e6;border-left:4px solid #e08a00;padding:10px 14px;margin:10px 0;border-radius:0 5px 5px 0;}}
+  .dim{{color:#999;font-size:13px;}}
+  code{{background:#f2f4f7;padding:1px 5px;border-radius:3px;font-size:12.5px;}}
+  ol,ul{{margin:6px 0;padding-left:22px;}} li{{margin:4px 0;}}
+  .foot{{margin-top:30px;font-size:12.5px;color:#888;border-top:1px dashed #ccc;padding-top:10px;}}
+</style>
+</head>
+<body>
+
+<h1>② 搜索体检 · 过程文档 · {esc(title)}</h1>
+<p class="meta">
+岗位号：{esc(meta.get("job_code") or trace.get("job_code") or "—")} ｜
+计划文件：<code>{esc(meta.get("plan_file") or trace.get("plan_file") or "—")}</code> ｜
+执行时间：{esc(trace.get("ts") or "—")}<br>
+轮数 {len(rounds)} ｜ 拿到命中总数 {found_n}/{len(rounds)} 轮 ｜ 搜索约 {esc(trace.get("searches_estimate", "—"))} 次 ｜
+用时 {esc(trace.get("elapsed_sec", "—"))}s ｜ tab {esc(trace.get("tab_id", "—"))}<br>
+数据来源：<b>只读</b>结果页上的「共N位人选」（<b>不抓人</b>：没调 extract、没落任何候选人 id、没开详情页）
+</p>
+
+<h2>一、每轮：关键字 / 条件 / 命中总人数</h2>
+<table>
+  <tr><th style="width:52px">轮</th><th style="width:190px">关键字</th><th>条件</th>
+      <th style="width:96px">命中总数</th><th style="width:130px">相对上轮</th><th>改了什么 / 为什么</th></tr>
+  {main_rows or "<tr><td colspan='6' class='dim'>（没有轮次）</td></tr>"}
+</table>
+<p class="dim">命中总数 = 结果页原文「共N位人选」（含 <code>+</code> 表示平台只给到"3000+"这种量级）。</p>
+
+<h2>二、每个条件砍掉多少人（本地算减法，不做业务判断）</h2>
+<table>
+  <tr><th style="width:52px">轮</th><th>砍人最多的一步</th><th style="width:90px">变化</th><th>读数链条</th></tr>
+  {kill_rows or "<tr><td colspan='4' class='dim'>（读数不够，算不出「砍人最多」的一步）</td></tr>"}
+</table>
+<p class="dim">只统计<b>一轮之内</b>两次读数之间的变化（跨轮的变化看上面第一张表）；某轮没出现，说明那轮读数不够。
+<b>标记为「旧状态」的读数（关键字那一步不触发搜索）不参与计算</b>——否则会算出"加城市砍掉 2858 人"这种假因果。</p>
+
+<h2>三、逐步明细（每个条件设完后的读数）</h2>
+<table>
+  <tr><th style="width:52px">轮</th><th>条件</th><th style="width:96px">类型</th>
+      <th style="width:52px">生效</th><th style="width:110px">设完后的读数</th><th>说明</th></tr>
+  {step_rows or "<tr><td colspan='6' class='dim'>（没有条件明细）</td></tr>"}
+</table>
+
+{warn_html}
+
+<h2>四、小猎的结论（它自己写的）</h2>
+{concl_html}
+{hl_html}
+
+<div class="foot">
+本地渲染：本页来自《轮次轨迹》<code>{esc(meta.get("json_name") or "search_rounds_*.json")}</code>，
+执行与读数全部由 <code>search_rounds.py</code> 完成，<b>小猎没有手写本页 HTML</b>（可随时由
+<code>report_html.render_search_rounds</code> 重生）· 渲染时间 {esc(now)}<br>
+长度预算：{bud}。<b>命中人数与校验结果不设上限、不被截断</b>——预算只掐小猎的叙述。<br>
+已知脆点：命中总数只能从页面纯文本<b>前 3000 字</b>里读；页面条件极多时可能读不到（读不到就如实标，不猜）。
+</div>
+</body>
+</html>"""
+
+
+def render_collect(job_title: str, trace: dict, meta: dict | None = None) -> str:
+    """② 正式采集 · 过程报告（本地渲染，0 token）。
+
+    trace = 采集执行器落的轨迹 JSON（每页：命中/通过/开详情；每人：分数/命中词/决定/详情字数）。
+    meta（全可选）：job_code / json_name / html_name / plan_file
+    """
+    meta = meta or {}
+    now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    title = job_title or trace.get("job_code") or "（未命名岗位）"
+    rounds = trace.get("rounds") or []
+    dry = bool(trace.get("dry_run"))
+
+    r_rows = ""
+    detail_rows = ""
+    for r in rounds:
+        st = r.get("stats") or {}
+        r_rows += (
+            f"<tr><td class='num'>{esc(r.get('n'))}</td><td><b>{esc(r.get('keyword'))}</b></td>"
+            f"<td>{esc('、'.join(r.get('conds') or []) or '（无）')}</td>"
+            f"<td class='num'>{esc(r.get('total_raw') or '读不到')}</td>"
+            f"<td class='num'>{esc(st.get('n', 0))}</td>"
+            f"<td class='num'><b class='big'>{esc(st.get('open', 0))}</b></td>"
+            f"<td class='num'>{esc(st.get('industry', 0))}</td>"
+            f"<td class='num'>{esc(st.get('avg_score', 0))}</td>"
+            f"<td>{esc(r.get('stop_reason') or '继续')}</td></tr>")
+        for j in (r.get("cards") or []):
+            c = j.get("card") or {}
+            act = j.get("action") or j.get("decision") or ""
+            mark = {"open": "🔍 开详情", "skip": "留卡", "drop": "不收集"}.get(act, esc(act))
+            hit = "、".join((j.get("industry_hits") or [])[:3]) or "—"
+            sk = "、".join((j.get("skill_hits") or [])[:3]) or "—"
+            dt = j.get("detail") or {}
+            dtxt = (f"{esc(dt.get('chars'))} 字" + ("（截断）" if dt.get("truncated") else "")
+                    ) if dt.get("chars") else "—"
+            detail_rows += (
+                f"<tr><td class='num'>{esc(r.get('n'))}</td><td>{esc(c.get('name') or '?')}</td>"
+                f"<td class='num'>{esc(j.get('score'))}</td><td class='num'>{esc(c.get('years') or '?')}</td>"
+                f"<td>{esc(c.get('education') or '?')}</td><td>{esc(c.get('city') or '?')}</td>"
+                f"<td>{esc(c.get('expect_position') or '—')}</td>"
+                f"<td>{esc(hit)}</td><td>{esc(sk)}</td><td>{mark}</td><td class='dim'>{dtxt}</td></tr>")
+
+    opened = [j for r in rounds for j in (r.get("cards") or []) if j.get("action") == "open"]
+    detail_sec = ""
+    for j in opened:
+        c = j.get("card") or {}
+        d = j.get("detail") or {}
+        head = (f"<b>{esc(c.get('name') or '?')}</b> · {esc(j.get('score'))} 分 · "
+                f"{esc(c.get('years') or '?')} 年 · {esc(c.get('education') or '?')} · {esc(c.get('city') or '?')}")
+        body = esc((d.get("excerpt") or "（没有详情全文）")[:1200])
+        detail_sec += (f"<div class='box'>{head}<div class='dim'>行业命中：{esc('、'.join(j.get('industry_hits') or []) or '—')}"
+                       f" ｜ 开详情理由：{esc((j.get('reasons') or ['—'])[0])}</div>"
+                       f"<pre style='white-space:pre-wrap;font-size:12.5px;max-height:300px;overflow:auto'>{body}</pre></div>")
+
+    warn_html = ""
+    if dry:
+        warn_html += "<div class='warn'>这是 <b>dry-run</b>：只跑了本地判分，<b>没开浏览器、没开详情、没写库</b>。</div>"
+    if trace.get("notes"):
+        warn_html += "<div class='warn'>" + "<br>".join(esc(x) for x in trace["notes"]) + "</div>"
+    miss = [r.get("n") for r in rounds if not r.get("total_raw")]
+    if miss:
+        warn_html += ("<div class='warn'>第 " + "、".join(str(x) for x in miss) +
+                      " 页<b>没读到「共N位人选」</b>（如实标注，不猜）。</div>")
+
+    return f"""<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>正式采集过程 · {esc(title)}</title>
+<style>
+  body{{font-family:-apple-system,"Segoe UI","Microsoft YaHei",sans-serif;background:#fbfbfa;margin:0;padding:26px 30px;color:#222;line-height:1.7;max-width:1200px;}}
+  h1{{font-size:21px;border-bottom:3px solid #2e6fdb;padding-bottom:8px;margin:0 0 6px;}}
+  h2{{font-size:16px;color:#1b4f9c;margin-top:26px;border-left:5px solid #2e6fdb;padding-left:9px;}}
+  .meta{{font-size:13px;color:#666;margin:0 0 16px;}}
+  table{{border-collapse:collapse;width:100%;margin:10px 0;font-size:13px;background:#fff;}}
+  th,td{{border:1px solid #d7dbe0;padding:5px 8px;text-align:left;vertical-align:top;}}
+  th{{background:#eef3fb;font-weight:600;}}
+  td.num{{text-align:center;font-weight:700;}}
+  td.num b.big{{font-size:17px;color:#1b4f9c;}}
+  .box{{background:#fff;border:1px solid #e2e5ea;border-radius:6px;padding:10px 14px;margin:10px 0;}}
+  .warn{{background:#fff7e6;border-left:4px solid #e08a00;padding:10px 14px;margin:10px 0;border-radius:0 5px 5px 0;}}
+  .dim{{color:#999;font-size:12.5px;}}
+  code{{background:#f2f4f7;padding:1px 5px;border-radius:3px;font-size:12.5px;}}
+  .foot{{margin-top:30px;font-size:12.5px;color:#888;border-top:1px dashed #ccc;padding-top:10px;}}
+</style>
+</head>
+<body>
+
+<h1>② 正式采集 · 过程报告 · {esc(title)}</h1>
+<p class="meta">
+岗位号：{esc(meta.get("job_code") or trace.get("job_code") or "—")} ｜
+执行时间：{esc(trace.get("ts") or "—")} ｜ 用时 {esc(trace.get("elapsed_sec", "—"))}s ｜
+tab {esc(trace.get("tab_id", "—"))}<br>
+本岗库：<code>{esc(trace.get("db_path") or "—")}</code> ｜
+产物：<code>{esc(trace.get("out_file") or "—")}</code> ｜ 详情配额：{esc(trace.get("details_per_page", "—"))}/页<br>
+口径：<b>翻页人工、判断本地</b>——本地只做"值不值得开详情"的排序与配额，<b>不丢人</b>（丢人是匹配层的事）。
+</p>
+
+{warn_html}
+
+<h2>一、每页：命中 / 卡片 / 开详情 / 行业命中 / 平均分 / 为什么停</h2>
+<table>
+  <tr><th style="width:44px">页</th><th style="width:170px">关键字</th><th>条件</th>
+      <th style="width:96px">共N位人选</th><th style="width:60px">卡片</th><th style="width:70px">开详情</th>
+      <th style="width:70px">行业命中</th><th style="width:64px">平均分</th><th>停不停</th></tr>
+  {r_rows or "<tr><td colspan='9' class='dim'>（没有页记录）</td></tr>"}
+</table>
+
+<h2>二、逐个候选人（分数 / 命中 / 本地决定）</h2>
+<table>
+  <tr><th style="width:40px">页</th><th style="width:64px">姓名</th><th style="width:52px">分</th>
+      <th style="width:48px">年限</th><th style="width:56px">学历</th><th style="width:80px">城市</th>
+      <th style="width:120px">期望职位</th><th>行业命中</th><th>技能命中</th>
+      <th style="width:78px">决定</th><th style="width:78px">详情</th></tr>
+  {detail_rows or "<tr><td colspan='11' class='dim'>（没有候选人）</td></tr>"}
+</table>
+<p class="dim">分数只由"像不像这岗的人"决定（行业命中 / 技能命中 / 电气职能 / 学历）；
+<b>没有行业命中的人分数上限 40</b>，保证行业对口的人永远排在前面。活跃度/城市只做平手参考。</p>
+
+<h2>三、进了详情页的人（全文摘要）</h2>
+{detail_sec or "<p class='dim'>（这一轮没有开详情）</p>"}
+
+<div class="foot">
+本地渲染：本页来自采集轨迹 <code>{esc(meta.get("json_name") or "collected_*.json")}</code>，
+执行由 <code>collect_exec.py</code> + 判断由 <code>collect_rules.py</code> 完成，<b>小猎没有手写本页 HTML</b>
+（可随时由 <code>report_html.render_collect</code> 重生）· 渲染时间 {esc(now)}
+</div>
+</body>
+</html>"""
+
+
+def main_search() -> None:
+    """CLI：把《轮次轨迹》JSON 渲染成过程网页（本地、0 token）。"""
+    ap = argparse.ArgumentParser(description="本地渲染 ②搜索体检 过程网页")
+    ap.add_argument("--search-rounds", required=True, type=Path, help="search_rounds_*.json（轮次轨迹）")
+    ap.add_argument("--out", type=Path, default=None, help="输出 HTML（默认与轨迹同名的 _过程.html）")
+    ap.add_argument("--title", default="", help="标题（岗位名）")
+    args = ap.parse_args()
+    p = Path(args.search_rounds)
+    if not p.exists():
+        print(f"❌ 轨迹文件不存在: {p}")
+        sys.exit(1)
+    trace = json.loads(p.read_text(encoding="utf-8-sig"))
+    title = args.title or trace.get("job_code") or f"岗位 {p.parent.parent.name}"
+    html = render_search_rounds(title, trace, meta={"json_name": p.name, "plan_file": trace.get("plan_file")})
+    out = Path(args.out) if args.out else p.with_name(p.stem + "_过程.html")
+    out.parent.mkdir(parents=True, exist_ok=True)
+    out.write_text(html, encoding="utf-8")
+    print(f"✅ 已渲染 {len(trace.get('rounds') or [])} 轮 → {out}（{out.stat().st_size} 字节）")
+
+
+def _greet_card(c: dict) -> str:
+    """打招呼报告里的**一个人**（主名单用）。"""
+    sc = int(c.get("score") or 0)
+    cls = "ok" if sc >= 80 else ("mid" if sc >= 60 else "no")
+    flags = []
+    if c.get("on_card_only"):
+        flags.append('<span class="chip warn">仅卡片评估（没抓到全文，判断偏弱）</span>')
+    if c.get("no_greeting"):
+        flags.append('<span class="chip warn">缺话术（这轮没生成，别自己编）</span>')
+    if c.get("new_today"):
+        flags.append('<span class="chip ok">今天新采到</span>')
+    pts = "".join(f"<li>{esc(x)}</li>" for x in (c.get("match_points") or []))
+    ccs = "".join(f"<li>{esc(x)}</li>" for x in (c.get("concerns") or []))
+    g1 = (f'<div class="g"><span class="gl">话术1 · 岗位亮点</span>{esc(c.get("msg1"))}</div>'
+          if c.get("msg1") else "")
+    g2 = (f'<div class="g"><span class="gl">话术2 · 匹配理由</span>{esc(c.get("msg2"))}</div>'
+          if c.get("msg2") else "")
+    return f"""<div class="cand">
+  <div class="chead"><span class="score {cls}">{sc}</span>
+    <b>{esc(c.get('name'))}</b>
+    <span class="mut">{esc(c.get('verdict'))} · 置信度 {esc(c.get('confidence'))} ·
+      {esc(c.get('company'))} · {esc(c.get('position'))} · {esc(c.get('activity'))}</span></div>
+  <div class="flags">{''.join(flags)}</div>
+  <div class="kv"><b>📋 一句话：</b>{esc(c.get('summary'))}</div>
+  {f'<div class="kv"><b>✅ 匹配点：</b><ul class="green">{pts}</ul></div>' if pts else ''}
+  {f'<div class="kv"><b>⚠️ 先核实：</b><ul class="red">{ccs}</ul></div>' if ccs else ''}
+  <div class="greet">{g1}{g2}
+    <div class="kv"><a href="{esc(c.get('url'))}" target="_blank">▶ 打开猎聘详情页</a>
+      <span class="mut">（{esc(c.get('round_tag'))}）</span></div></div>
+</div>"""
+
+
+def render_greeting(report: dict) -> str:
+    """打招呼报告 → 自包含 HTML（**本地渲染，0 token**）。
+
+    这份 HTML 是给老板"过目 + 复制话术"用的壳；**资产是同名 JSON**（小猎照它执行）。
+    """
+    job = report.get("job") or {}
+    d = report.get("daily") or {}
+    gate = report.get("gate") or {}
+    plan = report.get("plan") or {}
+    title = job.get("title") or report.get("job_code") or "岗位"
+    t_ok = bool(gate.get("time_ok"))
+    cards = "".join(_greet_card(c) for c in (report.get("main") or []))
+    if not cards:
+        cards = '<div class="kv">（今天没有要打的：要么都打过了，要么没有过线的人）</div>'
+
+    def rows(items: list, cols: list) -> str:
+        if not items:
+            return '<div class="kv">（无）</div>'
+        body = "".join("<tr>" + "".join(f"<td>{esc(it.get(k))}</td>" for k in cols) + "</tr>"
+                       for it in items)
+        head = "".join(f"<th>{esc(h)}</th>" for h in cols)
+        return f'<table><tr>{head}</tr>{body}</table>'
+
+    return f"""<!DOCTYPE html><html lang="zh-CN"><head><meta charset="UTF-8">
+<title>打招呼报告 · {esc(title)}</title><style>
+body{{font-family:-apple-system,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;
+background:#f5f7fa;margin:0;padding:22px;color:#1f2937;}}
+.wrap{{max-width:1000px;margin:0 auto;background:#fff;border-radius:12px;padding:26px;
+box-shadow:0 2px 12px rgba(0,0,0,.06);}}
+h1{{margin:0 0 6px;font-size:22px;}} h2{{font-size:16px;margin:22px 0 8px;}}
+.mut{{color:#6b7280;font-size:12px;}} .kv{{margin:6px 0;font-size:13px;}}
+.cards{{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin:14px 0;}}
+.card{{background:#f9fafb;border:1px solid #e5e7eb;border-radius:8px;padding:12px;text-align:center;}}
+.card .n{{font-size:20px;font-weight:600;}} .card .l{{font-size:12px;color:#6b7280;margin-top:3px;}}
+.cand{{border:1px solid #e5e7eb;border-radius:10px;padding:16px;margin-bottom:12px;}}
+.chead{{display:flex;align-items:center;gap:8px;font-size:16px;}}
+.score{{font-weight:700;color:#fff;border-radius:999px;padding:2px 10px;font-size:13px;}}
+.score.ok{{background:#10b981;}} .score.mid{{background:#f59e0b;}} .score.no{{background:#ef4444;}}
+.chip{{display:inline-block;font-size:11px;border-radius:999px;padding:1px 8px;margin-right:6px;
+background:#eef2ff;color:#3730a3;}} .chip.warn{{background:#fef3c7;color:#92400e;}}
+.chip.ok{{background:#dcfce7;color:#166534;}} .flags{{margin:6px 0;}}
+ul{{margin:4px 0 4px 18px;padding:0;}} ul.green li{{color:#059669;}} ul.red li{{color:#dc2626;}}
+.greet{{background:#fff7ed;border-left:3px solid #fb923c;padding:10px 12px;border-radius:4px;margin-top:10px;}}
+.g{{margin:5px 0;font-size:13px;white-space:pre-wrap;}}
+.gl{{display:inline-block;background:#fef3c7;color:#92400e;font-size:11px;border-radius:999px;
+padding:1px 8px;margin-right:6px;font-weight:600;}}
+.gate{{padding:10px 12px;border-radius:6px;font-size:13px;
+background:{'#dcfce7' if t_ok else '#fee2e2'};color:{'#166534' if t_ok else '#991b1b'};}}
+table{{width:100%;border-collapse:collapse;font-size:12px;margin-top:6px;}}
+th,td{{border-bottom:1px solid #eef0f3;padding:6px 8px;text-align:left;}}
+th{{background:#f9fafb;color:#6b7280;font-weight:600;}}
+.foot{{text-align:center;color:#9ca3af;font-size:12px;margin-top:20px;}}
+</style></head><body><div class="wrap">
+<h1>💬 打招呼报告</h1>
+<div class="mut">岗位：{esc(title)}（{esc(report.get('job_code'))}）· 生成时间 {esc(report.get('created_at'))}
+ · 口径：{esc(plan.get('strictness'))}档 · 入围线 {esc(report.get('threshold'))} 分
+ · 名额上限 {esc(report.get('max_list'))}</div>
+<div class="kv"><b>本次口径</b>（发给模型的动态提示词）：<br><span class="mut">{esc(report.get('criteria')).replace(chr(10), '<br>')}</span></div>
+<div class="gate">⏰ {esc(gate.get('time_reason'))}｜允许时段：{esc(report.get('time_window_text'))}
+ ｜跟进冷却 {esc(gate.get('follow_up_days'))} 天</div>
+
+<div class="cards">
+ <div class="card"><div class="n">{esc(d.get('candidates_total'))}</div><div class="l">池子里总人数</div></div>
+ <div class="card"><div class="n">{esc(d.get('main'))}</div><div class="l">今天该打</div></div>
+ <div class="card"><div class="n">{esc(d.get('waiting'))}</div><div class="l">等回复中</div></div>
+ <div class="card"><div class="n">{esc(d.get('replied'))}</div><div class="l">有回复</div></div>
+ <div class="card"><div class="n">{esc(d.get('excluded'))}</div><div class="l">已排除（不列名单）</div></div>
+</div>
+
+<h2>🟢 今天该打（最多 {esc(report.get('max_list'))} 人，按分降序）</h2>
+{cards}
+
+<h2>🟡 等回复中（打过招呼、还没回；到 {esc(gate.get('follow_up_days'))} 天该跟进）</h2>
+{rows([{'name': w.get('name'), 'score': w.get('score'), 'greeted_at': w.get('greeted_at'),
+        'days_since_greet': w.get('days_since_greet'), 'summary': (w.get('summary') or '')[:60]}
+       for w in (report.get('waiting') or [])],
+      ['name', 'score', 'greeted_at', 'days_since_greet', 'summary'])}
+
+<h2>🔵 有回复（该聊下一步）</h2>
+{rows([{'name': w.get('name'), 'score': w.get('score'), 'replied_at': w.get('replied_at'),
+        'summary': (w.get('summary') or '')[:60]} for w in (report.get('replied') or [])],
+      ['name', 'score', 'replied_at', 'summary'])}
+
+<div class="foot">本报告由本地渲染（0 token）生成 · 资产是同名 JSON（小猎照它执行）· 打招呼动作仍是**人工闸门**</div>
+</div></body></html>"""
+
+
 def main() -> None:
     ap = argparse.ArgumentParser(description="本地渲染候选人匹配/打招呼 HTML 报告")
     ap.add_argument("--report", required=True, type=Path, help="pool_report JSON（含 pool_quality + candidates）")
@@ -415,4 +1175,7 @@ def main() -> None:
 
 
 if __name__ == "__main__":
-    main()
+    if "--search-rounds" in sys.argv:
+        main_search()
+    else:
+        main()

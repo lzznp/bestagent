@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>岗前分析过程文档 · 后端设计工程师（中兴微·外包30HC）</title>
+<style>
+  body{font-family:"Microsoft YaHei",Arial,sans-serif;max-width:960px;margin:24px auto;padding:0 16px;color:#222;line-height:1.7;}
+  h1{font-size:22px;border-bottom:3px solid #2a6df4;padding-bottom:8px;}
+  h2{font-size:17px;margin-top:28px;border-left:5px solid #2a6df4;padding-left:10px;background:#f2f6ff;}
+  h3{font-size:15px;margin-top:18px;}
+  table{border-collapse:collapse;width:100%;margin:10px 0;font-size:14px;}
+  th,td{border:1px solid #ccc;padding:6px 9px;text-align:left;vertical-align:top;}
+  th{background:#eaf1ff;}
+  .tag{display:inline-block;background:#2a6df4;color:#fff;border-radius:4px;padding:1px 8px;font-size:12px;margin-right:4px;}
+  .risk{color:#b00020;}
+  .ok{color:#0a7a3c;}
+  .warn{color:#c77700;}
+  code,pre{background:#f5f5f5;padding:2px 5px;border-radius:3px;font-size:13px;}
+  pre{padding:10px;overflow-x:auto;}
+  .box{background:#fff8e6;border:1px solid #f0d98c;padding:8px 12px;border-radius:5px;margin:10px 0;}
+  .boxb{background:#eef7ee;border:1px solid #b8dcb8;padding:8px 12px;border-radius:5px;margin:10px 0;}
+</style>
+</head>
+<body>
+
+<h1>岗前分析过程文档</h1>
+<p><b>岗位：</b>后端设计工程师（数字后端-模块交付）｜中兴微电子（外包/代招：科锐国际）<br>
+<b>职位编号：</b>J20260825102513131256（禾蛙平台）｜<b>分析时间：</b>2026-09-05 14:18<br>
+<b>执行人：</b>小猎（AI猎头助理）｜<b>步骤：</b>① 岗前分析（纯文件任务，未触发任何对外动作/采集）</p>
+
+<h2>一、本次读了什么</h2>
+<table>
+<tr><th>文件</th><th>用途</th><th>结论</th></tr>
+<tr><td>chat/J-CHAT-20260905-141728/jd.txt（195行）</td><td>岗位原始信息</td><td>非空，含禾蛙页面快照+完整JD，无需向老板索要JD</td></tr>
+<tr><td>prompts/analyze_job.txt（岗前分析方法论手册）</td><td>输出格式/评分标准</td><td>严格按其JSON字段与0-5评分口径执行，不增不减字段</td></tr>
+<tr><td>prompts/rules.md（成长规则库）</td><td>合规约束</td><td>「① 岗位分析」「流程/工具」小节目前无具体条目，按手册执行即可</td></tr>
+</table>
+
+<h2>二、岗位信息提取（关键字段）</h2>
+<table>
+<tr><th>字段</th><th>内容</th></tr>
+<tr><td>岗位名称</td><td>后端设计工程师——数字后端·模块交付方向（平台列表挂名为「版图后端设计工程师」，职能分类误挂「模拟版图设计工程师」，<span class="risk">口径存疑</span>）</td></tr>
+<tr><td>用人企业</td><td>深圳市中兴微电子技术有限公司（中兴微电子 Sanechips，中兴通讯控股、国内头部Fabless）</td></tr>
+<tr><td>签约/代招</td><td>北京科锐国际人力资源股份有限公司（候选人与其签劳动合同、到客户公司工作，<b>外包性质</b>，平台标「保回款」）</td></tr>
+<tr><td>地点/人数</td><td>上海10、深圳10、南京10，共30人；onsite</td></tr>
+<tr><td>薪资</td><td>年薪10-30万（12薪）；寻访须知标「月薪20k左右」；<b>预计佣金4K/人</b></td></tr>
+<tr><td>核心要求</td><td>0-3年（须知口径1-3年）；模块级交付 PNR/STA/PA/PV 全链路；主流后端EDA工具；Tcl/Shell脚本；<b>硬性优先：新进/先进工艺节点项目实战经验</b>（PDK未稳定阶段、对接Foundry/FAE、flow适配）</td></tr>
+<tr><td>学历口径</td><td>列表「大专及以上」 vs 正文「本科及以上（微电子/集成电路/电子工程等）」<span class="warn">冲突</span></td></tr>
+<tr><td>职责</td><td>SoC子模块RTL2GDS物理实现：PNR布局布线、STA时序收敛、PA功耗/IR-drop、PV物理验证（DRC/LVS/ERC）、面向先进/新进工艺适配后端flow、支撑流片</td></tr>
+</table>
+
+<h2>三、进展判断</h2>
+<ul>
+<li>平台AI与页面信息：2026-08-25发布、近期刷新；<b>累计推荐过初筛 2 人、面试 0、Offer 0</b>；30 HC大量空余。</li>
+<li>发单顾问评价99+条、273条评价显示7天内安排面试，流程真实。</li>
+<li>按手册进展档位 → <b>「已有推荐但无面试」= 还有机会</b>；叠加HC=30、Offer=0，属「竞争已开跑但未锁定」，窗口期仍在，但需抢速度、覆盖三地优质人选形成先发优势。</li>
+</ul>
+
+<h2>四、逐项评分依据</h2>
+<table>
+<tr><th>维度</th><th>得分</th><th>依据</th></tr>
+<tr><td>佣金（≥3万=5/≥1万=3/&lt;1万=1）</td><td>1</td><td>预计佣金4K/人 &lt; 1万档。量大（30HC）可摊薄，但单人佣金低，需确认是否按人头/回款结算、保期与到岗口径</td></tr>
+<tr><td>HC数量（≥4=5/2-3=3/1=1）</td><td>5</td><td>30人（沪/深/宁各10），外包批量岗，量级顶格</td></tr>
+<tr><td>新鲜度（≤7天=5/≤30天=3/&gt;30天=1）</td><td>3</td><td>2026-08-25发布，距今约11天，处7~30天档；近期有刷新、平台AI称仍属急招黄金期，但按手册口径给3分</td></tr>
+<tr><td>上游靠谱度（大厂=5/知名=4/一般=2/未知=1）</td><td>5</td><td>用人方为中兴微电子（中兴通讯控股、国内头部Fabless大厂）；代招科锐国际为知名人力资源公司，标注保回款；发单方评价99+、处理快</td></tr>
+<tr><td>匹配难度（容易=5/一般=3/较难=1/很难=0）</td><td>1</td><td>要求0-3年资历却叠加「先进/新进工艺节点实战经验（PDK未稳+对接Foundry）」，该组合在1-3年人群中稀缺；技能窄众、三地onsite限制异地候选人 → 较难</td></tr>
+<tr><td><b>总分</b></td><td><b>15 / 25</b></td><td>等级口径（本次执行采用）：21-25顶级 / 17-20优质 / 12-16普通 / ≤11放弃 → <b>普通</b>；即便按刷新口径给新鲜度4-5分，也仅升至16-17（优质边缘），不改变谨慎沟通的基本判断</td></tr>
+</table>
+
+<h2>五、风险清单</h2>
+<ol>
+<li class="risk">佣金偏低：单人4K&lt;1万档；若面试/入职周期长，ROI差——必须先向发单方确认结算口径（按人头/回款、保期、是否含税）。</li>
+<li class="risk">职能口径混乱：挂网「版图后端设计」+ 职能归「模拟版图设计」，正文实为数字后端(PNR/STA/PA/PV)——会引来错误方向候选人，造成无效推荐；须先核对并统一挂网口径。</li>
+<li class="warn">学历冲突：列表「大专及以上」 vs 正文「本科及以上（微电子等相关专业）」，硬性门槛待确认。</li>
+<li class="warn">年限冲突：列表0-3年 vs 须知/AI 1-3年，实际范围待确认。</li>
+<li>先进工艺实战经验=硬性优先项，目标人群窄（海思/展锐/中兴微等先进节点项目背景、0-3年且经历PDK未稳阶段），批量交付难。</li>
+<li>外包性质（签科锐国际、驻中兴微）+onsite三地：候选人意愿打折、异地难推，入职期有流失风险，寻访话术须如实透明。</li>
+<li>发单方「必问问题/项目手册」均待补充，细则不完整。</li>
+</ol>
+
+<h2>六、结论与建议</h2>
+<div class="box">
+<b>判定：沟通</b>（非立即全力接单，也非放弃）<br>
+建议动作：①向发单方/职位PM核实：4K佣金的结算口径与批量激励、学历与年限硬性口径、职能挂网修正（数字后端≠模拟版图）；②确认后可低成本试跑1-2城搜索池，验证「0-3年+先进工艺」真实供给量，再决定是否以量取胜接下30HC大盘。
+</div>
+<div class="boxb">
+<b>机会面（不忽视）：</b>大厂下游岗位真实、保回款、HC=30且Offer=0，若跑通人选池，一单可抵多单；三地并行能摊薄单城搜索成本。适合作为「批量交付」型订单经营，而非「高佣精品」型。
+</div>
+
+<h2>七、搜索关键字设计与"实验"思路（纸上推演，未跑真实搜索）</h2>
+<p>本次仅做①② 分析，<b>未触发②采集</b>（未消耗猎聘限速额度）。以下四组关键字按手册规则生成，供下一步写 collect_plan 时使用，实际命中量需待老板确认后由 collect_liepin.py 跑批验证：</p>
+<table>
+<tr><th>组别</th><th>关键字</th><th>设计意图</th></tr>
+<tr><td>精确匹配</td><td>数字后端设计工程师 PNR 上海</td><td>岗位名+核心技能+城市，先测最精准词的供给量与命中质量</td></tr>
+<tr><td>职能相近</td><td>物理设计工程师 布局布线 STA 深圳</td><td>行业对该岗的通用叫法（物理设计/布局布线），兜住不用「数字后端」命名的候选人；可再试「数字后端/PR工程师/后端实现」</td></tr>
+<tr><td>竞品对标</td><td>海思 数字后端设计工程师 南京</td><td>先进工艺项目经验多集中在大厂（海思/展锐/平头哥/中兴微等），按目标公司+岗位定向捞人；三地可轮换公司词+城市词</td></tr>
+<tr><td>技能导向</td><td>PR工程师 Innovus ICC2 先进工艺</td><td>按工具（Innovus/ICC2）与工艺（先进工艺/7nm/5nm等）捞「简历里没写岗位名但技能对口」的人，扩大隐藏池</td></tr>
+</table>
+<p class="warn">注意：挂网职能名「模拟版图设计」与真实需求不符，若照平台职能词搜索会把流量引向模拟版图方向——搜索时应避开「版图」一词为主词，或在报告中显著提示。</p>
+
+<h2>八、输出文件</h2>
+<ul>
+<li>JSON 结构化结果：reports/analyze_20260905-141854.json（严格按 analyze_job.txt 手册字段，不增不减）</li>
+<li>本过程文档：reports/analyze_20260905-141854_过程.html</li>
+</ul>
+
+<p style="color:#888;font-size:12px;margin-top:30px;">—— 小猎 · 岗前分析过程留档 · 2026-09-05 14:18 ——</p>
+</body>
+</html>

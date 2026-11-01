@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>探索采集过程文档 · 后端设计工程师（中兴微·外包30HC）</title>
+<style>
+  body{font-family:"Microsoft YaHei",Arial,sans-serif;max-width:960px;margin:24px auto;padding:0 16px;color:#222;line-height:1.7;}
+  h1{font-size:22px;border-bottom:3px solid #2a6df4;padding-bottom:8px;}
+  h2{font-size:17px;margin-top:28px;border-left:5px solid #2a6df4;padding-left:10px;background:#f2f6ff;}
+  table{border-collapse:collapse;width:100%;margin:10px 0;font-size:14px;}
+  th,td{border:1px solid #ccc;padding:6px 9px;text-align:left;vertical-align:top;}
+  th{background:#eaf1ff;}
+  .tag{display:inline-block;background:#2a6df4;color:#fff;border-radius:4px;padding:1px 8px;font-size:12px;margin-right:4px;}
+  .risk{color:#b00020;}
+  .ok{color:#0a7a3c;}
+  .warn{color:#c77700;}
+  code,pre{background:#f5f5f5;padding:2px 5px;border-radius:3px;font-size:13px;}
+  pre{padding:10px;overflow-x:auto;}
+  .box{background:#fff8e6;border:1px solid #f0d98c;padding:8px 12px;border-radius:5px;margin:10px 0;}
+  .boxb{background:#eef7ee;border:1px solid #b8dcb8;padding:8px 12px;border-radius:5px;margin:10px 0;}
+</style>
+</head>
+<body>
+
+<h1>② 探索采集执行过程文档</h1>
+<p><b>岗位：</b>后端设计工程师（数字后端-模块交付）｜中兴微电子（外包/代招：科锐国际）<br>
+<b>执行时间：</b>2026-09-05 14:27 起｜<b>执行人：</b>小猎（AI猎头助理）<br>
+<b>步骤：</b>② 探索采集（真实猎聘搜索，走配方表脚本 collect_liepin.py，由 pwsh 工具执行；老板已确认 collect_plan_20260905-142334.json 计划）</p>
+
+<h2>一、执行依据（计划文件）</h2>
+<table>
+<tr><th>项</th><th>内容</th></tr>
+<tr><td>关键字（4 组，来自 analyze 报告 search_keywords）</td><td>① 数字后端设计工程师 ② 物理设计工程师 ③ PR工程师 Innovus ④ 海思 数字后端</td></tr>
+<tr><td>条件（conds）</td><td>years=1-3年；education=本科及以上（城市未设：三地分散各10人，先全国捞再按城市分）</td></tr>
+<tr><td>输出文件</td><td>reports/collected_20260905-142724.json</td></tr>
+</table>
+
+<h2>二、执行命令</h2>
+<pre>C:/Users/84005/miniconda3/envs/lzstudy/python.exe collect_liepin.py --keyword "数字后端设计工程师" --keyword "物理设计工程师" --keyword "PR工程师 Innovus" --keyword "海思 数字后端" --conds "years=1-3年" --conds "education=本科及以上" --out "D:/study/bestagent/bestagent/data/chat/J-CHAT-20260905-141728/reports/collected_20260905-142724.json"</pre>
+
+<h2>三、执行结果（如实）</h2>
+<p><b>总体：4 个关键字全部在「education=本科及以上」条件步骤失败 → 合并去重后 0 条。</b>脚本启动正常（限速账本 search 0/20 | extract 0/200，tab 1890029085），
+关键字输入与「years=1-3年」条件均成功，唯独教育程度筛选项找不到可点的「本科及以上」元素。</p>
+<table>
+<tr><th>关键字</th><th>输入</th><th>年限1-3年</th><th>学历本科及以上</th><th>结果</th></tr>
+<tr><td>数字后端设计工程师</td><td class="ok">ok</td><td class="ok">ok</td><td class="risk">失败</td><td>0 条</td></tr>
+<tr><td>物理设计工程师</td><td class="ok">ok</td><td class="ok">ok</td><td class="risk">失败</td><td>0 条</td></tr>
+<tr><td>PR工程师 Innovus</td><td class="ok">ok</td><td class="ok">ok</td><td class="risk">失败</td><td>0 条</td></tr>
+<tr><td>海思 数字后端</td><td class="ok">ok</td><td class="ok">ok</td><td class="risk">失败</td><td>0 条</td></tr>
+</table>
+
+<h2>四、报错原文（education 步骤，4 个关键字一致）</h2>
+<pre>❌ execute_spec 失败: {"ok": false, "steps": [{"group_id": "keyword", "value": "数字后端设计工程师", "type": "input", "ok": true, "verify": true, "input_value": "数字后端设计工程师"}, {"group_id": "years", "value": "1-3年", "type": "chips", "ok": true, "verify": true}, {"group_id": "education", "value": "本科及以上", "type": "chips", "ok": false, "error": "未找到包含 "本科及以上" 的可点元素"}], "failed": "education", "error": "未找到包含 "本科及以上" 的可点元素"}
+✅ 合并去重后共 0 条
+✅ 已存 D:\study\bestagent\bestagent\data\chat\J-CHAT-20260905-141728\reports\collected_20260905-142724.json</pre>
+
+<div class="box"><b>判断：</b>同为 chips 类型的「years=1-3年」能点中、education 点不中，且 4 个关键字表现完全一致 → 大概率不是网络/时序抖动，而是猎聘教育程度筛选的可选项文案与本条条件值不匹配
+（如页面只有「本科」「大专及以上」「硕士」等离散档而无「本科及以上」整段文案，或需先展开二级下拉）。需调整条件值或改用人选侧学历字段再采。</div>
+
+<h2>五、影响与待办</h2>
+<ul>
+<li class="risk">本次未产生任何候选行（count=0，rows 空），无法进入池子评估，也未消耗有效搜索额度（失败发生在配方表执行阶段，搜索未真正落库）。</li>
+<li>建议（<b>不自动重跑，等老板指示</b>）：① 去掉 education 条件重跑，事后在简历核验环节人工把关学历；② 或把 education 值改为页面实际存在的档位（需人工确认猎聘该筛选的可用文案，如「本科」档）；③ 年限档同理顺带核对（本次 1-3年 能点上，未见异常）。</li>
+<li>合规：未改动任何违规歧视条件；脚本为配方表自动执行，未做浏览器自由操作。</li>
+</ul>
+
+</body>
+</html>

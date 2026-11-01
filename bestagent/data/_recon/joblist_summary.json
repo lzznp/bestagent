@@ -1,0 +1,60 @@
+{
+ "https://h.liepin.com/job/showlistpage?jobStatus=11": {
+  "tab": 1890030431,
+  "title": "进行中的职位_职位管理_猎聘",
+  "final_url": "https://h.liepin.com/job/showlistpage?jobStatus=11",
+  "elements": 53,
+  "chars": 642,
+  "hrefs": [
+   "http://beian.miit.gov.cn/",
+   "http://www.beian.gov.cn/portal/registerSystemInfo?recordcode=11010502035189",
+   "https://h.liepin.com/",
+   "https://h.liepin.com/certification/home/",
+   "https://h.liepin.com/im/showmsgnewpage",
+   "https://h.liepin.com/job/gethjobdetail?hjobId=79866575",
+   "https://h.liepin.com/job/showaddpage/",
+   "https://h.liepin.com/job/showcustomermanagepage",
+   "https://h.liepin.com/job/showlistpage?jobStatus=11",
+   "https://h.liepin.com/search/getConditionItem",
+   "https://mskh.liepin.com/",
+   "https://wow.liepin.com/t1008237/index.html?agreementType=A0001",
+   "https://wow.liepin.com/t1008237/index.html?agreementType=A0002",
+   "https://wow.liepin.com/t1008237/index.html?agreementType=A0018",
+   "https://wow.liepin.com/t1008237/index.html?agreementType=A0053",
+   "https://wow.liepin.com/t1008237/index.html?agreementType=A0054",
+   "https://wow.liepin.com/t1008237/index.html?agreementType=A0055",
+   "https://wow.liepin.com/t1008237/index.html?agreementType=A0056",
+   "https://wow.liepin.com/t1008237/index.html?agreementType=A0057",
+   "https://www.12377.cn/"
+  ]
+ },
+ "https://h.liepin.com/job/showlistpage": {
+  "tab": 1890030433,
+  "title": "进行中的职位_职位管理_猎聘",
+  "final_url": "https://h.liepin.com/job/showlistpage",
+  "elements": 53,
+  "chars": 642,
+  "hrefs": [
+   "http://beian.miit.gov.cn/",
+   "http://www.beian.gov.cn/portal/registerSystemInfo?recordcode=11010502035189",
+   "https://h.liepin.com/",
+   "https://h.liepin.com/certification/home/",
+   "https://h.liepin.com/im/showmsgnewpage",
+   "https://h.liepin.com/job/gethjobdetail?hjobId=79866575",
+   "https://h.liepin.com/job/showaddpage/",
+   "https://h.liepin.com/job/showcustomermanagepage",
+   "https://h.liepin.com/job/showlistpage?jobStatus=11",
+   "https://h.liepin.com/search/getConditionItem",
+   "https://mskh.liepin.com/",
+   "https://wow.liepin.com/t1008237/index.html?agreementType=A0001",
+   "https://wow.liepin.com/t1008237/index.html?agreementType=A0002",
+   "https://wow.liepin.com/t1008237/index.html?agreementType=A0018",
+   "https://wow.liepin.com/t1008237/index.html?agreementType=A0053",
+   "https://wow.liepin.com/t1008237/index.html?agreementType=A0054",
+   "https://wow.liepin.com/t1008237/index.html?agreementType=A0055",
+   "https://wow.liepin.com/t1008237/index.html?agreementType=A0056",
+   "https://wow.liepin.com/t1008237/index.html?agreementType=A0057",
+   "https://www.12377.cn/"
+  ]
+ }
+}

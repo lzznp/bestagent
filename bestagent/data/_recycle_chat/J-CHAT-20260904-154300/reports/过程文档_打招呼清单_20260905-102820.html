@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>过程文档 · 打招呼准备清单 20260905-102820</title>
+<style>
+  body{font-family:"Microsoft YaHei",sans-serif;margin:24px auto;max-width:860px;line-height:1.7;color:#222}
+  h1{font-size:20px;border-bottom:2px solid #2a7;padding-bottom:6px}
+  h2{font-size:16px;color:#1a5;margin-top:24px}
+  table{border-collapse:collapse;width:100%;font-size:13px}
+  th,td{border:1px solid #bbb;padding:6px 8px;text-align:left}
+  th{background:#eefaf3}
+  code{background:#f3f3f3;padding:1px 5px;border-radius:3px}
+</style>
+</head>
+<body>
+<h1>小猎过程记录 · 打招呼准备清单</h1>
+<p>岗位：J-CHAT-20260904-154300 体外部门负责人（高级经理/总监）·杭州·50-120万｜时间：2026-09-05 10:28</p>
+
+<h2>1. 执行步骤</h2>
+<ol>
+  <li>读取 <code>jd.txt</code>：提炼卖点（杭州拱墅区·治疗性抗体体外活性/功能鉴定+带团队·博士·50-120万/12薪·线下）与硬性条件（博士统招、体外功能鉴定经验）；发现系统“10年+”与寻访须知“博士2年+”口径并存（已在清单核实点中体现）。</li>
+  <li>读取 <code>rules.md</code>：④ 汇报 / 流程小节当前均无沉淀内容，本次无额外纠错约束。</li>
+  <li>读取 <code>pool_report_20260904-172935.json</code>：按 verdict 过滤入围者（推荐/待定），去重、按 score 降序。入围 = 赵**(66/待定)、章**(62/待定)、朱**(55/待定) 共 3 人；不推荐 = 杨**(45) 不列入，末尾备注。</li>
+  <li>读取 <code>collected_20260904-171507.json</code>：按 <code>rows[candidate_id-1].fields.res_id_encode</code> 映射猎聘 ID 并拼详情链接（<code>https://h.liepin.com/resume/showresumedetail/?res_id_encode=…</code>）。</li>
+  <li>为每人撰写小节：概况 / 匹配点≤2 / 先核实≤2 / 话术1 / 话术2（自然带 1 个核实点）；链接使用 HTML 锚点 target=_blank。</li>
+  <li>头部写一句话卖点总述 + “今日建议先打：赵**、章**”及理由（其余第 3 人留后待口径确认）。</li>
+  <li>保存产物至 <code>reports/打招呼清单_20260905-102820.md</code>。</li>
+</ol>
+
+<h2>2. 入围者映射（candidate_id → 分数 → res_id）</h2>
+<table>
+<tr><th>排序</th><th>姓名</th><th>score</th><th>verdict</th><th>candidate_id</th><th>res_id_encode（截断）</th></tr>
+<tr><td>1</td><td>赵**</td><td>66</td><td>待定</td><td>3</td><td>e0f468ef6aKcfdb7e1567ca</td></tr>
+<tr><td>2</td><td>章**</td><td>62</td><td>待定</td><td>1</td><td>e1f06fe966Wced476156ec6</td></tr>
+<tr><td>3</td><td>朱**</td><td>55</td><td>待定</td><td>4</td><td>e1fb60e268Iced17c136ec6</td></tr>
+<tr><td colspan="4">不推荐·未列入</td><td>2</td><td>杨**（45分·恒瑞医学MA）</td></tr>
+</table>
+
+<h2>3. 先打建议理由</h2>
+<ul>
+  <li>赵**：全池最贴近体外活性评价方向 + 杭州本地可即面，先打可最快验证“双抗/单抗体外功能鉴定实操”这一全场硬伤；</li>
+  <li>章**：统招博士+14年，两种年限口径全满足、管理背景最硬，最可能直接转推荐；</li>
+  <li>朱**：学历口径（非统招+大专起点）风险大，等发单方确认“统招”能否放宽后再打。</li>
+</ul>
+
+<h2>4. 合规备注</h2>
+<ul>
+  <li>全程仅文件读写与评估，未执行采集、未代发打招呼（招呼动作由老板人工执行）；</li>
+  <li>清单不含任何性别/年龄/婚育等歧视性表述。</li>
+</ul>
+</body>
+</html>

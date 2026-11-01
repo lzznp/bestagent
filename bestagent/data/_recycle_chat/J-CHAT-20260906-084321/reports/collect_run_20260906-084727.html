@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>步骤② 探索采集过程文档 · J-CHAT-20260906-084321</title>
+<style>
+body{font-family:"Microsoft YaHei",sans-serif;margin:24px;color:#222;line-height:1.6}
+h1{font-size:20px;border-bottom:2px solid #2c6cb0;padding-bottom:6px}
+h2{font-size:16px;color:#2c6cb0;margin-top:22px}
+table{border-collapse:collapse;width:100%;margin:8px 0}
+th,td{border:1px solid #ccc;padding:6px 10px;font-size:14px;text-align:left}
+th{background:#eef3fa}
+.err{color:#b00020;background:#fff0f0;padding:2px 8px;border-radius:3px;font-family:Consolas,monospace}
+.ok{color:#1a7f37}
+.warn{color:#9a6700}
+code{background:#f4f4f4;padding:1px 5px;border-radius:3px;font-family:Consolas,monospace}
+li{margin:4px 0}
+</style>
+</head>
+<body>
+<h1>步骤② 探索采集（真实猎聘）过程记录</h1>
+<p><b>岗位：</b>南京嘉翼精密机器制造股份有限公司 · 会计（禾蛙 J20260722200824123951，南京江北新区，8-12 万/12薪，5-8 年）</p>
+<p><b>执行时间：</b>2026-09-06 08:47 起 · <b>执行人：</b>小猎（数字猎头合伙人）</p>
+
+<h2>1. 采集计划（collect_plan_20260906-084606.json）</h2>
+<ul>
+<li><b>keywords：</b>会计 全盘账 ｜ 主办会计 ｜ 总账会计 ｜ 合并报表</li>
+<li><b>conds：</b>city_current=南京</li>
+<li><b>口径备注：</b>不设学历筛（JD“大专及以上”无对应离散档）；不设年限筛（5-8 年无法精确表达、且 5-10 年档会带入超资深高期望）；寻访须知中“女性/已婚已育/33-45 岁”为违法歧视字段，已剔除，未写入任何关键字/条件。</li>
+</ul>
+
+<h2>2. 执行命令</h2>
+<p><code>C:/Users/84005/miniconda3/envs/lzstudy/python.exe collect_liepin.py --keyword "会计 全盘账" --keyword "主办会计" --keyword "总账会计" --keyword "合并报表" --conds city_current=南京 --out "...\reports\collected_20260906-084727.json"</code></p>
+
+<h2>3. 运行日志（逐关键字）</h2>
+<table>
+<tr><th>关键字</th><th>结果</th><th>命中</th></tr>
+<tr><td>会计 全盘账</td><td class="err">navigate 失败: 等待执行结果超时</td><td>0（未采到）</td></tr>
+<tr><td>主办会计</td><td class="err">navigate 失败: 等待执行结果超时</td><td>0（未采到）</td></tr>
+<tr><td>总账会计</td><td class="err">navigate 失败: 等待执行结果超时</td><td>0（未采到）</td></tr>
+<tr><td>合并报表</td><td class="ok">本轮 30 条，新增 30 条</td><td>30</td></tr>
+</table>
+<p><b>合计：</b>去重后 <b>30 条</b>，已写入 <code>collected_20260906-084727.json</code>（今日账本：search 1/80，extract 30/500）。</p>
+<p class="warn">⚠ 前三个关键字均报 <span class="err">navigate 失败: 等待执行结果超时</span>，疑似页面响应/时序问题，本次仅“合并报表”一路真实执行，核心命中面（主办/总账/全盘账）缺位，结果池有偏。</p>
+
+<h2>4. 结果质量初判（对照 JD：制造业 · 5-8 年 · 能扛全盘账/集团口径 · 8-12 万 · 向财务经理汇报）</h2>
+<ul>
+<li>本次 30 人全部为“合并报表”自然结果：<b>会计师事务所审计（经理/高级审计员）占比高、财务经理/财务总监级偏多、集团报表/售前/咨询顾问等亦混入</b>，整体级别与薪资期望明显高于 8-12 万的会计岗带宽，属于该关键词正常发散。</li>
+<li>相对贴近目标画像（制造业企业内部总账/全盘/合并岗、可留③逐人核）：<b>韦**</b>（国睿科技·管理会计 + 中通服·总账会计，制造+总账，6 年）、<b>葛**</b>（南京中新赛克·总账会计，制造，12 年）、<b>陈**</b>（南京三宝科技·合并报表会计兼子公司总账、苏宁集团财务，技能全对口但 12 年偏资深）、<b>胡**</b>（南京奥特佳新能源·合并财务主管，制造，9 年）、<b>邱**</b>（梦百合家居·合并报表会计师，制造对口但仅 4 年，年限偏短）。</li>
+<li>明显不符样本：多家会计所审计经理、财务总监（董**/晋**/王**等）、咨询/售前专家（程**/陈** IT 方向）、地产/零售/快消背景（肖**/张**/董**）等——级别、行业或薪资期望错位。</li>
+</ul>
+
+<h2>5. 结论与建议（未自动重跑，待老板指示）</h2>
+<ul>
+<li><b>建议补跑失败的三路关键字</b>（会计 全盘账 / 主办会计 / 总账会计）——它们才是本岗的核心命中面，本次因导航超时全部缺失，直接导致池子“偏合并报表、偏资深”。</li>
+<li>如补跑仍超时，可考虑：拆短关键字（全盘账 / 主办会计 / 总账各单跑）、或换会话窗口重试、或加条件（如排除“财务总监”类 title 目前猎聘不支持，仍以③逐人把关）。</li>
+<li>本次未打开任何候选人详情页（detail 0/100），列表采集不触碰平台“查看简历”风控点。</li>
+</ul>
+
+<p style="margin-top:26px;color:#888;font-size:13px">小猎 · 2026-09-06</p>
+</body>
+</html>

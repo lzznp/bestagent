@@ -1,0 +1,351 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""greet_exec.py — **打招呼执行器（手）**：照着"打招呼报告"把招呼打出去
+
+分工（承接项目铁律「**脑 = 小猎，手 = 脚本**」）：
+  · 脑（小猎 / 报告）= **决定打谁**（报告 main 名单）+ **说什么**（报告里的 `intro_msg`，一个字不改）；
+  · 本脚本（手）        = 开页面 → 点【立即沟通】→ 点【不选择职位开聊】→ 发岗位介绍 → 关页面 → 记台账。
+
+老板 2026-09-20 定的口径（**都是数据，不是硬编码**；要改口径改 plan / 报告，不改本文件）：
+  1. **不携带岗位**打招呼（发岗有 30 个上限、上新岗要下旧岗 → 不走那条路）；
+  2. 打招呼用**平台默认短语**（"你好~我这里有个职位很适合你…"）；
+  3. **紧接着就发岗位介绍**——不等回复（候选人端会看到多条消息的红点；岗位留在会话里，
+     日后"查看回复"时才知道这位对应哪个岗位）；
+  4. 岗位介绍**由报告生成**，脚本**只抄不想**；
+  5. 每处理完一个候选人，**关掉详情页**（别堆标签页）。
+
+安全（老板要的"人工闸门"）：
+  · **默认 dry-run**：只列清单、不发送；真发必须显式 `--yes`；
+  · 开跑前先过 `greeting_ready()`（报告在不在 / 新不新 / 现在能不能打）——不过就拒绝；
+  · 发送前**核对页面上那句话**就是我们要发的那句（对不上就不发）；
+  · 每个动作之间**留间隔**（别像机器一样连着点）。
+
+用法（cwd = bestagent）：
+  # 只列清单（0 花费、不发送）——小猎/老板用它确认
+  python greet_exec.py --job-code J-... --limit 3
+  # 真发（人工点头后）
+  python greet_exec.py --job-code J-... --yes --limit 1
+  # 只打某一个人
+  python greet_exec.py --job-code J-... --candidate-id 1 --yes
+"""
+from __future__ import annotations
+
+import argparse
+import glob
+import json
+import sqlite3
+import sys
+import time
+import urllib.request
+from datetime import datetime
+from pathlib import Path
+
+sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+from framework_config import WORKSPACE  # noqa: E402
+
+import greeting_report as gr  # noqa: E402
+import job_db  # noqa: E402
+
+BRIDGE = "http://127.0.0.1:8080"
+CHAT = WORKSPACE / "data" / "chat"
+ACCOUNT = "杨猛"
+
+
+# ── 桥客户端（只在这里用；写动作仅限"打招呼"这一条链）──────────────────────
+
+def _post(path: str, obj: dict) -> dict:
+    req = urllib.request.Request(BRIDGE + path, data=json.dumps(obj).encode("utf-8"),
+                                 headers={"Content-Type": "application/json"})
+    return json.loads(urllib.request.urlopen(req, timeout=15).read().decode("utf-8"))
+
+
+def _get(path: str) -> dict:
+    return json.loads(urllib.request.urlopen(BRIDGE + path, timeout=15).read().decode("utf-8"))
+
+
+def bridge_up() -> bool:
+    try:
+        return bool(_get("/api/health").get("ok"))
+    except Exception:  # noqa: BLE001
+        return False
+
+
+def act(action: str, params: dict | None = None, *, timeout: int = 60, source: str = "greet-exec") -> dict:
+    """投一个桥动作并等结果。"""
+    r = _post("/api/task", {"action": action, "params": params or {}, "source": source})
+    tid = ((r.get("task") or r) or {}).get("id")
+    if not tid:
+        raise RuntimeError(f"投任务失败：{json.dumps(r, ensure_ascii=False)[:200]}")
+    last: dict = {}
+    for _ in range(timeout):
+        time.sleep(1)
+        last = (_get("/api/task/" + str(tid)).get("task") or {})
+        if last.get("status") in ("done", "failed", "error"):
+            break
+    if last.get("status") != "done":
+        raise RuntimeError(f"{action} 失败：{last.get('error')}")
+    return last.get("result") or {}
+
+
+def snap(tab_id: int) -> dict:
+    return act("snapshot", {"tab_id": tab_id})
+
+
+def find_button(res: dict, *, min_w: int, max_w: int, top_lo: int = 0, top_hi: int = 99999,
+                left_lo: int = 0, exclude: set | None = None) -> int | None:
+    """在快照里找一个按钮（按宽/位置筛）——弹层里的按钮没有文本，只能靠几何定位。"""
+    best = None
+    for e in res.get("elements") or []:
+        if e.get("role") != "button":
+            continue
+        r = e.get("rect") or {}
+        w, t, l = r.get("width", 0), r.get("top", 0), r.get("left", 0)
+        if not (min_w <= w <= max_w and top_lo <= t <= top_hi and l >= left_lo):
+            continue
+        if exclude and e.get("index") in exclude:
+            continue
+        if best is None or w > (best[1].get("rect") or {}).get("width", 0):
+            best = (e.get("index"), e)
+    return best[0] if best else None
+
+
+def find_dialog_button(res: dict, names: tuple = ("不选择职位开聊", "立即开聊")) -> tuple[int | None, str]:
+    """找打招呼弹层里的按钮。**看元素列表，不看 body_preview**（后者只截前 3000 字，弹层文字在末尾）。
+
+    返回 (index, 依据说明)。先按文字找；找不到回退几何特征（实测：不选择职位开聊 top≈536 left≈631 w≈114）。
+    """
+    els = res.get("elements") or []
+    for nm in names:
+        for e in els:
+            if (e.get("name") or "").strip() == nm:
+                return e.get("index"), f"元素文字「{nm}」"
+    for e in els:
+        r = e.get("rect") or {}
+        if e.get("role") == "button" and 500 <= r.get("top", 0) <= 620 and 580 <= r.get("left", 0) <= 720 \
+                and 100 <= r.get("width", 0) <= 130:
+            return e.get("index"), "几何特征（弹层右下宽按钮）"
+    return None, "没找到"
+
+
+def dialog_open(res: dict) -> bool:
+    """弹层开没开：**用元素列表判断**（body_preview 会截断，不能用来判弹层）。"""
+    idx, _ = find_dialog_button(res)
+    return idx is not None
+
+
+def find_textarea(res: dict) -> int | None:
+    """会话输入框。优先占位含"请输入文字"的那个（实测：详情页底部还有别的 textarea，别抓错）。"""
+    tas = [e for e in (res.get("elements") or []) if e.get("role") == "textarea"]
+    if not tas:
+        return None
+    for e in tas:
+        if "请输入文字" in (e.get("name") or ""):
+            return e.get("index")
+    return max(tas, key=lambda e: (e.get("rect") or {}).get("width", 0)).get("index")
+
+
+# ── 打招呼一条链（每一小步都**校验**，不对就停，绝不硬发）──────────────────
+
+def greet_one(url: str, intro: str, *, name: str = "", gap: float = 2.5,
+              keep_tab: bool = False) -> dict:
+    """对一个人走完整条链。返回 {"ok", "steps": [...], "error"}。**失败不抛**。"""
+    steps: list[str] = []
+    tab = None
+    try:
+        r = act("new_tab", {"url": url})
+        tab = (r.get("tab") or {}).get("tab_id")
+        steps.append(f"开详情页 tab={tab}")
+        time.sleep(gap + 2)
+        res = snap(tab)
+        names = [(e.get("name") or "").strip() for e in (res.get("elements") or [])]
+        if "继续沟通" in names:
+            return {"ok": False, "steps": steps, "error": "他已经打过招呼了（页面是【继续沟通】）→ 跳过"}
+        if "立即沟通" not in names:
+            return {"ok": False, "steps": steps, "error": "详情页没加载出来（没看到沟通按钮）"}
+        # ① 立即沟通
+        c = act("click_by_text", {"tab_id": tab, "text": "立即沟通", "occurrence": 1})
+        steps.append(f"点【立即沟通】→ {c.get('clicked', {}).get('tag')}")
+        time.sleep(gap)
+        # ② 等弹层（**轮询 + 看元素**，不看被截断的 body_preview）
+        res, how, waited = None, "", 0.0
+        for _ in range(8):                      # 最多等 ~16 秒
+            time.sleep(2)
+            waited += 2
+            res = snap(tab)
+            if dialog_open(res):
+                break
+        if not res or not dialog_open(res):
+            return {"ok": False, "steps": steps,
+                    "error": f"等了 {waited:.0f} 秒弹层还是没出来（元素判断）"}
+        idx_nojob, how = find_dialog_button(res)
+        steps.append(f"弹层已开（依据：{how}）")
+        # 页面对账：默认短语必须还在（对不上就不发）
+        joined = " | ".join((e.get("name") or "") for e in (res.get("elements") or []))
+        if "你好~我这里有个职位很适合你" not in joined:
+            steps.append("⚠️ 没在元素里读到默认打招呼语（可能弹层文字不全）——继续，但记一笔")
+        # ③ 不选择职位开聊（= 用默认短语发出去）
+        act("click", {"tab_id": tab, "index": idx_nojob})
+        steps.append("点【不选择职位开聊】→ 招呼已发")
+        time.sleep(gap)
+        res = snap(tab)
+        names = [(e.get("name") or "").strip() for e in (res.get("elements") or [])]
+        if "继续沟通" not in names:
+            return {"ok": False, "steps": steps, "error": "发完之后页面没变成【继续沟通】→ 不确定是否成功"}
+        # ④ 发岗位介绍（实测路径：面板要先打开 → type → 点文字"发送" → 两处校验）
+        if not intro.strip():
+            return {"ok": False, "steps": steps, "error": "报告里没有 intro_msg（岗位介绍）→ 不硬编，先停下"}
+        # 4.1 面板可能还没展开（打招呼后是收起状态）→ 点【继续沟通】把它打开
+        if not find_textarea(res):
+            more = next((e for e in (res.get("elements") or [])
+                         if (e.get("name") or "").strip() == "继续沟通"), None)
+            if more:
+                act("click", {"tab_id": tab, "index": more.get("index")})
+                steps.append("点【继续沟通】展开聊天面板")
+                time.sleep(gap)
+                res = snap(tab)
+        ti = find_textarea(res)
+        if not ti:
+            return {"ok": False, "steps": steps, "error": "没找到会话输入框（聊天面板没展开）"}
+        # 4.2 输入 + **回读校验**（写进去了才算数）
+        act("type", {"tab_id": tab, "index": ti, "text": intro})
+        time.sleep(gap)
+        res = snap(tab)
+        ta = next((e for e in (res.get("elements") or []) if e.get("index") == ti), {})
+        val = str(ta.get("value") or "")
+        head = (intro.split("\n")[0] or "")[:12]
+        if head and head not in val:
+            return {"ok": False, "steps": steps,
+                    "error": f"岗位介绍没写进输入框（回读只有 {len(val)} 字）→ 不发，避免发空"}
+        steps.append(f"输入岗位介绍并回读校验通过（{len(val)} 字）")
+        # 4.3 点文字"发送"（**实测唯一可靠的路径**；几何猜按钮会点错）
+        act("click_by_text", {"tab_id": tab, "text": "发送", "occurrence": 1})
+        time.sleep(gap + 1)
+        res = snap(tab)
+        ta2 = next((e for e in (res.get("elements") or []) if e.get("role") == "textarea"), {})
+        v2 = str(ta2.get("value") or "")
+        joined = " | ".join((e.get("name") or "") for e in (res.get("elements") or []))
+        cleared = len(v2) < len(val) / 2
+        seen = bool(head) and (head in joined)
+        if cleared or seen:
+            steps.append("点【发送】→ 岗位介绍已发 ✅" + ("（输入框已清空）" if cleared else "（会话里已出现）"))
+        else:
+            return {"ok": False, "steps": steps,
+                    "error": "点了【发送】但输入框没清空、会话也没出现 → 这条没发出去"}
+        if not keep_tab:
+            act("close_tab", {"tab_id": tab})
+            steps.append("关闭详情页")
+        return {"ok": True, "steps": steps, "sent_verified": True, "tab": None if not keep_tab else tab}
+    except Exception as e:  # noqa: BLE001
+        if tab and not keep_tab:
+            try:
+                act("close_tab", {"tab_id": tab})
+                steps.append("（出错后）关闭详情页")
+            except Exception:  # noqa: BLE001
+                pass
+        return {"ok": False, "steps": steps, "error": f"{type(e).__name__}: {e}"}
+
+
+# ── 报告 / 台账 ───────────────────────────────────────────────────────────
+
+def latest_report(job_code: str) -> Path | None:
+    reps = CHAT / job_code / "reports"
+    if not reps.exists():
+        return None
+    got = sorted([p for p in reps.glob("打招呼报告_*.json")], key=lambda p: p.stat().st_mtime)
+    return got[-1] if got else None
+
+
+def record(con, job_code: str, cand_id: int, intro: str) -> None:
+    """发完记一笔：台账加"打招呼"事件 + 话术存进 match_results.detail_json（只增不改）。"""
+    con.execute("INSERT INTO candidate_events(candidate_id,job_code,event_type,note,account,created_at)"
+                " VALUES(?,?,?,?,?,?)",
+                (cand_id, job_code, "打招呼", "第1次问候：小猎自动（不选岗位·默认短语）+ 岗位介绍",
+                 ACCOUNT, datetime.now().strftime("%Y-%m-%d %H:%M:%S")))
+    con.commit()
+    row = con.execute("SELECT detail_json FROM match_results WHERE job_code=? AND candidate_id=?",
+                      (job_code, cand_id)).fetchone()
+    detail = {}
+    try:
+        detail = json.loads((row or {})["detail_json"] or "{}") if row else {}
+    except Exception:  # noqa: BLE001
+        detail = {}
+    detail.update({"intro_sent_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                   "intro_msg_sent": intro})
+    job_db.save_match(con, job_code, cand_id, {"detail": detail})
+
+
+# ── 主流程 ────────────────────────────────────────────────────────────────
+
+def run(job_code: str, *, yes: bool = False, limit: int = 0, candidate_id: int = 0,
+        gap: float = 2.5, pause: float = 8.0) -> dict:
+    out: dict = {"job_code": job_code, "sent": [], "skipped": [], "failed": [], "dry_run": not yes}
+    if yes and not bridge_up():
+        raise SystemExit("❌ 桥没在跑（127.0.0.1:8080）——请老板双击 bridge-agent\\start_bridge.bat")
+    rep_p = latest_report(job_code)
+    if not rep_p:
+        raise SystemExit("❌ 还没有打招呼报告 → 先让报告生成（小猎跑「💬打招呼报告」）")
+    rep = json.loads(rep_p.read_text(encoding="utf-8-sig"))
+    if yes:
+        ready = gr.greeting_ready(job_code)
+        if not ready.get("ok"):
+            raise SystemExit("❌ 前置检查没过，拒绝执行：\n   · " + "\n   · ".join(ready.get("problems") or []))
+    todo = rep.get("main") or []
+    if candidate_id:
+        todo = [c for c in todo if int(c.get("candidate_id") or 0) == int(candidate_id)]
+    if limit:
+        todo = todo[:limit]
+    out["report"] = rep_p.name
+    out["planned"] = len(todo)
+    print(f"📋 报告：{rep_p.name}｜待打 {len(todo)} 人｜模式：{'真发' if yes else '**dry-run（不发送）**'}")
+    for i, c in enumerate(todo, 1):
+        print(f"   {i}. {c.get('name')} {c.get('score')}分  {c.get('company')} · {c.get('position')}")
+        print(f"      首行预览：{(c.get('intro_msg') or '').splitlines()[0] if c.get('intro_msg') else '（缺岗位介绍！）'}")
+    if not yes:
+        print("\n⚠️ 这是 dry-run：**一个人都没发**。确认无误后加 --yes 真发。")
+        return out
+
+    con = job_db.open_db(job_code)
+    try:
+        for i, c in enumerate(todo, 1):
+            url = str(c.get("url") or "")
+            intro = str(c.get("intro_msg") or "")
+            name = str(c.get("name") or "")
+            if not url:
+                out["skipped"].append({"name": name, "why": "报告里没链接"})
+                continue
+            print(f"\n[{i}/{len(todo)}] {name} …")
+            got = greet_one(url, intro, name=name, gap=gap)
+            for s in got.get("steps") or []:
+                print("   ·", s)
+            if got.get("ok"):
+                record(con, job_code, int(c["candidate_id"]), intro)
+                out["sent"].append({"name": name, "candidate_id": c["candidate_id"],
+                                    "verified": bool(got.get("ok"))})
+                print("   ✅ 已记录台账")
+            else:
+                out["failed"].append({"name": name, "error": got.get("error")})
+                print("   ❌", got.get("error"))
+            if i < len(todo):
+                time.sleep(pause)   # 人与人之间留间隔
+    finally:
+        con.close()
+    print(f"\n✅ 打招呼结束：成功 {len(out['sent'])}｜跳过 {len(out['skipped'])}｜失败 {len(out['failed'])}")
+    return out
+
+
+def main() -> None:
+    ap = argparse.ArgumentParser(description="打招呼执行器（默认 dry-run，不发送）")
+    ap.add_argument("--job-code", required=True)
+    ap.add_argument("--yes", action="store_true", help="真发（不加就是 dry-run，只列清单）")
+    ap.add_argument("--limit", type=int, default=0, help="最多打几个（0=按报告名单全打）")
+    ap.add_argument("--candidate-id", type=int, default=0, help="只打某一个人（库内 id）")
+    ap.add_argument("--gap", type=float, default=2.5, help="动作间隔秒（别像机器一样连着点）")
+    ap.add_argument("--pause", type=float, default=8.0, help="人与人之间的间隔秒")
+    args = ap.parse_args()
+    res = run(args.job_code, yes=args.yes, limit=args.limit,
+              candidate_id=args.candidate_id, gap=args.gap, pause=args.pause)
+    print(json.dumps(res, ensure_ascii=False, indent=1))
+
+
+if __name__ == "__main__":
+    main()

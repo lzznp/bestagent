@@ -1,0 +1,562 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>后端设计工程师（数字后端·中兴微·三地30HC）· 打招呼清单 · 匹配报告</title>
+<style>
+  body{font-family:-apple-system,"Segoe UI","Microsoft YaHei",sans-serif;background:#f2f4f8;margin:0;padding:20px;color:#1f2937;}
+  .wrap{max-width:1000px;margin:0 auto;}
+  h1{font-size:20px;margin:0 0 2px;}
+  .meta{color:#6b7280;font-size:12px;margin-bottom:14px;}
+  .poolbox{background:#fff;border:1px solid #e5e7eb;border-radius:10px;padding:12px 16px;margin-bottom:14px;}
+  .poolchips .chip{display:inline-block;background:#eef2ff;border:1px solid #c7d2fe;border-radius:999px;padding:2px 10px;font-size:12px;margin:2px 4px 2px 0;}
+  .chip.ok{background:#ecfdf5;border-color:#a7f3d0;}
+  .chip.warn{background:#fffbeb;border-color:#fde68a;}
+  .kv{font-size:13px;margin:6px 0;}
+  .kv ul{margin:2px 0;padding-left:20px;}
+  ul.red li{color:#b91c1c;} ul.green li{color:#047857;}
+  .filters{margin:10px 0;}
+  .f{border:1px solid #d1d5db;background:#fff;border-radius:8px;padding:4px 12px;margin-right:6px;cursor:pointer;font-size:13px;}
+  .f.active{background:#2563eb;border-color:#2563eb;color:#fff;}
+  .candidate{background:#fff;border:1px solid #e5e7eb;border-radius:10px;padding:14px 16px;margin-bottom:12px;}
+  .chead{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:8px;}
+  .score{font-weight:700;padding:2px 10px;border-radius:999px;color:#fff;font-size:13px;}
+  .score.high{background:#10b981;} .score.mid{background:#f59e0b;} .score.low{background:#ef4444;}
+  .vtag{font-size:12px;padding:1px 8px;border-radius:999px;}
+  .vtag.rec{background:#d1fae5;color:#065f46;} .vtag.hold{background:#fef3c7;color:#92400e;} .vtag.no{background:#fee2e2;color:#991b1b;}
+  .cname{font-weight:600;font-size:15px;} .cid{color:#9ca3af;font-size:12px;}
+  .btn{margin-left:auto;background:#2563eb;color:#fff;text-decoration:none;font-size:12px;padding:5px 12px;border-radius:8px;}
+  .btn:hover{background:#1d4ed8;}
+  .summ{font-size:13px;color:#374151;margin-bottom:6px;}
+  .points,.concerns{font-size:13px;margin:4px 0;}
+  .points ul,.concerns ul{margin:2px 0;padding-left:20px;}
+  .points li{color:#047857;} .concerns li{color:#b91c1c;}
+  .greeting{background:#fff7ed;border-left:3px solid #fb923c;padding:8px 12px;border-radius:4px;margin-top:8px;font-size:13px;}
+  .g-item{margin-top:4px;} .g-label{display:inline-block;background:#fef3c7;color:#92400e;font-size:11px;padding:1px 8px;border-radius:999px;margin-right:6px;font-weight:600;}
+  details.snippet{margin-top:8px;} details.snippet summary{cursor:pointer;color:#6b7280;font-size:12px;}
+  details.snippet pre{background:#f9fafb;border:1px solid #e5e7eb;border-radius:6px;padding:8px;font-size:12px;white-space:pre-wrap;font-family:inherit;}
+  .footer{text-align:center;margin-top:18px;color:#9ca3af;font-size:12px;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>📊 后端设计工程师（数字后端·中兴微·三地30HC）· 打招呼清单 · 候选人匹配报告</h1>
+  <div class="meta">本地渲染（数据来源：结构化 JSON，非 LLM 手写）· 生成 2026-09-05 16:58:26 · 共 15 人
+    （推荐 15 / 待定 0 / 不推荐 0）</div>
+  <div class="poolbox"><div class="poolchips"><span class="chip">中</span><span class="chip">池子整体可用但需精选再投：建议优先深挖高分组——褚**（85分，上海、innovus/STA/PR/CTS技能全且求职目标吻合）、范**与庄**（82分，南京本地+矽力杰/海思后端）、以及周**/张**/小**（80分，深圳/上海/南京各一）；先逐份调取简历核验&#x27;先进工艺实战+PNR/STA/PA/PV完整交付&#x27;硬证据并确认外包驻场与到岗意愿，再批量发起沟通以抢30HC窗口；同时对噪声行强过滤，并将73-85位排入下一批评估、按中兴微/海思系在职数字后端定向补采。</span><span class="chip">分布 high 7 / medium 31 / low 34 / total 72</span><span class="chip ok">data_valid ✅通过</span></div><div class="kv"><b>主要缺口：</b><ul class="red"><li>噪声占比高：本次仅逐评前72位，其中约34位与数字后端无关（HR/机械/材料/工艺设备/电机热管理/模拟IC与模拟版图等），系平台&#x27;版图后端/模拟版图&#x27;挂网词误导所致，须强过滤</li><li>硬性优先项&#x27;先进/新进工艺节点实战（PDK未稳期、对接Foundry/FAE、flow适配）&#x27;在摘要中普遍无证据，多数候选人的PNR/STA/PA/PV完整交付深度与先进工艺经历需逐份简历核验</li><li>部分高匹配候选人求职期望错位：多人目标成都/西安/天津/武汉/苏州/广州等非目标城市，需逐一确认能否接受上海/深圳/南京三地onsite及外包驻场</li><li>学历专业口径冲突多：法学、大气科学、生物医学工程、材料物理、理论物理等非微电子/电子专业占比不低，需与发单方确认&#x27;本科及以上且微电子/集成电路/电子工程相关&#x27;的硬性口径</li><li>年限口径混杂：卡片标注&#x27;工作1-2年&#x27;与任职时长/列表0-3年/寻访1-3年不一致，且多份卡片未列Innovus/ICC2等工具与Tcl/Shell脚本证据</li></ul></div><div class="kv"><b>优势：</b><ul class="green"><li>真实搜索结果、85条姓名脱敏且res_id互异、无重复无占位，数据源可用</li><li>核心候选池厚实：前72位中约38位具数字后端/物理设计直接履历（华为海思系驻场、中兴微在职、矽力杰、晶晨、天数智芯、比特大陆、海光、瑞晟、垣芯、思信等），1-3年资历主体符合年限要求</li><li>多位高潜候选人身处目标城市且求职目标吻合：上海（褚/张/刘等）、南京（范/庄/小/段等）、深圳（周/田/李等），onsite可用性强，可支撑走量</li><li>学历集中且偏上：硕士/博士占比高，含东南大学、电子科技大学、复旦大学、华中科技大学、山东大学、华南理工等，集成电路/微电子专业对口者多</li></ul></div><div class="kv"><b>数据校验：</b>校验通过：85条均来自猎聘真实候选人卡片（姓名脱敏、res_id互异、无重复/占位），count=rows=85一致；部分行职能与岗位完全无关属关键词（版图/后端）歧义所致，已在单候选人评估中剔除，不影响data_valid。本次仅评估前72位，另13位（73-85）待后续批次。</div></div>
+  
+  
+    <div class="candidate v-rec" data-v="推荐">
+      <div class="chead">
+        <span class="score high">85</span>
+        <span class="vtag rec">✅ 推荐</span>
+        <span class="cname">褚**</span>
+        <span class="cid">#22</span>
+        <a class="btn" href="https://h.liepin.com/resume/showresumedetail/?res_id_encode=e2f266ea65Zcbd6781462c0" target="_blank" rel="noopener">🔗 猎聘直达（新标签）</a>
+      </div>
+      <div class="summ">技能、年限、城市、专业全面吻合，是池中上海名额首选，第一优先深挖。</div>
+      <div class="points"><b>✅ 匹配点</b><ul><li>数字后端设计2年3个月（桐芯+叩持），方向硬匹配</li><li>技能含innovus/静态时序分析/PR/CTS/综合，主流后端EDA与技能要求吻合</li><li>现居上海浦东求职上海=岗位城市，微电子统招本科对口</li></ul></div>
+      <div class="concerns"><b>⚠️ 疑虑点</b><ul><li>需核验先进/新进工艺节点（PDK未稳、Foundry对接）实战证据（卡片未展开）</li></ul></div>
+      <div class="greeting"><div class="g-item"><span class="g-label">概况</span>男26，上海浦东，微电子统招本科，桐芯+叩持数字后端2年3个月，会4nm/22/28nm全流程。</div><div class="g-item"><span class="g-label">先核实</span>[&quot;简历标注&#x27;在职暂无跳槽打算&#x27;，需确认看机会意愿及接受科锐签约外包驻场到中兴微&quot;, &quot;求职期望25-26k×15薪，高于岗位&#x27;20k左右&#x27;口径，需先对齐薪资&quot;, &#x27;4nm/22/28nm为正文实料，但PDK未稳期/对接Foundry等新进工艺细节未体现，需核验&#x27;]</div><div class="g-item"><span class="g-label">话术1 · 岗位亮点</span>你好，中兴微数字后端岗正在招，上海/深圳/南京三地可选、共30个HC，签科锐长期驻场、薪资20k上下，方便聊下吗？</div><div class="g-item"><span class="g-label">话术2 · 匹配理由</span>看您做过三星4nm、台积电22/28nm的后端全流程，会Innovus/PT/Calibre，和岗位模块交付方向很对口，想跟您细聊一下。</div></div>
+      <details class='snippet'><summary>列表摘要（展开）</summary><pre>3天内活跃
+褚**
+26岁
+工作2年
+本科
+上海-浦东新区
+求职期望：
+上海数字后端工程师
+innovus
+静态时序分析
+PR
+CTS
+综合FC
+
+上海桐芯集成电路设计有限公司 · 数字后端设计工程师
+2024.06-至今(2年3个月)
+
+叩持(西安)电子信息技术有限公司 · 数字后端工程师
+2023.10-2024.06(8个月)
+
+河南理工大学 · 微电子科学与工程 · 本科 · 统招
+2018.06-2022.06(4年)
+
+立即沟通</pre></details>
+    </div>
+    <div class="candidate v-rec" data-v="推荐">
+      <div class="chead">
+        <span class="score high">82</span>
+        <span class="vtag rec">✅ 推荐</span>
+        <span class="cname">范**</span>
+        <span class="cid">#12</span>
+        <a class="btn" href="https://h.liepin.com/resume/showresumedetail/?res_id_encode=e1ff6bec64Dced27a106fc0" target="_blank" rel="noopener">🔗 猎聘直达（新标签）</a>
+      </div>
+      <div class="summ">矽力杰数字后端+东南硕士+南京目标，综合条件位列池子前列，优先深挖。</div>
+      <div class="points"><b>✅ 匹配点</b><ul><li>矽力杰（杭州）数字后端2年以上，方向硬匹配</li><li>东南大学电子信息统招硕士，学历优</li><li>现居/求职南京=岗位城市，onsite无碍</li></ul></div>
+      <div class="concerns"><b>⚠️ 疑虑点</b><ul><li>需核验PNR/STA/PA/PV完整交付与先进工艺证据（卡片未展开）</li></ul></div>
+      <div class="greeting"><div class="g-item"><span class="g-label">概况</span>男27南京，东南大学电子信息硕士，矽力杰数字后端2年2个月，现居求职均南京。</div><div class="g-item"><span class="g-label">先核实</span>[&#x27;简历项目以28nm等成熟工艺为主，先进/新进工艺（7/5nm）实战证据不足，需核验&#x27;, &#x27;正文仅展开2段项目，另2段及附件简历未查看，需索要核验完整交付&#x27;, &quot;求职期望25-30k×14薪高于岗位&#x27;20k左右&#x27;口径，且需确认接受外包驻场形式&quot;]</div><div class="g-item"><span class="g-label">话术1 · 岗位亮点</span>您好，中兴微数字后端岗急招，南京本地也有HC、就在本地onsite，共三地30个名额、签科锐长期岗，想跟您聊聊？</div><div class="g-item"><span class="g-label">话术2 · 匹配理由</span>您矽力杰做了2年多数字后端，有TSMC28nm Cortex-A7和ICC2模块全流程经验，和岗位模块交付非常对口，方便细聊吗？</div></div>
+      <details class='snippet'><summary>列表摘要（展开）</summary><pre>今天活跃
+范**
+27岁
+工作2年
+硕士
+南京-鼓楼区
+求职期望：
+南京数字后端工程师
+
+矽力杰半导体技术(杭州)有限公司 · 数字后端工程师
+2024.07-至今(2年2个月)
+
+东南大学 · 电子信息 · 硕士 · 统招
+2021.09-2024.06(3年)
+
+立即沟通</pre></details>
+    </div>
+    <div class="candidate v-rec" data-v="推荐">
+      <div class="chead">
+        <span class="score high">82</span>
+        <span class="vtag rec">✅ 推荐</span>
+        <span class="cname">庄**</span>
+        <span class="cid">#72</span>
+        <a class="btn" href="https://h.liepin.com/resume/showresumedetail/?res_id_encode=edfb6eea68e1Tcfd1761d6ec6" target="_blank" rel="noopener">🔗 猎聘直达（新标签）</a>
+      </div>
+      <div class="summ">海思IC后端+山大微电子+南京本地，是南京名额最值得优先深挖的人选之一。</div>
+      <div class="points"><b>✅ 匹配点</b><ul><li>现职华为海思（驻场思信）IC后端1年6个月，后端实战硬</li><li>山东大学微电子科学与工程统招本科，专业对口</li><li>现居南京且求职南京=岗位城市</li></ul></div>
+      <div class="concerns"><b>⚠️ 疑虑点</b><ul><li>需核验先进工艺细节及其对外包驻场形态的接受度</li><li>后端从业约1年6个月，独立交付深度需简历确认</li></ul></div>
+      <div class="greeting"><div class="g-item"><span class="g-label">概况</span>男23南京，微电子本科（985/211），海思IC后端在岗1年6个月，做过7nm先进工艺。</div><div class="g-item"><span class="g-label">先核实</span>[&#x27;现为思信派驻海思的驻场外包，需确认跳槽中兴微（科锐签约驻场南京）的意愿与到岗时间&#x27;, &quot;含附件简历且&#x27;海思先进工艺产品芯片后端BLOCK负责人&#x27;等内容未展开，需索要核验独立交付深度&quot;, &#x27;正文未显示院校名称（平台标注985/211），学历信息需以附件或学信核验&#x27;]</div><div class="g-item"><span class="g-label">话术1 · 岗位亮点</span>您好，中兴微数字后端岗在南京大量招人、三地共30个HC，签科锐长期驻场、薪资20k上下，看您挺合适想聊聊？</div><div class="g-item"><span class="g-label">话术2 · 匹配理由</span>您在海思南京驻场做IC后端，亲手跟过7nm先进制程SOC模块和14nm/28nm模块交付，正是岗位最看重的先进工艺实战，方便聊下？</div></div>
+      <details class='snippet'><summary>列表摘要（展开）</summary><pre>7天内活跃
+庄**
+23岁
+工作2年
+本科
+南京-雨花台区
+求职期望：
+南京数字后端工程师
+
+海思 · IC后端工程师
+2025.03-至今(1年6个月)
+
+广州思信电子科技有限公司 · IC后端工程师
+2025.03-至今(1年6个月)
+
+中科院青岛无人机试验基地综合检测中心 · 电子助理工程师
+2024.12-2025.03(3个月)
+
+山东大学 · 微电子科学与工程 · 本科 · 统招
+2020.09-2024.06(4年)
+
+立即沟通</pre></details>
+    </div>
+    <div class="candidate v-rec" data-v="推荐">
+      <div class="chead">
+        <span class="score high">80</span>
+        <span class="vtag rec">✅ 推荐</span>
+        <span class="cname">刘**</span>
+        <span class="cid">#13</span>
+        <a class="btn" href="https://h.liepin.com/resume/showresumedetail/?res_id_encode=e8fb67e26ee1Tc9d17d1164c1" target="_blank" rel="noopener">🔗 猎聘直达（新标签）</a>
+      </div>
+      <div class="summ">头部SoC公司后端经验充足且人在上海，为高潜人选，简历核验后即可推进。</div>
+      <div class="points"><b>✅ 匹配点</b><ul><li>晶晨半导体（25年绩效A）+天数智芯连续数字后端约3年，主流SoC大厂履历</li><li>现居上海且求职上海，onsite吻合</li><li>统招硕士</li></ul></div>
+      <div class="concerns"><b>⚠️ 疑虑点</b><ul><li>硕士专业材料物理与化学非微电子对口，学历口径存疑</li><li>卡片未列EDA工具与先进工艺细节</li></ul></div>
+      <div class="greeting"><div class="g-item"><span class="g-label">概况</span>男27上海，硕士，晶晨+天数智芯数字后端约2年，主做台积电6/12nm流片交付。</div><div class="g-item"><span class="g-label">先核实</span>[&quot;求职期望35-55k×15薪，与岗位&#x27;20k左右&#x27;年薪10-30万口径差距大，需先确认能否接受该薪资带&quot;, &#x27;需确认接受科锐签约外包驻场形式与到岗节奏&#x27;, &#x27;本硕专业（材料物理与化学/材料科学与工程）非微电子/集成电路对口，学历专业口径需与发单方确认&#x27;]</div><div class="g-item"><span class="g-label">话术1 · 岗位亮点</span>您好，中兴微数字后端岗上海/深圳/南京三地都在招、共30个HC，签科锐长期岗、急招好入职，考虑看下新机会吗？</div><div class="g-item"><span class="g-label">话术2 · 匹配理由</span>您在晶晨做过台积电6nm/12nm流片的多颗芯片模块后端交付，正是岗位需要的先进工艺实战，能力很对口，想跟您细聊。</div></div>
+      <details class='snippet'><summary>列表摘要（展开）</summary><pre>今天活跃
+刘**
+27岁
+工作2年
+硕士
+上海
+求职期望：
+上海数字后端工程师
+数字后端
+
+上海天数智芯半导体股份有限公司 · 数字后端工程师
+2026.02-至今(7个月)
+
+晶晨半导体(上海)股份有限公司 · 数字后端工程师（25年绩效A，最高绩效）
+2024.07-2026.02(1年7个月)
+
+上海大学 · 材料物理与化学 · 硕士 · 统招
+2021.09-2024.06(3年)
+
+青岛理工大学 · 材料科学与工程 · 本科 · 统招
+2017.09-2021.06(4年)
+
+立即沟通</pre></details>
+    </div>
+    <div class="candidate v-rec" data-v="推荐">
+      <div class="chead">
+        <span class="score high">80</span>
+        <span class="vtag rec">✅ 推荐</span>
+        <span class="cname">周**</span>
+        <span class="cid">#17</span>
+        <a class="btn" href="https://h.liepin.com/resume/showresumedetail/?res_id_encode=ecf565ed6ce6Acbd37a116eca" target="_blank" rel="noopener">🔗 猎聘直达（新标签）</a>
+      </div>
+      <div class="summ">华为后端+集成电路专业+深圳本地，是最符合深圳名额的高潜年轻候选。</div>
+      <div class="points"><b>✅ 匹配点</b><ul><li>华为IC后端工程师1年3个月在岗，大厂后端实战</li><li>集成电路设计与集成系统统招本科对口</li><li>现居深圳且求职深圳=岗位城市</li></ul></div>
+      <div class="concerns"><b>⚠️ 疑虑点</b><ul><li>从业年限偏短，需确认能独立完成PNR/STA/PA/PV模块交付</li><li>卡片未列先进工艺/工具细节</li></ul></div>
+      <div class="greeting"><div class="g-item"><span class="g-label">概况</span>男23深圳，集成电路统招本科，华为IC后端在岗1年3个月，求职深圳。</div><div class="g-item"><span class="g-label">先核实</span>[&#x27;detail正文无职责业绩/项目/技能信息，PNR/STA/PA/PV模块交付与先进/新进工艺实战均无法从简历确认，需重点核验&#x27;, &#x27;后端从业仅1年3个月，需确认能否独立完成模块交付并接受科锐签约外包驻场&#x27;, &quot;期望薪资8-13k×12薪低于岗位&#x27;20k左右&#x27;口径，需确认真实期望与可聘性，避免口径错位&quot;]</div><div class="g-item"><span class="g-label">话术1 · 岗位亮点</span>您好，中兴微数字后端岗在深圳有10个HC急招，签科锐长期驻场、薪资20k上下，华为后端背景很合适，方便聊下吗？</div><div class="g-item"><span class="g-label">话术2 · 匹配理由</span>看您在华为做IC后端1年多、又是集成电路科班，跟岗位数字后端模块交付方向很对口，想请您聊聊看机会的事。</div></div>
+      <details class='snippet'><summary>列表摘要（展开）</summary><pre>3天内活跃
+周**
+23岁
+工作1年
+本科
+深圳
+求职期望：
+深圳数字后端工程师
+
+华为 · IC后端工程师
+2025.06-至今(1年3个月)
+
+天津理工大学 · 集成电路设计与集成系统 · 本科 · 统招
+2021.09-2025.06(4年)
+
+立即沟通</pre></details>
+    </div>
+    <div class="candidate v-rec" data-v="推荐">
+      <div class="chead">
+        <span class="score high">80</span>
+        <span class="vtag rec">✅ 推荐</span>
+        <span class="cname">张**</span>
+        <span class="cid">#25</span>
+        <a class="btn" href="https://h.liepin.com/resume/showresumedetail/?res_id_encode=ecfa6de06ae8Ecbd578126fcb" target="_blank" rel="noopener">🔗 猎聘直达（新标签）</a>
+      </div>
+      <div class="summ">上海本地科创板芯片后端+东南硕士+Tcl技能，属上海名额高潜，优先核验。</div>
+      <div class="points"><b>✅ 匹配点</b><ul><li>某科创板芯片公司数字后端2年以上，方向对口</li><li>技能含Tcl，吻合岗位脚本要求</li><li>东南大学电子信息统招硕士，现居上海且求职上海</li></ul></div>
+      <div class="concerns"><b>⚠️ 疑虑点</b><ul><li>卡片未展开PNR/STA/PA/PV完整交付与先进工艺证据</li></ul></div>
+      <div class="greeting"><div class="g-item"><span class="g-label">概况</span>男27上海，东南大学硕士，某科创板芯片数字后端2年，量产6款SoC。</div><div class="g-item"><span class="g-label">先核实</span>[&#x27;求职期望30-35k×16薪，高于岗位20k上下口径，且需确认接受科锐签约外包驻场到中兴微&#x27;, &#x27;本科新能源材料与器件非微电子对口（硕士为电子信息），学历专业口径需与发单方确认&#x27;, &#x27;6nm等工艺为简历量产实料，但新进工艺（PDK未稳期/对接Foundry）实战深度未展开，需核验&#x27;]</div><div class="g-item"><span class="g-label">话术1 · 岗位亮点</span>您好，中兴微数字后端岗急招，上海/深圳/南京三地各有HC、共30个，科锐签约驻场、薪资20k上下，方便聊下吗？</div><div class="g-item"><span class="g-label">话术2 · 匹配理由</span>您在某科创板芯片公司做数字后端2年多、量产6款SoC，工艺覆盖6nm/28nm，正是岗位要的先进工艺与模块交付方向。</div></div>
+      <details class='snippet'><summary>列表摘要（展开）</summary><pre>3天内活跃
+张**
+27岁
+工作2年
+硕士
+上海-浦东新区
+求职期望：
+上海数字后端工程师
+Tcl
+Python
+verilog
+
+某科创板芯片公司 · 数字后端工程师
+2024.07-至今(2年2个月)
+
+东南大学 · 电子信息 · 硕士 · 统招
+2021.09-2024.06(3年)
+
+华东理工大学 · 新能源材料与器件 · 本科 · 统招
+2017.09-2021.06(4年)
+
+立即沟通</pre></details>
+    </div>
+    <div class="candidate v-rec" data-v="推荐">
+      <div class="chead">
+        <span class="score high">80</span>
+        <span class="vtag rec">✅ 推荐</span>
+        <span class="cname">小**</span>
+        <span class="cid">#64</span>
+        <a class="btn" href="https://h.liepin.com/resume/showresumedetail/?res_id_encode=e8f565ed66e3Dc9d37a1c62c6" target="_blank" rel="noopener">🔗 猎聘直达（新标签）</a>
+      </div>
+      <div class="summ">驻场海思后端+南京本地+专业对口，与岗位形态契合，是南京名额首推。</div>
+      <div class="points"><b>✅ 匹配点</b><ul><li>现驻场华为海思（思信外包）数字后端1年6个月，后端实战硬</li><li>现居南京且求职南京=岗位城市</li><li>华南师范电子科学与技术统招硕士对口</li></ul></div>
+      <div class="concerns"><b>⚠️ 疑虑点</b><ul><li>外包/驻场履历需核验独立交付深度与先进工艺细节</li><li>岗位本身即外包驻场，需确认其对外包身份接受度</li></ul></div>
+      <div class="greeting"><div class="g-item"><span class="g-label">概况</span>男26南京，华南师大电子硕士，思信驻场海思数字后端1年7个月。</div><div class="g-item"><span class="g-label">先核实</span>[&#x27;现为思信外包驻场华为海思，需确认愿转签科锐并驻场中兴微的意愿与到岗时间&#x27;, &#x27;期望23-30k×14薪略高于岗位20k上下口径；平台标工作2年含6个月FPGA，数字后端实为1年7个月需核口径&#x27;, &#x27;简历洞察含注意点1条、正文已整合附件简历更丰富内容，索要后需核验独立交付深度&#x27;]</div><div class="g-item"><span class="g-label">话术1 · 岗位亮点</span>您好，中兴微数字后端南京本地就有HC，上海/深圳/南京共30个名额、科锐签约长期驻场、薪资20k上下，想跟您聊聊？</div><div class="g-item"><span class="g-label">话术2 · 匹配理由</span>看您驻场华为海思做过5nm/7nm/28nm多颗先进工艺芯片、成功流片2颗，跟岗位先进工艺模块交付的口径高度对口。</div></div>
+      <details class='snippet'><summary>列表摘要（展开）</summary><pre>7天内活跃
+小**
+26岁
+工作2年
+硕士
+南京
+求职期望：
+南京数字后端工程师
+
+广州思信电子科技有限公司(驻场华为海思) · 数字后端工程师
+2025.02-至今(1年7个月)
+
+广州思信电子科技有限公司 · 数字后端工程师
+2025.02-至今(1年7个月)
+
+华南师范大学 · 电子科学与技术 · 硕士 · 统招
+2021.09-2024.06(3年)
+
+西南石油大学 · 电子信息科学与技术 · 本科 · 统招
+2017.09-2021.07(4年)
+
+立即沟通</pre></details>
+    </div>
+    <div class="candidate v-rec" data-v="推荐">
+      <div class="chead">
+        <span class="score high">80</span>
+        <span class="vtag rec">✅ 推荐</span>
+        <span class="cname">周**</span>
+        <span class="cid">#81</span>
+        <a class="btn" href="https://h.liepin.com/resume/showresumedetail/?res_id_encode=ecf06de967e8Tcbd4781461c3" target="_blank" rel="noopener">🔗 猎聘直达（新标签）</a>
+      </div>
+      <div class="summ">华为后端2年+厦大硕士+目标上海，是本批最高分首选，优先深挖。</div>
+      <div class="points"><b>✅ 匹配点</b><ul><li>华为数字后端工程师2年2个月在岗，方向硬匹配</li><li>厦门大学电子信息统招硕士，学历优且专业相关</li><li>求职期望上海=岗位目标城市，onsite上海可行</li></ul></div>
+      <div class="concerns"><b>⚠️ 疑虑点</b><ul><li>需简历核验PNR/STA/PA/PV完整交付与先进/新进工艺节点实战证据</li><li>现居深圳异地，需确认上海到岗及外包驻场意愿</li></ul></div>
+      <div class="greeting"><div class="g-item"><span class="g-label">概况</span>男26深圳，厦大硕士，华为海思数字后端2年2个月，做过7nm/12nm先进工艺。</div><div class="g-item"><span class="g-label">先核实</span>[&quot;detail求职意向显示长沙（可查看全部共3条），与pool摘要&#x27;上海&#x27;不一致，需确认可接受上海/深圳/南京哪地及外包驻场&quot;, &#x27;在岗华为海思（在职急寻新工作），需确认转签科锐驻场中兴微的意愿、到岗时间及是否涉同业/竞业限制&#x27;, &#x27;期望25-50k×15薪偏高需对齐；简历洞察含注意点1条、正文已整合附件简历，索要后核验完整交付&#x27;]</div><div class="g-item"><span class="g-label">话术1 · 岗位亮点</span>您好，中兴微数字后端深圳本地在招、三地共30个HC，科锐签约长期驻场、薪资20k上下，方便聊下新机会吗？</div><div class="g-item"><span class="g-label">话术2 · 匹配理由</span>您在华为海思做数字后端2年多，7nm/12nm关键模块物理实现到PV/PI收敛都有实战，正对岗位先进工艺优先的口径。</div></div>
+      <details class='snippet'><summary>列表摘要（展开）</summary><pre>周**
+26岁
+工作2年
+硕士
+深圳
+求职期望：
+上海数字后端工程师
+
+华为 · 数字后端工程师
+2024.07-至今(2年2个月)
+
+厦门大学 · 电子信息 · 硕士 · 统招
+2021.09-2024.06(3年)
+
+湘潭大学 · 电子信息 · 本科 · 统招
+2017.09-2021.06(4年)
+
+立即沟通</pre></details>
+    </div>
+    <div class="candidate v-rec" data-v="推荐">
+      <div class="chead">
+        <span class="score mid">78</span>
+        <span class="vtag rec">✅ 推荐</span>
+        <span class="cname">董**</span>
+        <span class="cid">#4</span>
+        <a class="btn" href="https://h.liepin.com/resume/showresumedetail/?res_id_encode=e6f067e56defDcdd47d1661cb" target="_blank" rel="noopener">🔗 猎聘直达（新标签）</a>
+      </div>
+      <div class="summ">名校硕士+两年数字后端、目标城市南京正中岗位，是高潜深挖对象。</div>
+      <div class="points"><b>✅ 匹配点</b><ul><li>某半导体上市公司数字后端工程师满2年，方向对口</li><li>电子科技大学统招硕士，现求职期望南京=岗位城市</li></ul></div>
+      <div class="concerns"><b>⚠️ 疑虑点</b><ul><li>卡片未展开PNR/STA/PA/PV与先进工艺证据，需核验</li><li>现居成都，需确认到岗南京与外包意愿</li></ul></div>
+      <div class="greeting"><div class="g-item"><span class="g-label">概况</span>男27现居成都，电子科大硕士，半导体上市公司数字后端2年3个月，意向南京。</div><div class="g-item"><span class="g-label">先核实</span>[&#x27;detail仅见成熟工艺180/90/40nm，岗位硬性优先的先进/新进工艺实战无证据，需重点核验&#x27;, &quot;简历标注&#x27;在职暂无跳槽打算&#x27;且现居成都，需确认到岗南京时间及接受科锐签约外包驻场&quot;, &#x27;期望25-45k×14薪高于岗位20k上下口径需对齐；简历洞察含注意点1条需点开核对&#x27;]</div><div class="g-item"><span class="g-label">话术1 · 岗位亮点</span>您好，中兴微数字后端南京在招，上海/深圳/南京三地共30个HC、科锐签约驻场、薪资20k上下，方便聊下吗？</div><div class="g-item"><span class="g-label">话术2 · 匹配理由</span>您2年多做了50+器件和20+中小ASIC的后端TO、还打通IR/EM流程，模块交付功底扎实，想跟您细聊。</div></div>
+      <details class='snippet'><summary>列表摘要（展开）</summary><pre>董**
+27岁
+工作2年
+硕士
+成都
+求职期望：
+南京数字后端工程师
+
+某半导体上市公司 · 数字后端工程师
+2024.06-至今(2年3个月)
+
+电子科技大学 · 物理与电子信息 · 硕士 · 统招
+2021.09-2024.06(3年)
+
+立即沟通</pre></details>
+    </div>
+    <div class="candidate v-rec" data-v="推荐">
+      <div class="chead">
+        <span class="score mid">78</span>
+        <span class="vtag rec">✅ 推荐</span>
+        <span class="cname">田**</span>
+        <span class="cid">#30</span>
+        <a class="btn" href="https://h.liepin.com/resume/showresumedetail/?res_id_encode=edfa65ee65e3Icfd57a1466cb" target="_blank" rel="noopener">🔗 猎聘直达（新标签）</a>
+      </div>
+      <div class="summ">深圳本地+两年数字后端+海归硕士，是深圳名额高潜，优先深挖。</div>
+      <div class="points"><b>✅ 匹配点</b><ul><li>深圳中安辰鸿数字后端2年以上，方向对口</li><li>迈阿密大学ECE硕士+厦门大学本科，学历佳</li><li>现居深圳且求职深圳=岗位城市</li></ul></div>
+      <div class="concerns"><b>⚠️ 疑虑点</b><ul><li>卡片未展开工具与先进工艺证据，需简历核验</li></ul></div>
+      <div class="greeting"><div class="g-item"><span class="g-label">概况</span>男27深圳，迈阿密大学ECE硕士，中安辰鸿数字后端2年2个月，参与7nm流片。</div><div class="g-item"><span class="g-label">先核实</span>[&#x27;求职期望35-50k×15薪，与岗位20k上下口径差距大，需先确认可接受薪资带&#x27;, &#x27;正文已整合附件简历，索要核验完整交付；公司规模小，PNR/STA/PA/PV独立完整交付深度待核验&#x27;, &#x27;需确认接受科锐签约驻场到中兴微（同为驻场外包再转场）及到岗时间&#x27;]</div><div class="g-item"><span class="g-label">话术1 · 岗位亮点</span>您好，中兴微数字后端深圳有10个HC急招、三地共30个，科锐签约驻场、薪资20k上下，方便聊下吗？</div><div class="g-item"><span class="g-label">话术2 · 匹配理由</span>您在中安辰鸿做过7nm DDR模块APR、还有国产新工艺节点Stdcell/Memory验证，正是岗位看重的先进/新进工艺实战。</div></div>
+      <details class='snippet'><summary>列表摘要（展开）</summary><pre>今天活跃
+田**
+27岁
+工作2年
+硕士
+深圳-龙岗区
+求职期望：
+深圳数字后端工程师
+
+深圳中安辰鸿技术有限公司 · 数字后端工程师
+2024.07-至今(2年2个月)
+
+深圳中安辰鸿技术有限公司 · 数字后端设计工程师
+2024.07-至今(2年2个月)
+
+迈阿密大学 · 电子计算机工程 · 硕士 · 统招
+2022.08-2024.05(2年)
+
+厦门大学 · 电子与电气工程 · 本科 · 统招
+2017.09-2021.08(4年)
+
+立即沟通</pre></details>
+    </div>
+    <div class="candidate v-rec" data-v="推荐">
+      <div class="chead">
+        <span class="score mid">78</span>
+        <span class="vtag rec">✅ 推荐</span>
+        <span class="cname">赵**</span>
+        <span class="cid">#62</span>
+        <a class="btn" href="https://h.liepin.com/resume/showresumedetail/?res_id_encode=e4fa65ea67e8Ncad57a1d64c1" target="_blank" rel="noopener">🔗 猎聘直达（新标签）</a>
+      </div>
+      <div class="summ">后端年限足、工具脚本全覆盖、专业对口的资深候选，城市意愿是唯一关卡。</div>
+      <div class="points"><b>✅ 匹配点</b><ul><li>数字后端工程师近4年（南京匠心致诚），年限充足方向硬匹配</li><li>技能含innovus/calibre/STA/Tcl/Shell，工具脚本全面吻合岗位</li><li>天津工业大学集成电路工程统招硕士，专业对口</li></ul></div>
+      <div class="concerns"><b>⚠️ 疑虑点</b><ul><li>求职天津与三地onsite错位，需确认转投意愿</li><li>任职时长与学历时间口径存在疑点需核验</li></ul></div>
+      <div class="greeting"><div class="g-item"><span class="g-label">概况</span>男25天津，集成电路工程硕士，南京匠心致诚数字后端3年余，熟TSMC22/华力28nm。</div><div class="g-item"><span class="g-label">先核实</span>[&#x27;求职意向天津/成都/重庆/上海/广州、未含深圳/南京，需确认可接受三地哪地onsite及科锐签约外包驻场&#x27;, &#x27;任职2022.11起含读研实习期、平台状态为2025届硕士应届，岗位1-3年口径下毕业后实际全职年限需确认&#x27;, &#x27;简历洞察含注意点2条且正文已整合附件简历，先进/新进工艺实战与独立完整交付深度需索要核验&#x27;]</div><div class="g-item"><span class="g-label">话术1 · 岗位亮点</span>您好，中兴微数字后端岗急招，上海/深圳/南京三地可选、共30个HC，科锐签约长期驻场、薪资20k上下，方便聊下吗？</div><div class="g-item"><span class="g-label">话术2 · 匹配理由</span>您做过TSMC22nm低功耗导航芯片全芯片物理设计与华力28nm模块PR/signoff，跟岗位PNR/PV模块交付方向很对口，想细聊下。</div></div>
+      <details class='snippet'><summary>列表摘要（展开）</summary><pre>赵**
+25岁
+2025年毕业
+硕士
+天津-西青区
+求职期望：
+天津数字后端工程师
+TCL
+Shell
+perl
+innovus
+calibre
+STA
+
+南京匠心致诚科技有限公司 · 数字后端工程师
+2022.11-至今(3年10个月)
+
+天津工业大学（双一流） · 集成电路工程 · 硕士 · 统招
+2022.09-2025.06(3年)
+
+天津工业大学（双一流） · 电子科学与技术 · 本科 · 统招
+2018.09-2022.06(4年)
+
+立即沟通</pre></details>
+    </div>
+    <div class="candidate v-rec" data-v="推荐">
+      <div class="chead">
+        <span class="score mid">78</span>
+        <span class="vtag rec">✅ 推荐</span>
+        <span class="cname">王**</span>
+        <span class="cid">#63</span>
+        <a class="btn" href="https://h.liepin.com/resume/showresumedetail/?res_id_encode=e1fb61ed6eeeLc3d17b1165c4" target="_blank" rel="noopener">🔗 猎聘直达（新标签）</a>
+      </div>
+      <div class="summ">海思后端+华科硕士、人在上海，属高潜，确认可留上海即可重点推进。</div>
+      <div class="points"><b>✅ 匹配点</b><ul><li>海思半导体数字芯片后端近2年，大厂后端实战强</li><li>华中科技大学统招硕士</li><li>现居上海，onsite上海可行</li></ul></div>
+      <div class="concerns"><b>⚠️ 疑虑点</b><ul><li>求职期望武汉与三地城市错位需确认</li><li>专业材料学非微电子对口</li></ul></div>
+      <div class="greeting"><div class="g-item"><span class="g-label">概况</span>男27上海，华中科技大学硕士，海思半导体数字芯片后端1年11个月，主做7nm项目模块交付。</div><div class="g-item"><span class="g-label">先核实</span>[&#x27;工作经历止于2026.07但简历标在职，项目时间甚至出现2026.11，当前状态与到岗时间需核实&#x27;, &#x27;硕/本科均为材料类（华中科大材料学、武理工材料物理），非微电子/电子对口，学历专业口径需与发单方确认&#x27;, &#x27;现为海思直签，需确认接受科锐签约外包驻场到中兴微；期望20-30k×15薪与20k左右基本同带，仍建议对齐&#x27;]</div><div class="g-item"><span class="g-label">话术1 · 岗位亮点</span>您好，中兴微数字后端岗急招，上海/南京本地都有HC，三地共30个名额、科锐签约长期驻场、薪资20k上下，方便聊下吗？</div><div class="g-item"><span class="g-label">话术2 · 匹配理由</span>您在华为海思做数字芯片后端近2年，7nm项目模块物理实现都做到TO、还带signoff专项，正对岗位最看重的先进工艺实战。</div></div>
+      <details class='snippet'><summary>列表摘要（展开）</summary><pre>3天内活跃
+王**
+27岁
+工作2年
+硕士
+上海
+求职期望：
+武汉数字后端工程师
+
+海思半导体 · 数字芯片后端工程师
+2024.08-2026.07(1年11个月)
+
+华中科技大学 · 材料学，新能源材料与器件 · 硕士 · 统招
+2021.09-2024.09(3年)
+
+武汉理工大学 · 材料物理 · 本科 · 统招
+2017.09-2021.06(4年)
+
+立即沟通</pre></details>
+    </div>
+    <div class="candidate v-rec" data-v="推荐">
+      <div class="chead">
+        <span class="score mid">78</span>
+        <span class="vtag rec">✅ 推荐</span>
+        <span class="cname">李**</span>
+        <span class="cid">#69</span>
+        <a class="btn" href="https://h.liepin.com/resume/showresumedetail/?res_id_encode=e6f062ea66efXcdd47f1267c0" target="_blank" rel="noopener">🔗 猎聘直达（新标签）</a>
+      </div>
+      <div class="summ">三年数字IC后端+深圳本地，是深圳名额可靠候选，核验工艺后推进。</div>
+      <div class="points"><b>✅ 匹配点</b><ul><li>数字IC后端约3年（润和+叩持），年限充足方向对口</li><li>现居深圳且求职深圳=岗位城市</li><li>电子信息工程统招本科</li></ul></div>
+      <div class="concerns"><b>⚠️ 疑虑点</b><ul><li>从业公司偏外包系，独立模块交付深度与先进工艺证据需核验</li><li>院校层次一般，需以简历正文背书</li></ul></div>
+      <div class="greeting"><div class="g-item"><span class="g-label">概况</span>男27深圳，电子信息工程统招本科，润和软件驻海思COT数字IC后端2年5个月。</div><div class="g-item"><span class="g-label">先核实</span>[&#x27;状态在职暂无跳槽打算，需确认看机会意愿、可到岗时间及接受科锐签约外包驻场&#x27;, &#x27;期望30-40k×15薪明显高于岗位20k左右/年薪10-30万口径，需先对齐薪资&#x27;, &#x27;简历洞察含注意点1条且正文已整合附件简历，7nm/12nm独立完整交付与先进/新进工艺细节需索要核验&#x27;]</div><div class="g-item"><span class="g-label">话术1 · 岗位亮点</span>您好，中兴微数字后端深圳本地有10个HC急招、三地共30个，科锐签约长期驻场、薪资20k上下，方便聊下吗？</div><div class="g-item"><span class="g-label">话术2 · 匹配理由</span>您在海思深圳COT驻场做数字IC后端2年多，有7nm/12nm模块物理实现和STA/PV实战，正是岗位要的模块交付方向。</div></div>
+      <details class='snippet'><summary>列表摘要（展开）</summary><pre>3天内活跃
+李**
+27岁
+工作3年
+本科
+深圳
+求职期望：
+深圳数字后端工程师
+
+润和软件 · 数字IC后端工程师
+2024.04-至今(2年5个月)
+
+叩持电子 · 数字IC后端工程师
+2023.09-2024.03(6个月)
+
+安阳工学院 · 电子信息工程 · 本科 · 统招
+2018.09-2022.06(4年)
+
+立即沟通</pre></details>
+    </div>
+    <div class="candidate v-rec" data-v="推荐">
+      <div class="chead">
+        <span class="score mid">74</span>
+        <span class="vtag rec">✅ 推荐</span>
+        <span class="cname">胡**</span>
+        <span class="cid">#10</span>
+        <a class="btn" href="https://h.liepin.com/resume/showresumedetail/?res_id_encode=ecfd60e967eaJcbd77c1461c0" target="_blank" rel="noopener">🔗 猎聘直达（新标签）</a>
+      </div>
+      <div class="summ">工具链完整、方向硬匹配的集成电路硕士，若愿意转投三地则很值得深挖。</div>
+      <div class="points"><b>✅ 匹配点</b><ul><li>数字后端工程师2年以上，方向对口</li><li>技能含Innovus/PT/Calibre/DC，主流后端EDA吻合岗位</li><li>西安理工大学集成电路工程统招硕士对口</li></ul></div>
+      <div class="concerns"><b>⚠️ 疑虑点</b><ul><li>求职西安与三地onsite错位，需确认可转投</li><li>卡片无先进/新进工艺实战证据</li></ul></div>
+      <div class="greeting"><div class="g-item"><span class="g-label">概况</span>男29西安，西安理工大学集成电路工程硕士，恒翔控制数字后端2年2个月，熟PR/STA/PV全流程。</div><div class="g-item"><span class="g-label">先核实</span>[&#x27;工艺均为SMIC130/180/40nm成熟节点，岗位硬性优先的先进/新进工艺实战无证据，需重点核验&#x27;, &#x27;求职意向西安/成都/武汉、不含上海/深圳/南京，需确认可接受三地onsite及到岗&#x27;, &#x27;期望22-28k×12薪与20k左右接近但仍需对齐，并确认接受科锐签约外包驻场&#x27;]</div><div class="g-item"><span class="g-label">话术1 · 岗位亮点</span>您好，中兴微数字后端岗急招，上海/深圳/南京三地可选、共30个HC，科锐签约长期驻场、薪资20k上下，方便聊下吗？</div><div class="g-item"><span class="g-label">话术2 · 匹配理由</span>您2年多独立走通PR/STA/PV全流程且项目都流片，Innovus/PT/Calibre用得熟，与岗位模块交付方向很对口。</div></div>
+      <details class='snippet'><summary>列表摘要（展开）</summary><pre>今天活跃
+胡**
+29岁
+工作2年
+硕士
+西安
+求职期望：
+西安数字后端工程师
+Linux
+DC
+INNOVUS
+Calibre
+PT
+
+西安恒翔控制技术有限公司 · 数字后端工程师
+2024.07-至今(2年2个月)
+
+西安理工大学 · 集成电路工程 · 硕士 · 统招
+2021.09-2024.07(3年)
+
+黄淮学院 · 通信工程 · 本科 · 统招
+2017.09-2021.07(4年)
+
+立即沟通</pre></details>
+    </div>
+    <div class="candidate v-rec" data-v="推荐">
+      <div class="chead">
+        <span class="score mid">74</span>
+        <span class="vtag rec">✅ 推荐</span>
+        <span class="cname">段**</span>
+        <span class="cid">#24</span>
+        <a class="btn" href="https://h.liepin.com/resume/showresumedetail/?res_id_encode=ecf46de361Nc9db791d66c0" target="_blank" rel="noopener">🔗 猎聘直达（新标签）</a>
+      </div>
+      <div class="summ">正在中兴微做数字IC后端，是天然对口人选，但需先确认其求职方向与意愿。</div>
+      <div class="points"><b>✅ 匹配点</b><ul><li>现职中兴微电子数字IC后端2年2个月——正是用工方，背景高度匹配</li><li>华中科技大学统招本科</li></ul></div>
+      <div class="concerns"><b>⚠️ 疑虑点</b><ul><li>求职期望长沙硬件工程师与岗位方向冲突，需先确认本人意向</li><li>电磁场与无线技术专业非微电子对口</li></ul></div>
+      <div class="greeting"><div class="g-item"><span class="g-label">概况</span>男27长沙，华中科技大学统招本科，现职中兴微电子数字IC后端2年2个月。</div><div class="g-item"><span class="g-label">先核实</span>[&#x27;现职即本岗用工方中兴微（疑直雇），需确认为何看机会、能否接受转签科锐外包驻场，及现居长沙与三地onsite到岗安排&#x27;, &#x27;求职意向首条为长沙·硬件工程师15-20k×14薪，与数字后端三地onsite方向冲突，需核实真实意向与目标城市&#x27;, &#x27;正文仅一句netlist到GDS设计与验证，工艺节点/EDA工具/PNR·STA·PA·PV深度均未展开（简历洞察含注意点1条），且专业电磁场与无线技术非微电子对口，需重点核验&#x27;]</div><div class="g-item"><span class="g-label">话术1 · 岗位亮点</span>您好，中兴微数字后端岗急招，上海/深圳/南京三地共30个HC、科锐签约驻场、薪资20k上下，您正做这块，方便聊下吗？</div><div class="g-item"><span class="g-label">话术2 · 匹配理由</span>您在中兴微做数字IC后端2年多、负责netlist到GDS的后端实现，正是岗位数字后端模块交付的方向，想跟您细聊下。</div></div>
+      <details class='snippet'><summary>列表摘要（展开）</summary><pre>7天内活跃
+段**
+27岁
+工作2年
+本科
+长沙
+求职期望：
+长沙硬件工程师
+
+中兴微电子 · 数字ic后端
+2024.07-至今(2年2个月)
+
+华中科技大学 · 电磁场与无线技术 · 本科 · 统招
+2017.09-2021.06(4年)
+
+立即沟通</pre></details>
+    </div>
+  <div class="footer">小猎工作台产物 · 数据资产在 reports/*.json，本页可随时重新生成</div>
+</div>
+<script>
+  document.querySelectorAll('.f').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      document.querySelectorAll('.f').forEach(function(b){b.classList.remove('active');});
+      btn.classList.add('active');
+      var f = btn.getAttribute('data-f');
+      document.querySelectorAll('.candidate').forEach(function(c){
+        c.style.display = (f === 'all' || c.getAttribute('data-v') === f) ? '' : 'none';
+      });
+    });
+  });
+</script>
+</body>
+</html>

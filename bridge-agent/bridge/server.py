@@ -442,6 +442,29 @@ class AgentRunner:
 RUNNER = AgentRunner(f"http://{os.environ.get('BRIDGE_BIND_HOST', '127.0.0.1')}:{os.environ.get('BRIDGE_BIND_PORT', '8080')}")
 
 
+# ── 本地来源白名单（2026-09-20 加；**桥的第一道门**）────────────────────────
+# 威胁（实测）：桥能 click/type（含"在猎聘聊天里发消息"），而它原先**无任何校验 + ACAO: \***
+#   → 你浏览器里**任意一个网页**都能 POST 简单请求来驱使桥操作你已登录的页面。
+# 治法（最小、且**不依赖"桥将来变成什么形态"**）：凡带 Origin 的请求必须来自白名单，否则 403。
+#   · Python 脚本 / DSH 工具（Node 侧）→ 不发送 Origin，照旧放行；
+#   · 浏览器扩展 → `chrome-extension://` 一律放行（只有装在本机浏览器里的扩展能发）；
+#   · 本机界面（DSH GUI :3080 / 面板 :8501）→ 白名单。
+# 故意不做（留给"桥的形态"那一场讨论）：token、权限矩阵、端口自适应。
+ALLOWED_ORIGINS = {
+    "http://127.0.0.1:3080", "http://localhost:3080",
+    "http://127.0.0.1:8501", "http://localhost:8501",
+}
+ALLOWED_ORIGIN_PREFIXES = ("chrome-extension://",)
+
+
+def origin_allowed(origin: str) -> bool:
+    """来源是否放行（**空 = 非浏览器调用**，放行：脚本/Node/MCP 都不带 Origin）。"""
+    o = (origin or "").strip()
+    if not o:
+        return True
+    return o in ALLOWED_ORIGINS or o.startswith(ALLOWED_ORIGIN_PREFIXES)
+
+
 def _last_snapshot_url(run):
     """从 run 事件里取最后一次快照的 URL（candidates 入库兜底站点信息用）。"""
     url = ""
@@ -459,14 +482,40 @@ class Handler(BaseHTTPRequestHandler):
         # 精简控制台日志
         sys_stdout_write(f"[bridge] {self.address_string()} {fmt % args}")
 
+    def _cors_headers(self):
+        """只对**白名单来源**回 CORS 头（不再一律 `*`）；非白名单一律不回。"""
+        o = (self.headers.get("Origin") or "").strip()
+        if o and origin_allowed(o):
+            self.send_header("Access-Control-Allow-Origin", o)
+            self.send_header("Vary", "Origin")
+            self.send_header("Access-Control-Allow-Methods", "GET,POST,OPTIONS")
+            self.send_header("Access-Control-Allow-Headers", "Content-Type")
+
+    def _origin_blocked(self) -> bool:
+        """带 Origin 且不在白名单 → 挡掉并记账（日志里能看见谁在敲门）。"""
+        o = (self.headers.get("Origin") or "").strip()
+        if origin_allowed(o):
+            return False
+        sys_stdout_write(f"[bridge] 拒绝来源 {o} → {self.path}")
+        # ⚠️ 2026-09-20 实测（补丁后日志里抓到 ConnectionResetError）：回 403 前必须**把请求体读干净**
+        #    并关掉这条连接——否则 HTTP/1.1 keep-alive 下残留的 body 会让下一次请求错位。
+        try:
+            n = int(self.headers.get("Content-Length") or 0)
+            if n > 0:
+                self.rfile.read(n)
+        except Exception:  # noqa: BLE001
+            pass
+        self.close_connection = True
+        self._send_json({"error": "origin not allowed", "origin": o,
+                         "hint": "只允许本机白名单界面 / 扩展 / 不带 Origin 的本地调用"}, status=403)
+        return True
+
     def _send_json(self, obj, status=200):
         body = json.dumps(obj, ensure_ascii=False).encode("utf-8")
         self.send_response(status)
         self.send_header("Content-Type", "application/json; charset=utf-8")
         self.send_header("Content-Length", str(len(body)))
-        self.send_header("Access-Control-Allow-Origin", "*")
-        self.send_header("Access-Control-Allow-Methods", "GET,POST,OPTIONS")
-        self.send_header("Access-Control-Allow-Headers", "Content-Type")
+        self._cors_headers()
         self.end_headers()
         self.wfile.write(body)
 
@@ -482,6 +531,8 @@ class Handler(BaseHTTPRequestHandler):
 
     # ---------- 路由 ----------
     def do_OPTIONS(self):
+        if self._origin_blocked():
+            return
         self._send_json({})
 
     def _send_html(self, text, status=200):
@@ -489,11 +540,13 @@ class Handler(BaseHTTPRequestHandler):
         self.send_response(status)
         self.send_header("Content-Type", "text/html; charset=utf-8")
         self.send_header("Content-Length", str(len(body)))
-        self.send_header("Access-Control-Allow-Origin", "*")
+        self._cors_headers()
         self.end_headers()
         self.wfile.write(body)
 
     def do_GET(self):
+        if self._origin_blocked():
+            return
         path = urlparse(self.path).path
         if path == "/" or path == "/console":
             if os.path.exists(CONSOLE_HTML):
@@ -597,7 +650,7 @@ class Handler(BaseHTTPRequestHandler):
                 self.send_header("Content-Type", "image/png")
                 self.send_header("Content-Length", str(len(raw)))
                 self.send_header("Cache-Control", "no-store")
-                self.send_header("Access-Control-Allow-Origin", "*")
+                self._cors_headers()
                 self.end_headers()
                 self.wfile.write(raw)
             else:
@@ -606,6 +659,8 @@ class Handler(BaseHTTPRequestHandler):
             self._send_json({"error": "not found", "path": path}, status=404)
 
     def do_POST(self):
+        if self._origin_blocked():
+            return
         path = urlparse(self.path).path
         if path == "/api/agent/run":
             if not AGENT_AVAILABLE:

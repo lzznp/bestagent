@@ -1,0 +1,420 @@
+{
+ "body_preview": "首页\n沟通\n找人\n职位\n猎头服务\n\n每日任务\n\n杨猛\n你好，杨猛\n我的主页\t个人中心\n安全中心\t账户资源\n用户规则\t通话管理\n安全退出\n\n消息\n\n互动\n\n设置\n全部\n新招呼\n我发起的\n我回复的\n有简历\n全部职位\n未读\n未选中会话\n沟通职位:\n设置沟通职位\n用户简历已设置隐私状态",
+ "elements": [
+  {
+   "href": "https://h.liepin.com/",
+   "index": 0,
+   "name": "猎聘诚猎通",
+   "rect": {
+    "height": 48,
+    "left": 34.66666793823242,
+    "top": 0,
+    "width": 143
+   },
+   "role": "a",
+   "tag": "a",
+   "value": ""
+  },
+  {
+   "href": "https://h.liepin.com/",
+   "index": 1,
+   "name": "首页",
+   "rect": {
+    "height": 48,
+    "left": 267.6666564941406,
+    "top": 0,
+    "width": 80
+   },
+   "role": "a",
+   "tag": "a",
+   "value": ""
+  },
+  {
+   "href": "https://h.liepin.com/im/showmsgnewpage",
+   "index": 2,
+   "name": "沟通",
+   "rect": {
+    "height": 48,
+    "left": 347.6666564941406,
+    "top": 0,
+    "width": 80
+   },
+   "role": "a",
+   "tag": "a",
+   "value": ""
+  },
+  {
+   "href": "https://h.liepin.com/search/getConditionItem",
+   "index": 3,
+   "name": "找人",
+   "rect": {
+    "height": 48,
+    "left": 427.6666564941406,
+    "top": 0,
+    "width": 80
+   },
+   "role": "a",
+   "tag": "a",
+   "value": ""
+  },
+  {
+   "href": "https://h.liepin.com/job/showlistpage?jobStatus=11",
+   "index": 4,
+   "name": "职位",
+   "rect": {
+    "height": 48,
+    "left": 507.6666564941406,
+    "top": 0,
+    "width": 80
+   },
+   "role": "a",
+   "tag": "a",
+   "value": ""
+  },
+  {
+   "href": "https://mskh.liepin.com/",
+   "index": 5,
+   "name": "猎头服务",
+   "rect": {
+    "height": 48,
+    "left": 587.6666870117188,
+    "top": 0,
+    "width": 108
+   },
+   "role": "a",
+   "tag": "a",
+   "value": ""
+  },
+  {
+   "href": "https://h.liepin.com/certification/home/",
+   "index": 6,
+   "name": "杨猛",
+   "rect": {
+    "height": 48,
+    "left": 1161.5555419921875,
+    "top": 0,
+    "width": 73.11111450195312
+   },
+   "role": "a",
+   "tag": "a",
+   "value": ""
+  },
+  {
+   "href": "",
+   "index": 7,
+   "name": "",
+   "rect": {
+    "height": 28,
+    "left": 1045.5555419921875,
+    "top": 10,
+    "width": 28
+   },
+   "role": "button",
+   "tag": "button",
+   "value": ""
+  },
+  {
+   "href": "",
+   "index": 8,
+   "name": "杨猛",
+   "rect": {
+    "height": 21,
+    "left": 1177.5555419921875,
+    "top": 13.5,
+    "width": 28
+   },
+   "role": "span",
+   "tag": "span",
+   "value": ""
+  },
+  {
+   "href": "",
+   "index": 9,
+   "name": "",
+   "rect": {
+    "height": 38,
+    "left": 0,
+    "top": 48,
+    "width": 82
+   },
+   "role": "button",
+   "tag": "button",
+   "value": ""
+  },
+  {
+   "href": "",
+   "index": 10,
+   "name": "",
+   "rect": {
+    "height": 872,
+    "left": 86,
+    "top": 48,
+    "width": 1183.3333740234375
+   },
+   "role": "tabpanel",
+   "tag": "div",
+   "value": ""
+  },
+  {
+   "href": "",
+   "index": 11,
+   "name": "",
+   "rect": {
+    "height": 65.11111450195312,
+    "left": 8,
+    "top": 56,
+    "width": 62
+   },
+   "role": "tab",
+   "tag": "div",
+   "value": ""
+  },
+  {
+   "href": "",
+   "index": 12,
+   "name": "",
+   "rect": {
+    "height": 0,
+    "left": 86,
+    "top": 64,
+    "width": 0
+   },
+   "role": "input",
+   "tag": "input",
+   "value": "on"
+  },
+  {
+   "href": "",
+   "index": 13,
+   "name": "",
+   "rect": {
+    "height": 0,
+    "left": 154,
+    "top": 64,
+    "width": 0
+   },
+   "role": "input",
+   "tag": "input",
+   "value": "on"
+  },
+  {
+   "href": "",
+   "index": 14,
+   "name": "",
+   "rect": {
+    "height": 0,
+    "left": 236,
+    "top": 64,
+    "width": 0
+   },
+   "role": "input",
+   "tag": "input",
+   "value": "on"
+  },
+  {
+   "href": "",
+   "index": 15,
+   "name": "",
+   "rect": {
+    "height": 0,
+    "left": 332,
+    "top": 64,
+    "width": 0
+   },
+   "role": "input",
+   "tag": "input",
+   "value": "on"
+  },
+  {
+   "href": "",
+   "index": 16,
+   "name": "",
+   "rect": {
+    "height": 0,
+    "left": 428,
+    "top": 64,
+    "width": 0
+   },
+   "role": "input",
+   "tag": "input",
+   "value": "on"
+  },
+  {
+   "href": "",
+   "index": 17,
+   "name": "",
+   "rect": {
+    "height": 32,
+    "left": 1189.5555419921875,
+    "top": 64,
+    "width": 79.77777862548828
+   },
+   "role": "button",
+   "tag": "button",
+   "value": ""
+  },
+  {
+   "href": "",
+   "index": 18,
+   "name": "设置",
+   "rect": {
+    "height": 15.111111640930176,
+    "left": 1225.4444580078125,
+    "top": 72.11111450195312,
+    "width": 28
+   },
+   "role": "span",
+   "tag": "span",
+   "value": ""
+  },
+  {
+   "href": "",
+   "index": 19,
+   "name": "",
+   "rect": {
+    "height": 806,
+    "left": 397,
+    "top": 108,
+    "width": 872.3333129882812
+   },
+   "role": "div",
+   "tag": "div",
+   "value": ""
+  },
+  {
+   "href": "",
+   "index": 20,
+   "name": "",
+   "rect": {
+    "height": 32,
+    "left": 102,
+    "top": 120,
+    "width": 223
+   },
+   "role": "div",
+   "tag": "div",
+   "value": ""
+  },
+  {
+   "href": "",
+   "index": 21,
+   "name": "",
+   "rect": {
+    "height": 32,
+    "left": 341,
+    "top": 120,
+    "width": 32
+   },
+   "role": "button",
+   "tag": "button",
+   "value": ""
+  },
+  {
+   "href": "",
+   "index": 22,
+   "name": "",
+   "rect": {
+    "height": 31.77777862548828,
+    "left": 1350.888916015625,
+    "top": 120.11111450195312,
+    "width": 98.77777862548828
+   },
+   "role": "button",
+   "tag": "button",
+   "value": ""
+  },
+  {
+   "href": "",
+   "index": 23,
+   "name": "",
+   "rect": {
+    "height": 30.22222328186035,
+    "left": 113.8888931274414,
+    "top": 120.8888931274414,
+    "width": 175.22222900390625
+   },
+   "role": "span",
+   "tag": "span",
+   "value": ""
+  },
+  {
+   "href": "",
+   "index": 24,
+   "name": "",
+   "rect": {
+    "height": 30,
+    "left": 113.8888931274414,
+    "top": 120.8888931274414,
+    "width": 175.22222900390625
+   },
+   "role": "combobox",
+   "tag": "input",
+   "value": ""
+  },
+  {
+   "href": "",
+   "index": 25,
+   "name": "",
+   "rect": {
+    "height": 16,
+    "left": 298,
+    "top": 128,
+    "width": 16
+   },
+   "role": "span",
+   "tag": "span",
+   "value": ""
+  },
+  {
+   "href": "",
+   "index": 26,
+   "name": "",
+   "rect": {
+    "height": 65.11111450195312,
+    "left": 8,
+    "top": 137.11111450195312,
+    "width": 62
+   },
+   "role": "tab",
+   "tag": "div",
+   "value": ""
+  },
+  {
+   "href": "",
+   "index": 27,
+   "name": "未读",
+   "rect": {
+    "height": 22,
+    "left": 118,
+    "top": 164.88888549804688,
+    "width": 44
+   },
+   "role": "span",
+   "tag": "span",
+   "value": ""
+  },
+  {
+   "href": "",
+   "index": 28,
+   "name": "",
+   "rect": {
+    "height": 16,
+    "left": 102,
+    "top": 166.7916717529297,
+    "width": 16
+   },
+   "role": "input",
+   "tag": "input",
+   "value": "on"
+  }
+ ],
+ "error": null,
+ "ok": true,
+ "order": "visual",
+ "settled": {
+  "settled": true,
+  "waited_ms": 11786
+ },
+ "title": "职聊",
+ "url": "https://h.liepin.com/im/showmsgnewpage"
+}

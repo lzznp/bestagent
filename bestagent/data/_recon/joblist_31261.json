@@ -1,0 +1,759 @@
+{
+ "snapshot": {
+  "body_preview": "首页\n沟通\n找人\n职位\n猎头服务\n\n每日任务\n\n杨猛\n你好，杨猛\n我的主页\t个人中心\n安全中心\t账户资源\n用户规则\t通话管理\n安全退出\n发职位\n职位管理\n企业管理\n进行中的职位\n已暂停的职位\n已结束的职位\n职位草稿箱\n为保证猎头在平台高效工作，经过与有关部门就相关法律条文多次协商、沟通、解读后，可由猎企在猎聘诚猎通后台统一上传《猎头诚信联盟承诺函》，由平台审核后，所关联的顾问个人可正常进行职位发布。\n职位名称\n发布渠道\n搜 索\nPipeline\t职位 \n\t招聘企业\t发布渠道\t发布状态\t待处理简历\t更新时间\t操作\n查看\t\n机械工程师（非标物流自动化设备）\n\t\n江苏智库智能科技有限公司(某南京人工智能公司)\n\t猎聘\t已发布\t2\t2026-09-11\t操作\n一键刷新正在发布职位\n1\n10 条/页\n津ICP备15007986号-11\nICP经营许可证：合字B2-20160007\n人才服务许可证:120116184001号\n京公网安备:11010502035189\n算法备案信息\n投诉举报制度\n算法推荐服务说明\n\n违法和不良信息举报联系邮箱：jubao@liepin.com违法和不良信息举报中心链接：https://www.12377.cn\n\n营业执照\n用户协议\n隐私政策\n\n企业服务热线和算法推荐/未成年人举报渠道：400-0602-378 (工作日 9:00-19:00)\n\nCopyright©2006-2024 liepin.com All Rights Reserved",
+  "elements": [
+   {
+    "href": "https://h.liepin.com/",
+    "index": 0,
+    "name": "猎聘诚猎通",
+    "rect": {
+     "height": 48,
+     "left": 26.22222328186035,
+     "top": 0,
+     "width": 143
+    },
+    "role": "a",
+    "tag": "a",
+    "value": ""
+   },
+   {
+    "href": "https://h.liepin.com/",
+    "index": 1,
+    "name": "首页",
+    "rect": {
+     "height": 48,
+     "left": 259.22222900390625,
+     "top": 0,
+     "width": 80
+    },
+    "role": "a",
+    "tag": "a",
+    "value": ""
+   },
+   {
+    "href": "https://h.liepin.com/im/showmsgnewpage",
+    "index": 2,
+    "name": "沟通",
+    "rect": {
+     "height": 48,
+     "left": 339.22222900390625,
+     "top": 0,
+     "width": 80
+    },
+    "role": "a",
+    "tag": "a",
+    "value": ""
+   },
+   {
+    "href": "https://h.liepin.com/search/getConditionItem",
+    "index": 3,
+    "name": "找人",
+    "rect": {
+     "height": 48,
+     "left": 419.22222900390625,
+     "top": 0,
+     "width": 80
+    },
+    "role": "a",
+    "tag": "a",
+    "value": ""
+   },
+   {
+    "href": "https://h.liepin.com/job/showlistpage?jobStatus=11",
+    "index": 4,
+    "name": "职位",
+    "rect": {
+     "height": 48,
+     "left": 499.22222900390625,
+     "top": 0,
+     "width": 80
+    },
+    "role": "a",
+    "tag": "a",
+    "value": ""
+   },
+   {
+    "href": "https://mskh.liepin.com/",
+    "index": 5,
+    "name": "猎头服务",
+    "rect": {
+     "height": 48,
+     "left": 579.2222290039062,
+     "top": 0,
+     "width": 108
+    },
+    "role": "a",
+    "tag": "a",
+    "value": ""
+   },
+   {
+    "href": "https://h.liepin.com/certification/home/",
+    "index": 6,
+    "name": "杨猛",
+    "rect": {
+     "height": 48,
+     "left": 1153.111083984375,
+     "top": 0,
+     "width": 73.11111450195312
+    },
+    "role": "a",
+    "tag": "a",
+    "value": ""
+   },
+   {
+    "href": "",
+    "index": 7,
+    "name": "",
+    "rect": {
+     "height": 28,
+     "left": 1037.111083984375,
+     "top": 10,
+     "width": 28
+    },
+    "role": "button",
+    "tag": "button",
+    "value": ""
+   },
+   {
+    "href": "",
+    "index": 8,
+    "name": "杨猛",
+    "rect": {
+     "height": 21,
+     "left": 1169.111083984375,
+     "top": 13.5,
+     "width": 28
+    },
+    "role": "span",
+    "tag": "span",
+    "value": ""
+   },
+   {
+    "href": "https://h.liepin.com/job/showaddpage/",
+    "index": 9,
+    "name": "发职位",
+    "rect": {
+     "height": 56,
+     "left": 415.22222900390625,
+     "top": 48,
+     "width": 56
+    },
+    "role": "a",
+    "tag": "a",
+    "value": ""
+   },
+   {
+    "href": "https://h.liepin.com/job/showlistpage?jobStatus=11",
+    "index": 10,
+    "name": "职位管理",
+    "rect": {
+     "height": 56,
+     "left": 503.22222900390625,
+     "top": 48,
+     "width": 70
+    },
+    "role": "a",
+    "tag": "a",
+    "value": ""
+   },
+   {
+    "href": "https://h.liepin.com/job/showcustomermanagepage",
+    "index": 11,
+    "name": "企业管理",
+    "rect": {
+     "height": 56,
+     "left": 605.2222290039062,
+     "top": 48,
+     "width": 70
+    },
+    "role": "a",
+    "tag": "a",
+    "value": ""
+   },
+   {
+    "href": "",
+    "index": 12,
+    "name": "",
+    "rect": {
+     "height": 38,
+     "left": 26.22222328186035,
+     "top": 124.8888931274414,
+     "width": 44
+    },
+    "role": "button",
+    "tag": "button",
+    "value": ""
+   },
+   {
+    "href": "",
+    "index": 13,
+    "name": "进行中的职位",
+    "rect": {
+     "height": 21,
+     "left": 51.11111068725586,
+     "top": 135.7777862548828,
+     "width": 84
+    },
+    "role": "tab",
+    "tag": "div",
+    "value": ""
+   },
+   {
+    "href": "",
+    "index": 14,
+    "name": "已暂停的职位",
+    "rect": {
+     "height": 21,
+     "left": 184.88888549804688,
+     "top": 135.7777862548828,
+     "width": 84
+    },
+    "role": "tab",
+    "tag": "div",
+    "value": ""
+   },
+   {
+    "href": "",
+    "index": 15,
+    "name": "已结束的职位",
+    "rect": {
+     "height": 21,
+     "left": 318.6666564941406,
+     "top": 135.7777862548828,
+     "width": 84
+    },
+    "role": "tab",
+    "tag": "div",
+    "value": ""
+   },
+   {
+    "href": "",
+    "index": 16,
+    "name": "职位草稿箱",
+    "rect": {
+     "height": 21,
+     "left": 452.4444580078125,
+     "top": 135.7777862548828,
+     "width": 70
+    },
+    "role": "tab",
+    "tag": "div",
+    "value": ""
+   },
+   {
+    "href": "",
+    "index": 17,
+    "name": "",
+    "rect": {
+     "height": 698.6666870117188,
+     "left": 26.22222328186035,
+     "top": 167.6666717529297,
+     "width": 1200
+    },
+    "role": "tabpanel",
+    "tag": "div",
+    "value": ""
+   },
+   {
+    "href": "",
+    "index": 18,
+    "name": "请填写职位名称",
+    "rect": {
+     "height": 28,
+     "left": 119.11111450195312,
+     "top": 287.4444580078125,
+     "width": 142
+    },
+    "role": "input",
+    "tag": "input",
+    "value": ""
+   },
+   {
+    "href": "",
+    "index": 19,
+    "name": "",
+    "rect": {
+     "height": 28,
+     "left": 273.1111145019531,
+     "top": 287.4444580078125,
+     "width": 116
+    },
+    "role": "div",
+    "tag": "div",
+    "value": ""
+   },
+   {
+    "href": "",
+    "index": 20,
+    "name": "",
+    "rect": {
+     "height": 28,
+     "left": 401.1111145019531,
+     "top": 287.4444580078125,
+     "width": 80
+    },
+    "role": "button",
+    "tag": "button",
+    "value": ""
+   },
+   {
+    "href": "",
+    "index": 21,
+    "name": "",
+    "rect": {
+     "height": 26.22222328186035,
+     "left": 285,
+     "top": 288.3333435058594,
+     "width": 80.22222137451172
+    },
+    "role": "span",
+    "tag": "span",
+    "value": ""
+   },
+   {
+    "href": "",
+    "index": 22,
+    "name": "",
+    "rect": {
+     "height": 26,
+     "left": 285,
+     "top": 288.3333435058594,
+     "width": 80.22222137451172
+    },
+    "role": "combobox",
+    "tag": "input",
+    "value": ""
+   },
+   {
+    "href": "",
+    "index": 23,
+    "name": "搜 索",
+    "rect": {
+     "height": 18,
+     "left": 427.4305725097656,
+     "top": 292.4444580078125,
+     "width": 27.34722328186035
+    },
+    "role": "span",
+    "tag": "span",
+    "value": ""
+   },
+   {
+    "href": "",
+    "index": 24,
+    "name": "",
+    "rect": {
+     "height": 12,
+     "left": 366.1111145019531,
+     "top": 295.4444580078125,
+     "width": 12
+    },
+    "role": "span",
+    "tag": "span",
+    "value": ""
+   },
+   {
+    "href": "",
+    "index": 25,
+    "name": "",
+    "rect": {
+     "height": 28,
+     "left": 1100.5416259765625,
+     "top": 397.22222900390625,
+     "width": 73.77777862548828
+    },
+    "role": "button",
+    "tag": "button",
+    "value": ""
+   },
+   {
+    "href": "",
+    "index": 26,
+    "name": "",
+    "rect": {
+     "height": 24,
+     "left": 79.11111450195312,
+     "top": 399.22222900390625,
+     "width": 39.77777862548828
+    },
+    "role": "button",
+    "tag": "button",
+    "value": ""
+   },
+   {
+    "href": "",
+    "index": 27,
+    "name": "查看",
+    "rect": {
+     "height": 18,
+     "left": 87,
+     "top": 402.22222900390625,
+     "width": 24
+    },
+    "role": "span",
+    "tag": "span",
+    "value": ""
+   },
+   {
+    "href": "https://h.liepin.com/job/gethjobdetail?hjobId=79866575",
+    "index": 28,
+    "name": "机械工程师（非标物流自动化设备）",
+    "rect": {
+     "height": 18,
+     "left": 150.01388549804688,
+     "top": 402.22222900390625,
+     "width": 192.9166717529297
+    },
+    "role": "a",
+    "tag": "a",
+    "value": ""
+   },
+   {
+    "href": "",
+    "index": 29,
+    "name": "操作",
+    "rect": {
+     "height": 18,
+     "left": 1116.4305419921875,
+     "top": 402.22222900390625,
+     "width": 24
+    },
+    "role": "span",
+    "tag": "span",
+    "value": ""
+   },
+   {
+    "href": "",
+    "index": 30,
+    "name": "机械工程师（非标物流自动化设备）",
+    "rect": {
+     "height": 13.333333015441895,
+     "left": 150.01388549804688,
+     "top": 404,
+     "width": 192
+    },
+    "role": "span",
+    "tag": "span",
+    "value": ""
+   },
+   {
+    "href": "https://h.liepin.com/job/gethjobdetail?hjobId=79866575",
+    "index": 31,
+    "name": "2",
+    "rect": {
+     "height": 13.333333015441895,
+     "left": 904.263916015625,
+     "top": 404,
+     "width": 6.680555820465088
+    },
+    "role": "a",
+    "tag": "a",
+    "value": ""
+   },
+   {
+    "href": "",
+    "index": 32,
+    "name": "",
+    "rect": {
+     "height": 28,
+     "left": 55.11111068725586,
+     "top": 462.1111145019531,
+     "width": 175.7777862548828
+    },
+    "role": "button",
+    "tag": "button",
+    "value": ""
+   },
+   {
+    "href": "",
+    "index": 33,
+    "name": "",
+    "rect": {
+     "height": 28,
+     "left": 998.5277709960938,
+     "top": 462.1111145019531,
+     "width": 28
+    },
+    "role": "button",
+    "tag": "button",
+    "value": ""
+   },
+   {
+    "href": "",
+    "index": 34,
+    "name": "1",
+    "rect": {
+     "height": 28,
+     "left": 1034.52783203125,
+     "top": 462.1111145019531,
+     "width": 28
+    },
+    "role": "li",
+    "tag": "li",
+    "value": "0"
+   },
+   {
+    "href": "",
+    "index": 35,
+    "name": "",
+    "rect": {
+     "height": 28,
+     "left": 1070.52783203125,
+     "top": 462.1111145019531,
+     "width": 28
+    },
+    "role": "button",
+    "tag": "button",
+    "value": ""
+   },
+   {
+    "href": "",
+    "index": 36,
+    "name": "页码",
+    "rect": {
+     "height": 28,
+     "left": 1114.52783203125,
+     "top": 462.1111145019531,
+     "width": 82.80555725097656
+    },
+    "role": "div",
+    "tag": "div",
+    "value": ""
+   },
+   {
+    "href": "",
+    "index": 37,
+    "name": "",
+    "rect": {
+     "height": 26.22222328186035,
+     "left": 1126.4166259765625,
+     "top": 463,
+     "width": 47.02777862548828
+    },
+    "role": "span",
+    "tag": "span",
+    "value": ""
+   },
+   {
+    "href": "",
+    "index": 38,
+    "name": "页码",
+    "rect": {
+     "height": 26,
+     "left": 1126.4166259765625,
+     "top": 463,
+     "width": 47.02777862548828
+    },
+    "role": "combobox",
+    "tag": "input",
+    "value": ""
+   },
+   {
+    "href": "",
+    "index": 39,
+    "name": "10 条/页",
+    "rect": {
+     "height": 26.22222328186035,
+     "left": 1126.4166259765625,
+     "top": 463,
+     "width": 59.02777862548828
+    },
+    "role": "span",
+    "tag": "span",
+    "value": ""
+   },
+   {
+    "href": "",
+    "index": 40,
+    "name": "一键刷新正在发布职位",
+    "rect": {
+     "height": 18,
+     "left": 95,
+     "top": 467.1111145019531,
+     "width": 120
+    },
+    "role": "span",
+    "tag": "span",
+    "value": ""
+   },
+   {
+    "href": "",
+    "index": 41,
+    "name": "",
+    "rect": {
+     "height": 12,
+     "left": 1174.3333740234375,
+     "top": 470.1111145019531,
+     "width": 12
+    },
+    "role": "span",
+    "tag": "span",
+    "value": ""
+   },
+   {
+    "href": "http://beian.miit.gov.cn/",
+    "index": 42,
+    "name": "津ICP备15007986号-11",
+    "rect": {
+     "height": 18,
+     "left": 158.625,
+     "top": 890.3333129882812,
+     "width": 130.47222900390625
+    },
+    "role": "a",
+    "tag": "a",
+    "value": ""
+   },
+   {
+    "href": "https://wow.liepin.com/t1008237/index.html?agreementType=A0053",
+    "index": 43,
+    "name": "ICP经营许可证：合字B2-20160007",
+    "rect": {
+     "height": 18,
+     "left": 314.09722900390625,
+     "top": 890.3333129882812,
+     "width": 190.9583282470703
+    },
+    "role": "a",
+    "tag": "a",
+    "value": ""
+   },
+   {
+    "href": "https://wow.liepin.com/t1008237/index.html?agreementType=A0054",
+    "index": 44,
+    "name": "人才服务许可证:120116184001号",
+    "rect": {
+     "height": 18,
+     "left": 530.0555419921875,
+     "top": 890.3333129882812,
+     "width": 183.34722900390625
+    },
+    "role": "a",
+    "tag": "a",
+    "value": ""
+   },
+   {
+    "href": "http://www.beian.gov.cn/portal/registerSystemInfo?recordcode=11010502035189",
+    "index": 45,
+    "name": "京公网安备:11010502035189",
+    "rect": {
+     "height": 18,
+     "left": 738.4027709960938,
+     "top": 890.3333129882812,
+     "width": 161.4166717529297
+    },
+    "role": "a",
+    "tag": "a",
+    "value": ""
+   },
+   {
+    "href": "https://wow.liepin.com/t1008237/index.html?agreementType=A0057",
+    "index": 46,
+    "name": "算法备案信息",
+    "rect": {
+     "height": 18,
+     "left": 924.8194580078125,
+     "top": 890.3333129882812,
+     "width": 72
+    },
+    "role": "a",
+    "tag": "a",
+    "value": ""
+   },
+   {
+    "href": "https://wow.liepin.com/t1008237/index.html?agreementType=A0056",
+    "index": 47,
+    "name": "投诉举报制度",
+    "rect": {
+     "height": 18,
+     "left": 1021.8194580078125,
+     "top": 890.3333129882812,
+     "width": 72
+    },
+    "role": "a",
+    "tag": "a",
+    "value": ""
+   },
+   {
+    "href": "https://wow.liepin.com/t1008237/index.html?agreementType=A0018",
+    "index": 48,
+    "name": "算法推荐服务说明",
+    "rect": {
+     "height": 18,
+     "left": 161.31944274902344,
+     "top": 917.6666870117188,
+     "width": 96
+    },
+    "role": "a",
+    "tag": "a",
+    "value": ""
+   },
+   {
+    "href": "https://wow.liepin.com/t1008237/index.html?agreementType=A0055",
+    "index": 49,
+    "name": "营业执照",
+    "rect": {
+     "height": 18,
+     "left": 897.125,
+     "top": 917.6666870117188,
+     "width": 48
+    },
+    "role": "a",
+    "tag": "a",
+    "value": ""
+   },
+   {
+    "href": "https://wow.liepin.com/t1008237/index.html?agreementType=A0001",
+    "index": 50,
+    "name": "用户协议",
+    "rect": {
+     "height": 18,
+     "left": 970.125,
+     "top": 917.6666870117188,
+     "width": 48
+    },
+    "role": "a",
+    "tag": "a",
+    "value": ""
+   },
+   {
+    "href": "https://wow.liepin.com/t1008237/index.html?agreementType=A0002",
+    "index": 51,
+    "name": "隐私政策",
+    "rect": {
+     "height": 18,
+     "left": 1043.125,
+     "top": 917.6666870117188,
+     "width": 48
+    },
+    "role": "a",
+    "tag": "a",
+    "value": ""
+   },
+   {
+    "href": "https://www.12377.cn/",
+    "index": 52,
+    "name": "https://www.12377.cn",
+    "rect": {
+     "height": 16,
+     "left": 747.2777709960938,
+     "top": 918.888916015625,
+     "width": 124.84722137451172
+    },
+    "role": "a",
+    "tag": "a",
+    "value": ""
+   }
+  ],
+  "error": null,
+  "ok": true,
+  "order": "visual",
+  "settled": {
+   "settled": true,
+   "waited_ms": 251
+  },
+  "title": "进行中的职位_职位管理_猎聘",
+  "url": "https://h.liepin.com/job/showlistpage"
+ },
+ "text": "首页\n沟通\n找人\n职位\n猎头服务\n\n每日任务\n\n杨猛\n你好，杨猛\n我的主页\t个人中心\n安全中心\t账户资源\n用户规则\t通话管理\n安全退出\n发职位\n职位管理\n企业管理\n进行中的职位\n已暂停的职位\n已结束的职位\n职位草稿箱\n为保证猎头在平台高效工作，经过与有关部门就相关法律条文多次协商、沟通、解读后，可由猎企在猎聘诚猎通后台统一上传《猎头诚信联盟承诺函》，由平台审核后，所关联的顾问个人可正常进行职位发布。\n职位名称\n发布渠道\n搜 索\nPipeline\t职位 \n\t招聘企业\t发布渠道\t发布状态\t待处理简历\t更新时间\t操作\n查看\t\n机械工程师（非标物流自动化设备）\n\t\n江苏智库智能科技有限公司(某南京人工智能公司)\n\t猎聘\t已发布\t2\t2026-09-11\t操作\n一键刷新正在发布职位\n1\n10 条/页\n津ICP备15007986号-11\nICP经营许可证：合字B2-20160007\n人才服务许可证:120116184001号\n京公网安备:11010502035189\n算法备案信息\n投诉举报制度\n算法推荐服务说明\n\n违法和不良信息举报联系邮箱：jubao@liepin.com违法和不良信息举报中心链接：https://www.12377.cn\n\n营业执照\n用户协议\n隐私政策\n\n企业服务热线和算法推荐/未成年人举报渠道：400-0602-378 (工作日 9:00-19:00)\n\nCopyright©2006-2024 liepin.com All Rights Reserved"
+}

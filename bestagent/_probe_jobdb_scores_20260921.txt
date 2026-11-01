@@ -1,0 +1,28 @@
+[cols] ['id', 'job_code', 'source_platform', 'source_id', 'source_url', 'content_hash', 'raw_content', 'summary_text', 'display_name', 'display_company', 'display_position', 'active_badge', 'structured', 'local_score', 'local_hits', 'round_tag', 'status', 'collected_by', 'collected_account', 'first_seen_at', 'last_seen_at', 'updated_at']
+[count] 145
+[score dist] local_score -> count
+   62.0: 3
+   56.0: 12
+   50.0: 25
+   40.0: 98
+   15.0: 7
+[round_tag dist]
+   '电气工程师 欧姆龙#p4': 30
+   '电气工程师 欧姆龙#p3': 30
+   '电气工程师 欧姆龙#p1': 30
+   '电气工程师 欧姆龙#p2': 29
+   '电气工程师 欧姆龙#p5': 26
+[status dist]
+   'opened': 144
+   'kept': 1
+[top 8]
+   ('程**', '无锡先导智能装备股份有限公司', '自动化电气工程师', 62.0, 2443)
+   ('王**', '远景动力技术有限公司', '智能制造高级电气工程师', 62.0, 2349)
+   ('乔**', '上海米懿自动化设备有限公司', '高级电气工程师', 62.0, 2236)
+   ('李**', '无锡先导智能装备股份有限公司', '电气工程师', 56.0, 1668)
+   ('郭**', '无锡先导智能装备股份有限公司', '电气工程师', 56.0, 2323)
+   ('小**', '无锡先导智能装备股份有限公司', '电气工程师', 56.0, 1495)
+   ('刘**', '远景动力技术(江苏)有限公司', '主任电气工程师', 56.0, 3047)
+   ('王**', '无锡先导智能装备股份有限公司', '电气工程师', 56.0, 1707)
+[time range] first_seen_at / last_seen_at
+   ('2026-09-21 16:21:10', '2026-09-21 17:29:44')

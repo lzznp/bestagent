@@ -332,9 +332,17 @@ def _body(tab_id):
 
 # ---------------- 主流程 ----------------
 
-def execute_spec(spec, tab_id, do_search=True, do_extract=True, url=None):
+def execute_spec(spec, tab_id, do_search=True, do_extract=True, url=None, on_step=None):
     """spec: [{group_id, value}, ...]（自动按 TYPE_ORDER 排序执行）。
-    url: 当前页面 URL，用于按 URL 匹配对应页面配方（None 用默认页）。"""
+    url: 当前页面 URL，用于按 URL 匹配对应页面配方（None 用默认页）。
+
+    on_step（2026-09-15 加，为「②搜索体检」的"每个条件砍掉多少人"）：
+      每个条件**执行完且校验通过**后调用 `on_step(step)`，把返回的 dict 合并进该 step。
+      用途 = 就地读一次页面上的「共N位人选」——城市面板"确认"、chip 点击都会**即点即搜**，
+      所以这一个读数正好对应「这个条件带来的池子变化」。
+      ⚠️ 默认 None = 行为与以前**完全一致**（既有调用方零影响）；读数失败也只记在 step 里，
+      **绝不**让条件执行失败（读数另案记账，别污染"条件生效没"这个判断）。
+    """
     recipes = load_recipes(url=url)
     groups = {g["id"]: g for g in recipes["groups"]}
     # 搜索按钮文本从配方 search 组读取（默认"搜 索"，兼容自定义）
@@ -366,6 +374,23 @@ def execute_spec(spec, tab_id, do_search=True, do_extract=True, url=None):
         steps.append(step)
         if not res.get("ok"):
             return {"ok": False, "steps": steps, "failed": gid, "error": res.get("error")}
+        # 2026-09-15 强制校验（"不许假装成功"落到机制上）：
+        # 每个执行器都算了 `verify`（条件是否真进了"已选标签区"），但**此前没人看它** →
+        # `ok=True / verify=False` 会**静默通过** → 搜索带着**没设上的条件**跑 →
+        # 结果被误读成"这个条件的池子很薄"，而真相是"条件根本没生效"。
+        # 那会把"条件/配方写错"伪装成"市场事实"，污染后面所有判断（探池报告、池评、投放决策），
+        # 所以必须**硬失败 + 归因**（决策错→改规格；操作错→改配方；代码 bug→才改代码）。
+        if res.get("verify") is False:
+            return {"ok": False, "steps": steps, "failed": gid, "verify_failed": True,
+                    "error": (f"条件未生效（verify=False）：{gid}={value} —— 常见原因："
+                              "该档位在页面上不存在 / 选项文字不匹配 / 点击落到了别的元素")}
+        if on_step is not None:
+            try:
+                _extra = on_step(step)
+                if isinstance(_extra, dict):
+                    step.update(_extra)
+            except Exception as _exc:  # noqa: BLE001
+                step["on_step_error"] = str(_exc)[:200]
     if do_search:
         r = _cbt(tab_id, search_btn, 1)
         steps.append({"action": "search", "ok": r.get("ok"),

@@ -26,7 +26,7 @@ const POLL_INTERVAL_MS = 1500;
  *  collectElements 的逻辑全部内联在此（与 zClick/zType 同一遍历顺序）。
  *  T2：快照前先等页面稳定（readyState complete + DOM 静默窗口），
  *  避免点击/导航后立刻拿到半成品页面导致 LLM 误判。 */
-async function zSnapshot() {
+async function zSnapshot(previewChars) {
   const result = { ok: true, title: '', url: '', elements: [], body_preview: '', error: null, settled: null };
   try {
     // ---- T2 settle：等待页面加载稳定 ----
@@ -182,7 +182,9 @@ async function zSnapshot() {
     result.order = 'visual';
     // ---- 正文预览 ----
     const bodyText = (document.body && document.body.innerText || '').trim();
-    result.body_preview = bodyText.slice(0, 3000);
+    // 2026-09-20：默认从 3000 → 8000（3000 会把页面末尾的弹层截掉，导致误判）
+    const _pv = (typeof previewChars === 'number' && previewChars > 0) ? previewChars : 8000;
+    result.body_preview = bodyText.slice(0, _pv);
   } catch (e) {
     result.ok = false;
     result.error = String(e);
@@ -255,14 +257,37 @@ function zClick(index) {
     const target = _kept.map(i => out[i])[Number(index)];
     // ---- 点击 ----
     if (!target) { result.error = `编号 ${index} 不存在，请重新快照`; return result; }
-    target.scrollIntoView({ block: 'center', behavior: 'instant' });
-    // P5-2：真实事件序列——Ant Design Select 等控件监听 mousedown，仅 el.click() 打不开下拉。
-    // 先派发 mousedown/mouseup 再 click（自包含内联，executeScript 只序列化本函数）
-    target.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, cancelable: true, view: window }));
-    target.dispatchEvent(new MouseEvent('mouseup', { bubbles: true, cancelable: true, view: window }));
-    target.click();
+    // 2026-09-20：升级为"真人式点击"（带坐标 + 完整事件序列 + 命中测试）
+    // 2026-09-20：真人式点击（**必须内联**：executeScript 只序列化本函数，引用模块级函数会 ReferenceError）
+    try { target.scrollIntoView({ block: 'center', behavior: 'instant' }); } catch (e) {}
+    const _r = target.getBoundingClientRect();
+    const _cx = _r.left + _r.width / 2;
+    const _cy = _r.top + _r.height / 2;
+    let _blocked = null;
+    try {
+      const _at = document.elementFromPoint(_cx, _cy);
+      if (_at && _at !== target && !target.contains(_at) && !_at.contains(target)) {
+        _blocked = (_at.tagName || '').toLowerCase() + (_at.id ? ('#' + _at.id) : '');
+      }
+    } catch (e) {}
+    const _mk = (Ctor, type, extra) => {
+      try { return new Ctor(type, Object.assign({ bubbles: true, cancelable: true, view: window, clientX: _cx, clientY: _cy, button: 0 }, extra || {})); }
+      catch (e) { return null; }
+    };
+    const _PE = (typeof PointerEvent !== 'undefined') ? PointerEvent : MouseEvent;
+    for (const _s of [
+      [_PE, 'pointerdown', { pointerId: 1, pointerType: 'mouse', isPrimary: true, buttons: 1 }],
+      [MouseEvent, 'mousedown', { buttons: 1 }],
+      [_PE, 'pointerup', { pointerId: 1, pointerType: 'mouse', isPrimary: true, buttons: 0 }],
+      [MouseEvent, 'mouseup', {}],
+    ]) {
+      const _ev = _mk(_s[0], _s[1], _s[2]);
+      if (_ev) { try { target.dispatchEvent(_ev); } catch (e) {} }
+    }
+    try { target.click(); } catch (e) {}
     result.ok = true;
     result.clicked = { index, tag: target.tagName.toLowerCase() };
+    if (_blocked) result.blocked_by = _blocked;
   } catch (e) {
     result.error = String(e);
   }
@@ -418,11 +443,34 @@ function zClickByText(text, occurrence) {
       return result;
     }
     const target = matches[want - 1].el;
-    target.scrollIntoView({ block: 'center', behavior: 'instant' });
-    // P5-2：真实事件序列（同 zClick）——mousedown 监听控件（Ant Design Select）必须派发
-    target.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, cancelable: true, view: window }));
-    target.dispatchEvent(new MouseEvent('mouseup', { bubbles: true, cancelable: true, view: window }));
-    target.click();
+    // 2026-09-20：升级为"真人式点击"（带坐标 + 完整事件序列 + 命中测试）
+    // 2026-09-20：真人式点击（**必须内联**：executeScript 只序列化本函数，引用模块级函数会 ReferenceError）
+    try { target.scrollIntoView({ block: 'center', behavior: 'instant' }); } catch (e) {}
+    const _r = target.getBoundingClientRect();
+    const _cx = _r.left + _r.width / 2;
+    const _cy = _r.top + _r.height / 2;
+    let _blocked = null;
+    try {
+      const _at = document.elementFromPoint(_cx, _cy);
+      if (_at && _at !== target && !target.contains(_at) && !_at.contains(target)) {
+        _blocked = (_at.tagName || '').toLowerCase() + (_at.id ? ('#' + _at.id) : '');
+      }
+    } catch (e) {}
+    const _mk = (Ctor, type, extra) => {
+      try { return new Ctor(type, Object.assign({ bubbles: true, cancelable: true, view: window, clientX: _cx, clientY: _cy, button: 0 }, extra || {})); }
+      catch (e) { return null; }
+    };
+    const _PE = (typeof PointerEvent !== 'undefined') ? PointerEvent : MouseEvent;
+    for (const _s of [
+      [_PE, 'pointerdown', { pointerId: 1, pointerType: 'mouse', isPrimary: true, buttons: 1 }],
+      [MouseEvent, 'mousedown', { buttons: 1 }],
+      [_PE, 'pointerup', { pointerId: 1, pointerType: 'mouse', isPrimary: true, buttons: 0 }],
+      [MouseEvent, 'mouseup', {}],
+    ]) {
+      const _ev = _mk(_s[0], _s[1], _s[2]);
+      if (_ev) { try { target.dispatchEvent(_ev); } catch (e) {} }
+    }
+    try { target.click(); } catch (e) {}
     result.ok = true;
     result.clicked = {
       text: t,
@@ -431,6 +479,7 @@ function zClickByText(text, occurrence) {
       tag: target.tagName.toLowerCase(),
       matched_text: matches[want - 1].text,
     };
+    if (_blocked) result.blocked_by = _blocked;
   } catch (e) {
     result.error = String(e);
   }
@@ -457,8 +506,20 @@ function zScroll(direction, amount) {
 function zNavigate(url) {
   const result = { ok: false, error: null };
   try {
-    location.href = String(url);
+    // ⚠️ 2026-09-16 修（真跑实测踩到）：以前是直接 `location.href = String(url)` ——
+    //   **页面一卸载，这个注入脚本自己就死了，回执来不及送回桥** →
+    //   桥的 in-flight 被这条任务**永久占住**（症状：navigate 报"等待执行结果超时"，
+    //   接着 click_by_text / snapshot 等注入动作一个接一个超时；而纯扩展 API 的
+    //   list_tabs 仍然正常 —— 这就是它和"站点权限被重置"的区别）。
+    //   修法 = **先把回执送回去，再跳**：setTimeout 让出当前任务 → 注入函数立刻 return
+    //   → 扩展后台拿到 result 并 POST 给桥（后台 service worker 不受标签页跳转影响）
+    //   → 60ms 后才真正 `location.href`。仍是同一个标签页内跳转，语义不变。
+    const target = String(url);
+    setTimeout(function () {
+      try { location.href = target; } catch (e) { /* 页面已在跳了，忽略 */ }
+    }, 60);
     result.ok = true;
+    result.deferred = true;
   } catch (e) {
     result.error = String(e);
   }
@@ -580,8 +641,13 @@ function zVerifySite(checks) {
 async function zListTabs() {
   try {
     const tabs = await chrome.tabs.query({ currentWindow: true });
+    // v0.2.2：回报**扩展自身版本号** —— 开发期"老板重载了没/重载的是不是新代码"
+    //   以前只能靠猜（衔接报告 §7-10 记过这个痛）。带上版本号就能被桥侧**验证**。
+    let version = '';
+    try { version = chrome.runtime.getManifest().version || ''; } catch (e) { version = ''; }
     return {
       ok: true,
+      version,
       tabs: tabs.map(t => ({ tab_id: t.id, url: t.url || '', title: t.title || '', active: t.active })),
     };
   } catch (e) {
@@ -852,6 +918,134 @@ async function zSomShot(tabId) {
   return result;
 }
 
+/** 读整页文本（v1.9.0 新增，2026-09-16）
+ *  参数 maxChars：默认 0 = **不截断**（返回整页 innerText）；>0 才截断。
+ *
+ *  为什么要有它：`snapshot` 的 body_preview 是**硬编码前 3000 字**（预览用，故意紧凑），
+ *  而详情页（简历）实测要 3800+ 字 —— 用它当"简历全文"会**只拿到半份**，且最先被切掉的
+ *  正是中后段的【项目经历 / 我的技能 / 自我评价】（实测三份简历：3000 / 2999 / 1752）。
+ *  口径（照参考项目）：**落盘存全文，喂模型时再按预算截** —— 3000 是"喂模型的预算"，
+ *  不该当"存储上限"。
+ *  ⚠️ 自包含：executeScript 只序列化本函数，全部逻辑内联。 */
+function zPageText(maxChars) {
+  const result = { ok: true, url: location.href, title: document.title || '', text: '', chars: 0, truncated: false, error: null };
+  try {
+    const cap = Number(maxChars) || 0;            // 0 / 未传 = 不截断
+    const t = (document.body && document.body.innerText) || '';
+    result.chars = t.length;
+    if (cap > 0 && t.length > cap) {
+      result.text = t.slice(0, cap);
+      result.truncated = true;
+    } else {
+      result.text = t;
+    }
+  } catch (e) {
+    result.ok = false;
+    result.error = String(e);
+  }
+  return result;
+}
+
+/** 翻页（v1.9.2 新增，2026-09-16）——**按分页结构点，不按文字**
+ *
+ *  为什么必须新加它（实测）：老板的结果页页码是 `li.ant-pagination-item`，
+ *  ① `click_by_text("下一页")` 找不到可点祖先（`li` 没有 role/tabindex/onclick/class，
+ *     而文字在子节点里 → 我们的"可点判定"漏了它）；
+ *  ② `click_by_text("4")` 会点到年龄"46岁"里的那个 span（每次 72 个候选匹配）——
+ *     页码是**短数字**，拿文字定位必然撞车。
+ *  所以这里直接读分页容器：优先点"下一页"，没有箭头就点"当前页 + 1"那个页码。
+ *
+ *  direction: 'next' | 'prev'
+ *  返回 {ok, clicked, page_before, page_after, waited_ms}：
+ *    · clicked='next-arrow' / 'page-item' / 'text-fallback'
+ *    · page_after 为 null 表示"读不到当前页码"（不是失败）
+ *    · 翻不动（下一页是 disabled，或页码没变）→ ok=false + reason='no-next' / 'not-changed'
+ *      —— **这套语义正好当"尾部到头了/翻页失败"的判据**，上层不用猜。
+ *  ⚠️ 自包含：executeScript 只序列化本函数，全部逻辑内联。 */
+function zClickPaging(direction, waitMs) {
+  const result = { ok: false, error: null, clicked: null, page_before: null, page_after: null,
+                   waited_ms: 0, url: location.href };
+  const t0 = performance.now();
+  try {
+    const dir = String(direction || 'next').toLowerCase() === 'prev' ? 'prev' : 'next';
+    const cap = Number(waitMs) > 0 ? Number(waitMs) : 15000;
+    const activeSel = '.ant-pagination-item-active, li.active, .active[class*="pagination"], [class*="pagination"] .active';
+    const activeEl = () => document.querySelector(activeSel);
+    const pageOf = (el) => {
+      if (!el) return null;
+      const t = (el.textContent || el.innerText || '').trim();
+      const m = t.match(/\d+/);
+      return m ? parseInt(m[0], 10) : null;
+    };
+    result.page_before = pageOf(activeEl());
+
+    const arrow = document.querySelector('.ant-pagination-' + dir);
+    let target = null;
+    if (arrow && !/disabled/.test(String(arrow.className))) {
+      target = arrow;
+      result.clicked = dir + '-arrow';
+    } else {
+      const a = activeEl();
+      if (a) {
+        const items = Array.from(document.querySelectorAll('.ant-pagination-item'));
+        const i = items.indexOf(a);
+        const cand = i >= 0 ? items[i + (dir === 'next' ? 1 : -1)] : null;
+        if (cand) {
+          target = cand;
+          result.clicked = 'page-item';
+        }
+      }
+      if (!target) {
+        // 兜底：非 antd 分页——找含"下一页/next"的可点元素
+        const words = dir === 'next' ? ['下一页', '下页', 'next', '›', '»'] : ['上一页', '上页', 'prev', '‹', '«'];
+        const all = document.querySelectorAll('a,button,li,span,div');
+        for (const el of all) {
+          const txt = ((el.textContent || '').trim()).slice(0, 6).toLowerCase();
+          if (txt && words.some((w) => txt === w || txt.includes(w))) {
+            if (el.offsetParent !== null) { target = el; result.clicked = 'text-fallback'; break; }
+          }
+        }
+      }
+    }
+    if (!target || target.offsetParent === null) {
+      result.error = '没找到可点的翻页控件（可能已是最后一页 / 分页结构变了）';
+      result.reason = 'no-next';
+      result.waited_ms = Math.round(performance.now() - t0);
+      return result;
+    }
+    target.scrollIntoView({ block: 'center', behavior: 'instant' });
+    target.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, cancelable: true, view: window }));
+    target.dispatchEvent(new MouseEvent('mouseup', { bubbles: true, cancelable: true, view: window }));
+    target.click();
+
+    // 等"页码真的变了"（或等到发现页码读不到就不再干等）
+    const seenBefore = result.page_before;
+    const deadline = t0 + cap;
+    let sawReadable = seenBefore !== null;
+    while (performance.now() < deadline) {
+      const cur = pageOf(activeEl());
+      if (cur !== null) {
+        sawReadable = true;
+        if (cur !== seenBefore) break;
+      } else if (sawReadable && performance.now() - t0 > 1200) {
+        break;   // 原来读得到、现在读不到了 → 视为已变（页面在重渲染）
+      }
+    }
+    result.page_after = pageOf(activeEl());
+    result.waited_ms = Math.round(performance.now() - t0);
+    if (sawReadable && seenBefore !== null && result.page_after === seenBefore) {
+      result.ok = false;
+      result.reason = 'not-changed';
+      result.error = `点了${result.clicked}但页码还是第 ${seenBefore} 页（可能已是最后一页）`;
+      return result;
+    }
+    result.ok = true;
+  } catch (e) {
+    result.error = String(e);
+  }
+  return result;
+}
+
 // ============================================================
 // 任务分发：action -> 工具函数
 // ============================================================
@@ -864,6 +1058,8 @@ const TOOL_FUNCS = {
   scroll: zScroll,
   navigate: zNavigate,
   extract: zExtract,
+  page_text: zPageText,
+  click_paging: zClickPaging,
   verify_site: zVerifySite,
   list_tabs: zListTabs,
   new_tab: zNewTab,
@@ -890,6 +1086,30 @@ async function getActiveTab() {
   return tabs && tabs.length > 0 ? tabs[0] : null;
 }
 
+// v0.2.2（2026-09-16 真跑实测踩到）：**注入必须带超时**。
+//   病根：某个标签页的渲染进程不响应时（典型 = Edge 把后台闲置标签冻结/睡眠，或页面自身卡死），
+//     `chrome.scripting.executeScript` 的 promise **永远不 settle** → `pollOnce` 里的
+//     `await executeOnTab(...)` 卡死 → **整个扩展的轮询停摆**：后面的任务全被堵住，
+//     连本地页也做不了，而且**不会自愈**（只能靠人重载扩展）。
+//   实测现场：本地两个页注入正常、猎聘两个页注入永久挂起；因为扩展是**串行**的，
+//     那条挂起的猎聘注入把整条腿堵死了。
+//   修法：包一层超时 → 超时如实报 `injection-timeout`，扩展继续处理下一个任务。
+//   ⚠️ 超时**不等于没执行**（脚本可能还在页面里跑）→ 所以只说"这次没拿到结果"，
+//     上层（collect_exec 等）本来就按"读不到就如实标注、失败就失败"处理，不会拿它当成功。
+//   ⚠️ 给 `click_paging` 留足余量：它自己会等 `wait_ms`（默认 15s）看页码变没变。
+const INJECT_TIMEOUT_MS = 30000;
+
+function withInjectTimeout(promise, ms, tag) {
+  return Promise.race([
+    promise,
+    new Promise((_, reject) => setTimeout(
+      () => reject(new Error(
+        `${tag}: 注入超时（${ms}ms）——该标签页渲染进程可能被冻结/睡眠或已卡死。` +
+        `建议：切到该标签页把它唤醒（或关掉重开），再重试。`)),
+      ms)),
+  ]);
+}
+
 async function executeOnTab(tab, action, params) {
   const fn = TOOL_FUNCS[action];
   if (!fn) return { ok: false, error: `未知动作: ${action}` };
@@ -912,18 +1132,30 @@ async function executeOnTab(tab, action, params) {
   if (action === 'scroll') args.push(p.direction ? String(p.direction) : 'down', p.amount !== undefined ? Number(p.amount) : 600);
   if (action === 'navigate') args.push(p.url ? String(p.url) : '');
   if (action === 'extract') args.push(p.anchor_text ? String(p.anchor_text) : '');
+  if (action === 'page_text') args.push(p.max_chars !== undefined ? Number(p.max_chars) : 0);
+  if (action === 'click_paging') args.push(p.direction ? String(p.direction) : 'next', p.wait_ms !== undefined ? Number(p.wait_ms) : 15000);
   if (action === 'verify_site') args.push(Array.isArray(p.checks) ? p.checks : []);
-  if (action === 'snapshot') { /* 无参 */ }
+  if (action === 'snapshot') args.push(p.preview_chars !== undefined ? Number(p.preview_chars) : 0);
   try {
-    const results = await chrome.scripting.executeScript({
-      target: { tabId: tab.id },
-      func: fn,
-      args,
-    });
+    // v0.2.2：超时余量按动作给 —— `click_paging` 自己会等 wait_ms 看页码变没变，别误杀它
+    let budget = INJECT_TIMEOUT_MS;
+    if (action === 'click_paging') {
+      const wm = p.wait_ms !== undefined ? Number(p.wait_ms) : 15000;
+      budget = Math.max(INJECT_TIMEOUT_MS, (isFinite(wm) ? wm : 15000) + 15000);
+    }
+    const results = await withInjectTimeout(
+      chrome.scripting.executeScript({
+        target: { tabId: tab.id },
+        func: fn,
+        args,
+      }),
+      budget, action);
     const r = results && results[0] && results[0].result;
     return r || { ok: false, error: '注入无返回' };
   } catch (e) {
-    return { ok: false, error: String(e && e.message || e), code: 'injection-failed' };
+    const msg = String(e && e.message || e);
+    const timeout = msg.indexOf('注入超时') >= 0;
+    return { ok: false, error: msg, code: timeout ? 'injection-timeout' : 'injection-failed' };
   }
 }
 

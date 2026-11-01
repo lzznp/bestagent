@@ -1,12 +1,20 @@
 #!/usr/bin/env python3
-"""限速模块：采集操作记账 + 限额检查 + 随机延迟（防账号风控，对应授权矩阵"自主+限量限速"）
+"""限速模块：采集操作**记账（日志）** + 随机延迟（账号保护）
+
+🔴 **死命令（2026-09-16 老板拍板，以后都遵守）**：**测试阶段不设人为额度**。
+   本地不因"每日上限 / 每页配额 / 页数硬顶 / 详情总数保险丝"而少采或停采。
+   本模块从此只做两件事：
+     1. **记账**（`record()` / `stats()`）—— 让你看得见花了多少；**看得见 ≠ 拦**；
+     2. **真人节奏**（`delay()`）—— 账号保护，保留。
+   `check()` 默认**恒返回 True（不拦）**。要恢复拦截：`quota_config.json` 里写 `"enforce": true`
+   （**上线前再谈限额**，届时才打开）。下面的 `*_daily_limit` 数字现在只是"记账刻度"，不产生阻断。
 
 用法：
   from quota import Quota
   q = Quota()
-  if q.check("search"):          # 今日搜索次数未超限
+  if q.check("search"):          # 测试期恒为 True（只记账不拦）
       ...执行搜索...
-      q.record("search")         # 记账
+      q.record("search")         # 记账（当日志看）
   q.delay()                      # 轮间随机延迟（像真人）
 
 限额默认值可改：data/usage/quota_config.json（不存在则用内置默认）
@@ -26,11 +34,15 @@ except Exception:
     pass
 
 DEFAULT_CONFIG = {
-    "search_daily_limit": 80,    # 每天搜索轮数上限（2026-09-05 老板拍板：搜索次数非平台红线，放宽为防失控熔断）
-    "extract_daily_limit": 500,  # 每天提取条数上限（列表页读取，随搜索走）
+    # 🔴 enforce=False = 死命令：**只记账、不拦**（测试阶段不设人为额度）。
+    #    下面这些数字现在只是"记账刻度"（看得见花了多少），**不产生任何阻断行为**。
+    #    上线前再谈限额：那时把它设为 true 才恢复拦截。
+    "enforce": False,
+    "search_daily_limit": 80,    # 记账刻度（enforce=False 时不拦）
+    "extract_daily_limit": 500,  # 记账刻度（enforce=False 时不拦）
     "min_delay_sec": 8,          # 轮间最小延迟（秒）（模拟真人节奏的核心，勿调太短）
     "max_delay_sec": 20,         # 轮间最大延迟（秒）
-    "detail_daily_limit": 100,   # 查看简历数（打开候选人详情页）日上限——平台真正统计的风控点；详情深采接入后生效
+    "detail_daily_limit": 100,   # 记账刻度（enforce=False 时不拦）；平台真正统计的是"查看简历数"
 }
 
 
@@ -63,15 +75,21 @@ class Quota:
         return self.data["days"].setdefault(date.today().isoformat(), {"search": 0, "extract": 0, "last": 0})
 
     def check(self, action: str) -> bool:
-        """action 今日是否还有额度。"""
+        """action 今日是否还有额度。
+
+        🔴 死命令（测试阶段不设人为额度）：`enforce=False`（默认）时**恒为 True**——只记账不拦。
+        """
+        if not self.config.get("enforce", False):
+            return True
         limit = self.config.get(f"{action}_daily_limit")
         if limit is None:
             return True
         return self._day().get(action, 0) < limit
 
     def remaining(self, action: str) -> int:
+        """距离"记账刻度"还剩多少。**测试期这个数不拦任何事，只作参考**；未设刻度 → -1（不限）。"""
         limit = self.config.get(f"{action}_daily_limit")
-        if limit is None:
+        if limit is None or not self.config.get("enforce", False):
             return -1
         return max(0, limit - self._day().get(action, 0))
 
@@ -91,6 +109,7 @@ class Quota:
         time.sleep(wait)
 
     def stats(self) -> str:
+        """一行账本（**日志口径**：花了多少；测试期后面这些数字不构成上限）。"""
         d = self._day()
         parts = []
         for k, v in self.config.items():
@@ -101,13 +120,21 @@ class Quota:
 
 
 if __name__ == "__main__":
-    # 自测：记账/检查/剩余额度
-    q = Quota(path="data/usage/_quota_test.json", config={"search_daily_limit": 2, "extract_daily_limit": 5})
+    # 自测：①死命令下 check 恒 True（只记账不拦）②enforce=True 时才恢复拦截
+    q = Quota(path="data/usage/_quota_test.json", config={"search_daily_limit": 2,
+                                                          "extract_daily_limit": 5})
     print("初始:", q.stats())
     assert q.check("search") is True
     q.record("search")
     q.record("search")
-    assert q.check("search") is False, "超限应返回 False"
-    assert q.remaining("search") == 0
-    print("2 次搜索后:", q.stats())
+    q.record("search")
+    assert q.check("search") is True, "死命令：测试阶段不设人为额度，check 必须恒为 True"
+    assert q.remaining("search") == -1, "不拦时 remaining 应为 -1（不限）"
+    print("超记账刻度仍不拦:", q.stats())
+
+    q2 = Quota(path="data/usage/_quota_test.json",
+               config={"enforce": True, "search_daily_limit": 2, "extract_daily_limit": 5})
+    assert q2.check("search") is False, "enforce=True 时应恢复拦截（上线前才用）"
+    assert q2.remaining("search") == 0
+    print("enforce=True 恢复拦截:", q2.stats())
     print("✅ quota 自测通过")

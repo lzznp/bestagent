@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>岗前分析过程 · Python程序编码高级（武汉）· 2026-09-07</title>
+<style>
+body{font-family:"Microsoft YaHei",Arial,sans-serif;line-height:1.7;margin:24px auto;max-width:900px;color:#222;padding:0 16px}
+h1{font-size:22px;border-bottom:3px solid #2b6cb0;padding-bottom:8px}
+h2{font-size:18px;color:#2b6cb0;border-left:4px solid #2b6cb0;padding-left:8px;margin-top:30px}
+h3{font-size:15px;color:#444;margin-bottom:6px}
+table{border-collapse:collapse;width:100%;margin:10px 0}
+th,td{border:1px solid #ccc;padding:7px 10px;font-size:14px;text-align:left}
+th{background:#eef4fb}
+.tag{display:inline-block;padding:2px 10px;border-radius:10px;font-size:13px;color:#fff}
+.red{background:#c53030}.yellow{background:#dd6b20}.green{background:#2f855a}.gray{background:#718096}
+.score-card{background:#f7fafc;border:1px solid #cbd5e0;border-radius:8px;padding:14px 18px;margin:12px 0}
+.warn{background:#fffaf0;border-left:4px solid #dd6b20;padding:10px 14px;margin:12px 0}
+ul li{margin:4px 0}
+.small{font-size:13px;color:#666}
+</style>
+</head>
+<body>
+
+<h1>① 岗前分析过程文档</h1>
+<p class="small">岗位：J-CHAT-20260907-104730 ｜ 对外职位名：Python程序编码高级 ｜ 发单方：中智信通科技服务（广东）有限公司 ｜ 分析时间：2026-09-07 ｜ 分析人：小猎（数字合伙人）</p>
+
+<h2>一、输入与纪律</h2>
+<ul>
+<li>读取本岗 <b>jd.txt</b>（禾蛙接单页快照，152行）→ 有真实内容，按快照原样解析。</li>
+<li>读取成长规则库 rules.md「①岗位分析」两条（角色成组辨认规则）并遵守；读取 analyze_job.txt 手册按 JSON 结构评分。</li>
+<li>reports 目录此前为空：本岗第一次做岗前分析，输出 analyze JSON + 本 HTML 过程文档。</li>
+</ul>
+
+<h2>二、快照角色辨认（防串台）</h2>
+<table>
+<tr><th>快照人物/元素</th><th>角色归属</th><th>处理方式</th></tr>
+<tr><td>“杨顾问 LV2”（最早出现人名）</td><td>猎头本人登录账号（我方）</td><td>非发单方，不作为联系对象</td></tr>
+<tr><td>“中智信通科技服务…职位编号…Python程序编码高级 24-26万 佣金5.8K”</td><td>职位主体块</td><td>岗位数据来源</td></tr>
+<tr><td>“司顾问 421条评价 猎头顾问 简历处理时长1天 7天内安排面试”</td><td><b>发单顾问（发单方对接人）</b></td><td>日常联系对象（若做单）</td></tr>
+<tr><td>“潘阳 @禾蛙 / 禾蛙运营·职位PM / 扫码咨询”</td><td>平台侧 PM（属平台方领导层）</td><td>一般不直接联系，走官方渠道</td></tr>
+<tr><td>“禾禾智能分析（已接入DeepSeek-R1）+【AI生成】”</td><td>非人，平台营销话术</td><td>内容不作为判断依据，仅提取其中可核验数据</td></tr>
+</table>
+
+<h2>三、岗位信息抽取</h2>
+<table>
+<tr><th>项</th><th>内容</th></tr>
+<tr><td>职位名称</td><td>Python程序编码高级（职责为AI/知识工程方向：知识工程、数据标注模型开发与微调、知识图谱构建、AI前沿研究应用）</td></tr>
+<tr><td>城市/地址</td><td>武汉 · 武汉科创中心（<b>视频面试不可接受</b>，须现场面试）</td></tr>
+<tr><td>薪资</td><td>24-26万/年 · 12薪（月薪22K以内）</td></tr>
+<tr><td>HC / 佣金</td><td>招聘1人 / 预计佣金5.8K（保回款）</td></tr>
+<tr><td>学历/年限</td><td>本科·统招（计算机/数学相关），5-8年</td></tr>
+<tr><td>硬性条件</td><td>≥5年Python数据分析/AI项目经验；≥2年独立开发算法应用；作为核心成员参与≥2个算法项目</td></tr>
+<tr><td>核心技能栈</td><td>Python专家 + Java/C++其一；PyTorch/Transformers；向量检索(FAISS/Milvus等)+Hybrid Search；RAG全链路；Prompt工程；HuggingFace训练与微调(LoRA等)；LangChain/Haystack + Agent</td></tr>
+<tr><td>进度</td><td>累计接单10次；累计推荐24份且全部过初筛；近30天0面试、0 offer；约一个月前重新发布</td></tr>
+<tr><td>信息缺口</td><td>真实用人企业未披露（发单方疑为技术服务商）；必问问题/项目手册均“待发单方补充”；“必备/优先/目标公司”三栏为同一段重复文本</td></tr>
+</table>
+
+<h2>四、逐维评分（手册口径，满分25）</h2>
+<div class="score-card">
+<table>
+<tr><th>维度</th><th>事实依据</th><th>得分</th></tr>
+<tr><td>佣金</td><td>预计佣金5.8K（&lt;1万档，年薪24-26万对应佣金率约2.2%）</td><td>1/5</td></tr>
+<tr><td>HC数量</td><td>仅1人</td><td>1/5</td></tr>
+<tr><td>新鲜度</td><td>岗位编号2026-06-24创建，约一个月前（8月上旬）重新发布，距今&gt;30天</td><td>1/5</td></tr>
+<tr><td>上游靠谱度</td><td>中智信通科技服务（广东）：非知名主体、疑似中间技术服务商，真实用人企业未知</td><td>1/5</td></tr>
+<tr><td>匹配难度</td><td>技能栈深且交叉（RAG+向量+微调+Agent+图谱）、5-8年+核心成员2个算法项目；24-26万对资深AI工程师偏低 → 匹配池小</td><td>1/5</td></tr>
+<tr><td><b>合计</b></td><td><b>放弃档（0-10）</b></td><td><b>5/25</b></td></tr>
+</table>
+<p>对应等级：<span class="tag red">放弃</span>（手册：合计0-10为放弃档）</p>
+</div>
+
+<h2>五、进展信号解读（重要判断）</h2>
+<div class="warn">
+⚠️ 平台“禾禾AI”文案称本岗为“黄金介入期、无激烈竞争、弯道超车”——<b>此为营销话术，不采信</b>。
+其背后的可核验原始数据恰恰指向相反信号：<b>10个同行已接单、24份简历全部过初筛，但近30天0面试0offer</b>。
+这通常意味着：需求方初筛→面试环节把关严、标准飘，或岗位薪资与要求存在错配；而不是“没人竞争的肥肉”。
+若真无人竞争，不可能已有24份过筛简历堆在池子里。
+</div>
+<p>按手册进展判断：属于“已有推荐但无面试”——理论上有机会，但先行优势已被前面10单耗尽，我方若要介入，必须提供明显优于已有24份的候选人，成本与不确定性高。</p>
+
+<h2>六、风险清单</h2>
+<ul>
+<li><b>投入产出比低</b>：佣金5.8K+单HC，目标却是资深AI复合工程师，交付周期长、渠道成本高。</li>
+<li><b>进展偏负</b>：24份过筛却0面试，成交信号弱。</li>
+<li><b>用工性质不明</b>：发单方疑为技术服务商，真实用人企业/驻场外包/回款条件均待核实。</li>
+<li><b>匹配难度高</b>：技能栈跨RAG/向量检索/微调/Agent/图谱，5-8年资深+2个核心算法项目背书，人少；武汉24-26万同档偏低，愿接的人更少。</li>
+<li><b>现场面试限制</b>：不接受视频面试，候选人池进一步收窄到武汉本地或愿到武汉者。</li>
+<li><b>信息缺口</b>：必问问题/项目手册“待补充”，目标公司与真实雇主未披露，需PM澄清。</li>
+</ul>
+
+<h2>七、小猎态度（请老板拍板）</h2>
+<div class="score-card">
+<p><b>判断：别做（不建议接单）。</b></p>
+<p>一句话：佣金薄、单HC、岗位已被堆过24份仍无面试、技能匹配难度高——这是“低收益+高难度+弱信号”的组合，把时间投给这类单不划算。</p>
+<p>例外路径：若老板判断该用人方（武汉科创中心方向）有长期客户价值、想借此切入，可先按【先核实】走：向PM/发单顾问司顾问确认 ①真实用人企业与用工性质（是否外包驻场/能否转正）②24份过筛为何0面试 ③薪资上限是否可谈（24-26万绑5-8年资深AI工程师明显偏紧）④回款与佣金条件。核实后再决定是否值得投入。</p>
+</div>
+
+<h2>八、预置搜索关键字（若老板最终决定做/核实后做，供②采集使用）</h2>
+<table>
+<tr><th>策略</th><th>关键字</th></tr>
+<tr><td>精确匹配</td><td>Python 算法工程师 知识图谱 武汉</td></tr>
+<tr><td>职能相近</td><td>AI算法工程师 / NLP算法工程师 / Python开发工程师 / 大模型应用开发 / 知识图谱工程师 / 搜索推荐算法工程师</td></tr>
+<tr><td>竞品对标</td><td>（真实用人企业待PM核实后补充）武汉 RAG 大模型 算法工程师 / 武汉 研究院 AI工程师</td></tr>
+<tr><td>技能导向</td><td>RAG 向量检索 FAISS Milvus / PyTorch 微调 LoRA / 知识图谱 构建 / LangChain Agent 大模型应用</td></tr>
+</table>
+
+<p class="small">— 本过程文档由小猎生成并保存，供老板事后查看。判断主通道在对话，请老板拍板：<b>做吧 / 不做 / 先核实</b>。</p>
+
+</body>
+</html>

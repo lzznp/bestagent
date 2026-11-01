@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>步骤① 岗前分析 · 过程文档（体外部门负责人）</title>
+<style>
+  body { font-family: "Microsoft YaHei", "PingFang SC", sans-serif; margin: 2rem 2.5rem; line-height: 1.7; color: #222; max-width: 1080px; }
+  h1 { font-size: 1.5rem; border-bottom: 3px solid #2c6fbb; padding-bottom: .4rem; }
+  h2 { font-size: 1.15rem; color: #1d4e89; margin-top: 1.8rem; border-left: 5px solid #2c6fbb; padding-left: .6rem; }
+  h3 { font-size: 1rem; color: #333; }
+  table { border-collapse: collapse; width: 100%; margin: .7rem 0 1.2rem; font-size: .92rem; }
+  th, td { border: 1px solid #bbb; padding: .35rem .6rem; text-align: left; vertical-align: top; }
+  th { background: #eef3fa; }
+  .tag { display: inline-block; background: #2c6fbb; color: #fff; border-radius: 3px; padding: .1rem .5rem; font-size: .85rem; margin-right: .4rem; }
+  .box { background: #f7f9fc; border: 1px solid #d6e0ec; border-radius: 6px; padding: .8rem 1rem; margin: .6rem 0; }
+  .warn { background: #fdf3e7; border: 1px solid #e8c59a; border-radius: 6px; padding: .8rem 1rem; margin: .6rem 0; }
+  .ok { background: #eef8ec; border: 1px solid #b9dbb2; border-radius: 6px; padding: .8rem 1rem; margin: .6rem 0; }
+  code { background: #f0f0f0; padding: .1rem .35rem; border-radius: 3px; font-size: .9em; }
+  .score { font-weight: 700; }
+  .h5 { color: #1d6b2e; } .h1 { color: #b3442c; } .h4 { color: #8a6d1a; } .h0 { color: #c0392b; }
+  footer { margin-top: 2.2rem; border-top: 1px solid #ccc; padding-top: .6rem; font-size: .85rem; color: #666; }
+</style>
+</head>
+<body>
+
+<h1>步骤① 岗前分析 · 过程文档</h1>
+<p><span class="tag">岗位会话</span> J-CHAT-20260904-154300
+<span class="tag">岗位</span> 体外部门负责人（高级经理/总监）· 四川泸州步长生物制药有限公司
+<span class="tag">执行人</span> 小猎（猎头数字合伙人）
+<span class="tag">时间</span> 2026-09-04 15:46:15
+<span class="tag">输出</span> analyze_20260904-154615.json（同目录）</p>
+
+<h2>一、本次读了什么（文件清单）</h2>
+<table>
+<tr><th>#</th><th>文件</th><th>要点</th></tr>
+<tr><td>1</td><td><code>…/J-CHAT-20260904-154300/jd.txt</code></td><td>禾蛙平台职位页抓取文本（144 行），非空，含客户/职位/佣金/寻访须知/任职要求/薪资福利等杂乱信息</td></tr>
+<tr><td>2</td><td><code>…/prompts/analyze_job.txt</code></td><td>岗前分析方法论手册：规定 JSON 输出结构、五项评分标准、进展影响判断、四组搜索关键字生成规则</td></tr>
+<tr><td>3</td><td><code>…/prompts/rules.md</code></td><td>成长规则库：其中「① 岗位分析」「流程/工具」小节目前均为「（暂无）」，无额外纠错约束需遵守</td></tr>
+<tr><td>4</td><td><code>…/J-CHAT-20260904-154300/meta.json / state.json</code></td><td>会话元信息：新建岗位、<code>step1_analyzed=false</code>，本次为首份分析报告</td></tr>
+<tr><td>5</td><td><code>…/J-CHAT-20260904-154300/reports/</code></td><td>目录为空，无历史报告可参考</td></tr>
+</table>
+<p class="box">说明：JD 文件非空，按规矩不向老板索要/要求粘贴 JD，直接以文件为准开展分析。</p>
+
+<h2>二、岗位信息提取（jd_extracted）</h2>
+<table>
+<tr><th>字段</th><th>提取值</th></tr>
+<tr><td>岗位名称</td><td>体外部门负责人（高级经理/总监）；职位编号 J20260901161022132868</td></tr>
+<tr><td>用人企业</td><td>四川泸州步长生物制药有限公司（发单方/客户方，平台运营职位PM：彭熠@禾蛙）</td></tr>
+<tr><td>城市</td><td>杭州·拱墅区；招聘 1 人</td></tr>
+<tr><td>薪资</td><td>年薪 50–120 万（12 薪）；预计佣金 151.2K 元（≈15.12 万）；标签：保回款·迅致直营·72小时新发</td></tr>
+<tr><td>核心要求</td><td>统招博士（肿瘤/免疫/生物工程/分子生物专业）＋大中型生物药企经验＋抗体/双抗体外功能鉴定经验；熟悉单抗/双抗/融合蛋白/ADC 结构与体外评价方法（ELISA、FCM、亲和力、HTRF、ADCC/CDC/增殖抑制、内吞、杀伤）；自免/肿瘤/眼科项目经验；懂 IND 申报法规；团队管理能力</td></tr>
+<tr><td>岗位描述</td><td>建立并优化治疗性抗体体外活性/功能鉴定方法；带队开发细胞功能性生物分析；稳转报告基因细胞株构建；蛋白/细胞水平活性鉴定；IND/BLA 申报资料撰写与数据内审；项目管理与部门协调、培训考核</td></tr>
+</table>
+<div class="warn"><b>口径矛盾（重要关键判断）：</b>任职要求第 2 条与寻访须知写「博士 2 年以上大中型生物医药企业相关经验」，而系统「职位要求·工作年限」栏却显示「10 年及以上」。考虑岗位为部门负责人/总监级，实际更可能按 8–10 年招；但必须向发单方确认真实底线，否则易按错画像找人、浪费周期。</div>
+
+<h2>三、进展判断（progress）</h2>
+<table>
+<tr><th>信号</th><th>判断</th></tr>
+<tr><td>3 天前发布 / 72 小时新发</td><td>处于新鲜窗口</td></tr>
+<tr><td>页面未出现「已推荐/面试中/发offer」数字、无关闭信息</td><td>无在途候选人，机会窗口最好</td></tr>
+<tr><td>平台页另有「做单的人多吗 / 过往转化率」入口但 JD 文本未含数据</td><td>竞对做单情况未知 → 已列入风险，建议在禾蛙端查看</td></tr>
+</table>
+<p>结论：<code>status = 刚发布</code>，推荐/面试/offer 计数均记 0（JD 文本中无更高进展证据）。</p>
+
+<h2>四、逐项评分依据（score）</h2>
+<table>
+<tr><th>维度</th><th>评分标准</th><th>本岗取值</th><th>得分</th></tr>
+<tr><td>佣金</td><td>≥3万=5 / ≥1万=3 / &lt;1万=1</td><td>预计佣金 ≈15.12 万（151.2K）</td><td class="score h5">5</td></tr>
+<tr><td>HC 数量</td><td>≥4=5 / 2–3=3 / 1=1</td><td>招聘 1 人</td><td class="score h1">1</td></tr>
+<tr><td>新鲜度</td><td>≤7天=5 / ≤30天=3 / &gt;30天=1</td><td>3 天前发布，72 小时新发</td><td class="score h5">5</td></tr>
+<tr><td>上游靠谱度</td><td>大厂=5 / 知名=4 / 一般=2 / 未知=1</td><td>步长制药（上市药企）子公司，知名但非大分子头部大厂；大分子平台为新建方向</td><td class="score h4">4</td></tr>
+<tr><td>匹配难度</td><td>容易=5 / 一般=3 / 较难=1 / 很难=0</td><td>博士+体外功能鉴定+管理岗稀缺；总监级年限口径使画像更窄；杭州线下（不可视频）面试加大难度</td><td class="score h1">1</td></tr>
+<tr><td colspan="3"><b>总分（满分 25）</b></td><td class="score">16</td></tr>
+</table>
+<div class="box"><b>等级说明：</b>方法论手册未给出总分到等级的分档线，本次采用常规口径分档并留档备查——
+顶级 20–25 ／ <b>优质 15–19</b> ／ 普通 9–14 ／ 放弃 ≤8。
+本岗 16 分 → <b>优质</b>：高佣、超新、上游可信，被 HC 少＋匹配难拉低总分。</div>
+
+<p><b>进展影响分析（progress_impact）：</b>刚发布、72 小时新发、无在途推荐/面试/offer → 教科书式的最佳起跑窗口，值得第一时间接单抢占；但 HC 仅 1 且禾蛙平台多顾问可并发竞争同一批稀缺博士，时效即成功率，须「接单→确认口径→定向触达」一气呵成。</p>
+
+<h2>五、风险清单（risks）</h2>
+<ol>
+<li><b>经验年限口径矛盾</b>：「博士 2 年以上」vs「10 年及以上」，必须接单后先与发单方核实，避免按错标准寻访。</li>
+<li><b>客户资料不完整</b>：必问问题/项目手册均为「待发单方补充」，面试流程、团队架构、汇报对象缺失 → 影响筛选精度与对候选人说服力。</li>
+<li><b>高端稀缺、成功概率有限</b>：人才池极小、1 个 HC，且可能多家顾问竞争同一批人。</li>
+<li><b>面试仅限线下</b>：写「视频面试不可接受」，外地高端人才赴杭意愿是变数，杭州本地储备不足会拉长周期。</li>
+<li><b>新平台主体疑虑</b>：用人主体为步长旗下大分子子公司，需侧面核实管线阶段与团队稳定性，防候选人因平台成熟度顾虑流失。</li>
+</ol>
+
+<h2>六、搜索关键字实验过程（search_keywords）</h2>
+<p class="box">说明：本次会话<b>未接入猎聘/浏览器采集与搜索能力</b>，无法实跑返回量。以下「实验」为候选词组合的结构化推演与去重筛选（词库来自 JD 岗位词 + 职能近义词 + 大分子竞品名录 + 技能关键词），并保留到 JSON 供老板后续接入采集能力后实跑。</p>
+<table>
+<tr><th>组别</th><th>生成思路</th><th>关键字（猎聘搜索用）</th></tr>
+<tr><td>精确匹配</td><td>岗位名+核心技能+城市（最精准，先筛命中率）</td><td><code>体外部门负责人 双特异性抗体 体外功能鉴定 杭州</code></td></tr>
+<tr><td>职能相近</td><td>同职能不同称呼：体外/细胞功能/生物分析的分析负责人、经理、总监</td><td><code>体外活性分析 细胞功能分析 生物分析总监 高级经理 大分子分析</code></td></tr>
+<tr><td>竞品对标</td><td>枚举大分子 Biotech 竞品（信达/恒瑞/复宏汉霖/康宁杰瑞/君实/三生国健…）×岗位词</td><td><code>信达生物 恒瑞 复宏汉霖 康宁杰瑞 君实生物 三生国健 双抗 体外分析 总监</code></td></tr>
+<tr><td>技能导向</td><td>抓 JD 里硬技能：ADCC/CDC/报告基因/稳转株/HTRF/亲和力/抗体活性鉴定</td><td><code>ADCC CDC 报告基因稳转细胞株 HTRF 亲和力 抗体活性鉴定 大分子</code></td></tr>
+</table>
+<div class="ok"><b>实验小结：</b>① 先窄后宽——「精确匹配」用于第一步捞头部，命中不足再放「职能相近」与「技能导向」扩面；② 「竞品对标」把 JD 中的「大中型生物医药企业」要求翻译成具体竞品名单，是最快锁定目标池的打法；③ 城市维度建议仅在精确组保留，扩大池时去掉城市限制（高端博士可谈异地/需评估线下面试意愿）。</div>
+
+<h2>七、结论与建议</h2>
+<p><b>推荐结论：接单（recommendation = 接单）</b></p>
+<ul>
+<li><b>值得接：</b>预计佣金 ≈15.12 万（评分 5）+ 72 小时新发（5）+ 保回款/迅致直营降低回款风险 + 上游为上市药企背景（4），总分 16 = 优质，符合高价值新单特征。</li>
+<li><b>接单后 48 小时内动作：</b>① 向发单方（职位PM 彭熠/禾蛙运营）确认「2 年 vs 10 年」口径与必问问题、项目手册；② 侧面调研泸州步长大分子管线与团队；③ 按四组关键字启动定向寻访，优先「竞品对标」组锁定目标公司体外/细胞功能分析 lead。</li>
+<li><b>一句建议（advice）：</b>高佣金+72 小时新发+保回款直营订单，值得接单抢占先机；尽快核实年限矛盾并补齐项目手册后，按明确口径定向寻访大分子药企体外分析头部人才。</li>
+</ul>
+
+<h2>八、能力边界说明（诚实声明）</h2>
+<p class="warn">本次会话已接入：<b>文件读写</b>（读 JD/手册/规则、写 JSON 报告与 HTML 过程文档）。<br>
+<b>尚未接入：</b>猎聘/浏览器采集、候选人池评估、外部搜索、打招呼等一切对外动作 → 本报告的关键字为组合推演，<b>未经平台实跑验证</b>。<br>
+<b>替代建议：</b>若老板要跑真实采集与触达，可在 PyCharm 用 <code>run_pipeline</code> 后台跑，结果文件会出现在工作目录；届时小猎可基于实跑返回量回炉校准关键字。</p>
+
+<footer>小猎 · 岗前分析过程文档 · 2026-09-04 15:46:15 · 严格按 analyze_job.txt 手册输出，未增删字段</footer>
+</body>
+</html>

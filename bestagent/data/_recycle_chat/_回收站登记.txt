@@ -1,0 +1,26 @@
+﻿# 岗位回收站登记（挪进来 ≠ 删除）
+# 建立：2026-09-15 17:20:59
+# 老板口径（2026-09-15）：「保留这3个智库的，其他的都不要了」→ 保留 094907 / 153231 / 172253
+# 挪回办法：把下面的目录整棵移回 D:\study\bestagent\bestagent\data\chat\ 即可（面板刷新后会重新出现）
+
+- J-AUTO-20260905-220105
+    原路径：D:\study\bestagent\bestagent\data\chat\J-AUTO-20260905-220105
+    原因：禾蛙平台测试岗（中国移动·AI应用开发），与智库交付侧无关
+- J-CHAT-20260904-153220
+    原路径：D:\study\bestagent\bestagent\data\chat\J-CHAT-20260904-153220
+    原因：禾蛙平台测试岗（江苏泰信化学），与智库交付侧无关
+- J-CHAT-20260904-154300
+    原路径：D:\study\bestagent\bestagent\data\chat\J-CHAT-20260904-154300
+    原因：禾蛙平台测试岗（四川泸州步长制药），与智库交付侧无关
+- J-CHAT-20260905-141728
+    原路径：D:\study\bestagent\bestagent\data\chat\J-CHAT-20260905-141728
+    原因：禾蛙平台测试岗（北京经纬恒润），与智库交付侧无关
+- J-CHAT-20260906-084321
+    原路径：D:\study\bestagent\bestagent\data\chat\J-CHAT-20260906-084321
+    原因：禾蛙平台测试岗（南京嘉翼精密机器），与智库交付侧无关
+- J-CHAT-20260907-104730
+    原路径：D:\study\bestagent\bestagent\data\chat\J-CHAT-20260907-104730
+    原因：禾蛙平台测试岗（中智信通），与智库交付侧无关
+- J-CHAT-20260914-172256
+    原路径：D:\study\bestagent\bestagent\data\chat\J-CHAT-20260914-172256
+    原因：同一份 JD 的重复岗（与保留的 172253 同 JD，建档相隔 3 秒；172253 那份①分析更优且挂着 16:37 采集计划）

@@ -1,0 +1,392 @@
+{
+ "body_preview": "首页\n沟通\n找人\n职位\n猎头服务\n\n每日任务\n\n杨猛\n你好，杨猛\n我的主页\t个人中心\n安全中心\t账户资源\n用户规则\t通话管理\n安全退出\n认证信息\n账户资源\n优猎指数\n我的特权\n内容管理\n通话管理\n常用语\n打招呼语\n中性\n急切\n轻松\n自定义\n按职位设置\n设置\n你好~我这里有个职位很适合你，待遇优厚，了解一下吗？期待回复！\n你好，看了你的简历，方便聊聊吗？\n很高兴认识您，请问您有换一个工作环境的打算吗？\n想与你沟通下某知名公司（对外展示公司名）在招的这个职位，现在方便吗？\n你好，请问考虑某知名公司（对外展示公司名）的工作机会吗？\n某知名公司（对外展示公司名）正在寻求优秀的伙伴，如感兴趣，我们沟通一下\n您好，看过了你的简历，希望和你交流一下\n你好，你的简历和某知名公司（对外展示公司名）正在招的行政助理（示例职位名）岗位很匹配，方便聊聊吗？\n您好，某知名公司（对外展示公司名）正在招聘3年（示例）经验的产品经理（示例），工作地点是北京（示例），感兴趣聊聊吗？\n您好，某知名公司（对外展示公司名）正在招聘3年（示例）经验的产品经理（示例），工作地点是北京（示例），您有意向么？\n小明（示例），某知名公司（对外展示公司名）正在招聘3年（示例）经验的产品经理（示例），工作地点是北京（示例），方便进一步沟通吗？\n你好，某知名公司（对外展示公司名）寻找具有3年（示例）经验的产品经理（示例），能求一份你的简历吗？\n您好，我们正在招聘具有3年（示例）经验的产品经理（示例），工作地点是北京（示例），感兴趣聊聊吗？\n您好，某知名公司（对外展示公司名）招聘产品经理（示例），职位要求3年（示例）年以上经验，已看过您的简历，是否考虑新机会？\n小明（示例），你好！某知名公司（对外展示公司名）正在招聘产品经理（示例）（工作地点：北京（示例）），你的履历与我们的方向很契合，方便聊聊吗？\n小明（示例），你好。某知名公司（对外展示公司名）在北京（示例）有一个产品经理（示例）的职位正在招聘，要求3年（示例）年左右经验。如果你在关注类似机会，可以回复我。\n您好，小明（示例）。基于您的简历，认为您可能对北京（示例）的产品经理（示例）机会感兴趣。冒昧问一下，您目前处于看机会的阶段吗？\n小明（示例）你好，我们在平台上看到了你。某知名公司（对外展示公司名）在北京（示例）的产品经理（示例）职位正在招人，如果你在考虑新机会，不妨聊聊看。\n你好小明（示例）。某知名公司（对外展示公司名）在找北京（示例）的产品经理（示例）。如果你也在看机会，欢迎聊聊。\n你好，看到您的履历，与某知名公司（对外展示公司名）的产品经理（示例）岗位（地点：北京（示例））较为匹配，特此联系。\n小明（示例）您好，关注到您的资料，某知名公司（对外展示公司名）的产品经理（示例）职位或许适合您，不知您是否愿意进一步了解？\n你好，请问您目前在看新的工作机会吗？某知名公司（对外展示公司名）正在寻访产品经理（示例）人选。\n小明（示例）你好，某知名公司（对外展示公司名）现招聘产品经理（示例），若您对该职位感兴趣，我们可以进一步交流。\n你好，小明（示例）。某知名公司（对外展示公司名）在北京（示例）的产品经理（示例）职位正在招聘中，感兴趣的话可以聊一聊。\n你好，某知名公司（对外展示公司名）现在在招产品经理（示例），在北京（示例），如果您感兴趣可以发一下简历，方便我联系你，期待您的答复。\n津ICP备15007986号-11\nICP经营许可证：合字B2-20160007\n人才服务许可证:120116184001号\n京公网安备:11010502035189\n算法备案信息\n投诉举报制度\n算法推荐服务说明\n\n违法和不良信息举报联系邮箱：jubao@liepin.com违法和不良信息举报中心链接：https://www.12377.cn\n\n营业执照\n用户协议\n隐私政策\n\n企业服务热线和算法推荐/未成年人举报渠道：400-0602-378 (工作日 9:00-19:00)\n\nCopyright©2006-2024 liepin.com All Rights Reserved",
+ "elements": [
+  {
+   "href": "https://h.liepin.com/",
+   "index": 0,
+   "name": "猎聘诚猎通",
+   "rect": {
+    "height": 48,
+    "left": 26.22222328186035,
+    "top": 0,
+    "width": 143
+   },
+   "role": "a",
+   "tag": "a",
+   "value": ""
+  },
+  {
+   "href": "https://h.liepin.com/",
+   "index": 1,
+   "name": "首页",
+   "rect": {
+    "height": 48,
+    "left": 259.22222900390625,
+    "top": 0,
+    "width": 80
+   },
+   "role": "a",
+   "tag": "a",
+   "value": ""
+  },
+  {
+   "href": "https://h.liepin.com/im/showmsgnewpage",
+   "index": 2,
+   "name": "沟通",
+   "rect": {
+    "height": 48,
+    "left": 339.22222900390625,
+    "top": 0,
+    "width": 80
+   },
+   "role": "a",
+   "tag": "a",
+   "value": ""
+  },
+  {
+   "href": "https://h.liepin.com/search/getConditionItem",
+   "index": 3,
+   "name": "找人",
+   "rect": {
+    "height": 48,
+    "left": 419.22222900390625,
+    "top": 0,
+    "width": 80
+   },
+   "role": "a",
+   "tag": "a",
+   "value": ""
+  },
+  {
+   "href": "https://h.liepin.com/job/showlistpage?jobStatus=11",
+   "index": 4,
+   "name": "职位",
+   "rect": {
+    "height": 48,
+    "left": 499.22222900390625,
+    "top": 0,
+    "width": 80
+   },
+   "role": "a",
+   "tag": "a",
+   "value": ""
+  },
+  {
+   "href": "https://mskh.liepin.com/",
+   "index": 5,
+   "name": "猎头服务",
+   "rect": {
+    "height": 48,
+    "left": 579.2222290039062,
+    "top": 0,
+    "width": 108
+   },
+   "role": "a",
+   "tag": "a",
+   "value": ""
+  },
+  {
+   "href": "https://h.liepin.com/certification/home/",
+   "index": 6,
+   "name": "杨猛",
+   "rect": {
+    "height": 48,
+    "left": 1153.111083984375,
+    "top": 0,
+    "width": 73.11111450195312
+   },
+   "role": "a",
+   "tag": "a",
+   "value": ""
+  },
+  {
+   "href": "",
+   "index": 7,
+   "name": "",
+   "rect": {
+    "height": 28,
+    "left": 1037.111083984375,
+    "top": 10,
+    "width": 28
+   },
+   "role": "button",
+   "tag": "button",
+   "value": ""
+  },
+  {
+   "href": "",
+   "index": 8,
+   "name": "杨猛",
+   "rect": {
+    "height": 21,
+    "left": 1169.111083984375,
+    "top": 13.5,
+    "width": 28
+   },
+   "role": "span",
+   "tag": "span",
+   "value": ""
+  },
+  {
+   "href": "",
+   "index": 9,
+   "name": "",
+   "rect": {
+    "height": 38,
+    "left": 47.22222137451172,
+    "top": 68,
+    "width": 44
+   },
+   "role": "button",
+   "tag": "button",
+   "value": ""
+  },
+  {
+   "href": "",
+   "index": 10,
+   "name": "认证信息",
+   "rect": {
+    "height": 21,
+    "left": 47.22222137451172,
+    "top": 84,
+    "width": 56
+   },
+   "role": "tab",
+   "tag": "div",
+   "value": ""
+  },
+  {
+   "href": "",
+   "index": 11,
+   "name": "账户资源",
+   "rect": {
+    "height": 21,
+    "left": 135.22222900390625,
+    "top": 84,
+    "width": 56
+   },
+   "role": "tab",
+   "tag": "div",
+   "value": ""
+  },
+  {
+   "href": "",
+   "index": 12,
+   "name": "优猎指数",
+   "rect": {
+    "height": 21,
+    "left": 223.22222900390625,
+    "top": 84,
+    "width": 56
+   },
+   "role": "tab",
+   "tag": "div",
+   "value": ""
+  },
+  {
+   "href": "",
+   "index": 13,
+   "name": "我的特权",
+   "rect": {
+    "height": 21,
+    "left": 311.22222900390625,
+    "top": 84,
+    "width": 56
+   },
+   "role": "tab",
+   "tag": "div",
+   "value": ""
+  },
+  {
+   "href": "",
+   "index": 14,
+   "name": "内容管理",
+   "rect": {
+    "height": 21,
+    "left": 399.22222900390625,
+    "top": 84,
+    "width": 56
+   },
+   "role": "tab",
+   "tag": "div",
+   "value": ""
+  },
+  {
+   "href": "",
+   "index": 15,
+   "name": "通话管理",
+   "rect": {
+    "height": 21,
+    "left": 487.22222900390625,
+    "top": 84,
+    "width": 56
+   },
+   "role": "tab",
+   "tag": "div",
+   "value": ""
+  },
+  {
+   "href": "http://beian.miit.gov.cn/",
+   "index": 16,
+   "name": "津ICP备15007986号-11",
+   "rect": {
+    "height": 18,
+    "left": 158.625,
+    "top": 1473,
+    "width": 130.47222900390625
+   },
+   "role": "a",
+   "tag": "a",
+   "value": ""
+  },
+  {
+   "href": "https://wow.liepin.com/t1008237/index.html?agreementType=A0053",
+   "index": 17,
+   "name": "ICP经营许可证：合字B2-20160007",
+   "rect": {
+    "height": 18,
+    "left": 314.09722900390625,
+    "top": 1473,
+    "width": 190.9583282470703
+   },
+   "role": "a",
+   "tag": "a",
+   "value": ""
+  },
+  {
+   "href": "https://wow.liepin.com/t1008237/index.html?agreementType=A0054",
+   "index": 18,
+   "name": "人才服务许可证:120116184001号",
+   "rect": {
+    "height": 18,
+    "left": 530.0555419921875,
+    "top": 1473,
+    "width": 183.34722900390625
+   },
+   "role": "a",
+   "tag": "a",
+   "value": ""
+  },
+  {
+   "href": "http://www.beian.gov.cn/portal/registerSystemInfo?recordcode=11010502035189",
+   "index": 19,
+   "name": "京公网安备:11010502035189",
+   "rect": {
+    "height": 18,
+    "left": 738.4027709960938,
+    "top": 1473,
+    "width": 161.4166717529297
+   },
+   "role": "a",
+   "tag": "a",
+   "value": ""
+  },
+  {
+   "href": "https://wow.liepin.com/t1008237/index.html?agreementType=A0057",
+   "index": 20,
+   "name": "算法备案信息",
+   "rect": {
+    "height": 18,
+    "left": 924.8194580078125,
+    "top": 1473,
+    "width": 72
+   },
+   "role": "a",
+   "tag": "a",
+   "value": ""
+  },
+  {
+   "href": "https://wow.liepin.com/t1008237/index.html?agreementType=A0056",
+   "index": 21,
+   "name": "投诉举报制度",
+   "rect": {
+    "height": 18,
+    "left": 1021.8194580078125,
+    "top": 1473,
+    "width": 72
+   },
+   "role": "a",
+   "tag": "a",
+   "value": ""
+  },
+  {
+   "href": "https://wow.liepin.com/t1008237/index.html?agreementType=A0018",
+   "index": 22,
+   "name": "算法推荐服务说明",
+   "rect": {
+    "height": 18,
+    "left": 161.31944274902344,
+    "top": 1500.3333740234375,
+    "width": 96
+   },
+   "role": "a",
+   "tag": "a",
+   "value": ""
+  },
+  {
+   "href": "https://wow.liepin.com/t1008237/index.html?agreementType=A0055",
+   "index": 23,
+   "name": "营业执照",
+   "rect": {
+    "height": 18,
+    "left": 897.125,
+    "top": 1500.3333740234375,
+    "width": 48
+   },
+   "role": "a",
+   "tag": "a",
+   "value": ""
+  },
+  {
+   "href": "https://wow.liepin.com/t1008237/index.html?agreementType=A0001",
+   "index": 24,
+   "name": "用户协议",
+   "rect": {
+    "height": 18,
+    "left": 970.125,
+    "top": 1500.3333740234375,
+    "width": 48
+   },
+   "role": "a",
+   "tag": "a",
+   "value": ""
+  },
+  {
+   "href": "https://wow.liepin.com/t1008237/index.html?agreementType=A0002",
+   "index": 25,
+   "name": "隐私政策",
+   "rect": {
+    "height": 18,
+    "left": 1043.125,
+    "top": 1500.3333740234375,
+    "width": 48
+   },
+   "role": "a",
+   "tag": "a",
+   "value": ""
+  },
+  {
+   "href": "https://www.12377.cn/",
+   "index": 26,
+   "name": "https://www.12377.cn",
+   "rect": {
+    "height": 16,
+    "left": 747.2777709960938,
+    "top": 1501.5555419921875,
+    "width": 124.84722137451172
+   },
+   "role": "a",
+   "tag": "a",
+   "value": ""
+  }
+ ],
+ "error": null,
+ "ok": true,
+ "order": "visual",
+ "settled": {
+  "settled": true,
+  "waited_ms": 255
+ },
+ "title": "内容管理",
+ "url": "https://h.liepin.com/im/mycommonlanguage?sayhi=true"
+}

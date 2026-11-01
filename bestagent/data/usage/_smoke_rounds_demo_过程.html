@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>搜索体检过程 · （示例·假数据）智库 · 电气设计工程师</title>
+<style>
+  body{font-family:-apple-system,"Segoe UI","Microsoft YaHei",sans-serif;background:#fbfbfa;margin:0;padding:26px 30px;color:#222;line-height:1.7;max-width:1000px;}
+  h1{font-size:21px;border-bottom:3px solid #2e6fdb;padding-bottom:8px;margin:0 0 6px;}
+  h2{font-size:16px;color:#1b4f9c;margin-top:26px;border-left:5px solid #2e6fdb;padding-left:9px;}
+  .meta{font-size:13px;color:#666;margin:0 0 16px;}
+  table{border-collapse:collapse;width:100%;margin:10px 0;font-size:13.5px;background:#fff;}
+  th,td{border:1px solid #d7dbe0;padding:6px 9px;text-align:left;vertical-align:top;}
+  th{background:#eef3fb;font-weight:600;}
+  td.num{text-align:center;font-weight:700;width:76px;}
+  td.num b.big{font-size:17px;color:#1b4f9c;}
+  .miss{color:#c0392b;font-weight:700;}
+  .drop{color:#c0392b;font-weight:700;} .rise{color:#2e9e5b;font-weight:700;}
+  .box{background:#fff;border:1px solid #e2e5ea;border-radius:6px;padding:10px 14px;margin:10px 0;}
+  .warn{background:#fff7e6;border-left:4px solid #e08a00;padding:10px 14px;margin:10px 0;border-radius:0 5px 5px 0;}
+  .dim{color:#999;font-size:13px;}
+  code{background:#f2f4f7;padding:1px 5px;border-radius:3px;font-size:12.5px;}
+  ol,ul{margin:6px 0;padding-left:22px;} li{margin:4px 0;}
+  .foot{margin-top:30px;font-size:12.5px;color:#888;border-top:1px dashed #ccc;padding-top:10px;}
+</style>
+</head>
+<body>
+
+<h1>② 搜索体检 · 过程文档 · （示例·假数据）智库 · 电气设计工程师</h1>
+<p class="meta">
+岗位号：J-CHAT-20260914-172253 ｜
+计划文件：<code>（示例·假数据，不是真跑出来的）</code> ｜
+执行时间：2026-09-15 18:20:00<br>
+轮数 4 ｜ 拿到命中总数 3/4 轮 ｜ 搜索约 9 次 ｜
+用时 118.6s ｜ tab 1890030095<br>
+数据来源：<b>只读</b>结果页上的「共N位人选」（<b>不抓人</b>：没调 extract、没落任何候选人 id、没开详情页）
+</p>
+
+<h2>一、每轮：关键字 / 条件 / 命中总人数</h2>
+<table>
+  <tr><th style="width:52px">轮</th><th style="width:190px">关键字</th><th>条件</th>
+      <th style="width:96px">命中总数</th><th style="width:130px">相对上轮</th><th>改了什么 / 为什么</th></tr>
+  <tr><td class='num'>1</td><td>电气设计 输送线</td><td>city_current=南京、education=本科</td><td class='num'><b class='big'>360</b></td><td><span class='dim'>—</span></td><td>—<div class='dim'>先按 JD 两条硬门槛（南京 base + 本科及以上）跑一轮，看基础池子有多厚</div></td></tr><tr><td class='num'>2</td><td>电控设计 输送线</td><td>city_current=南京、education=本科、activity=今天活跃</td><td class='num'><b class='big'>142</b></td><td><span class='drop'>-218（-61%）</span></td><td>换职能叫法（电控设计）+ 加活跃度<div class='dim'>看「电控设计」这个叫法能捞到多少人，以及活跃度会砍掉多少</div></td></tr><tr><td class='num'>3</td><td>音飞储存 电气</td><td>city_current=南京</td><td class='num'><b class='big'>58</b></td><td><span class='drop'>-84（-59%）</span></td><td>改打竞品公司名（它自己提到的第二轮备选）<div class='dim'>竞品打法：直接捞在南京同行里干过的人</div></td></tr><tr><td class='num'>4</td><td>EPLAN 输送线</td><td>city_current=南京、activity=今天活跃</td><td class='num'><span class='miss'>读不到</span></td><td><span class='dim'>—</span></td><td>回到技能词，试「不叠同义词」那条经验<div class='dim'>捞简历里不写『电气设计』但用 EPLAN 画输送线图纸的同行</div></td></tr>
+</table>
+<p class="dim">命中总数 = 结果页原文「共N位人选」（含 <code>+</code> 表示平台只给到"3000+"这种量级）。</p>
+
+<h2>二、每个条件砍掉多少人（本地算减法，不做业务判断）</h2>
+<table>
+  <tr><th style="width:52px">轮</th><th>砍人最多的一步</th><th style="width:90px">变化</th><th>读数链条</th></tr>
+  <tr><td class='num'>1</td><td>city_current=南京</td><td class='num drop'>-1800</td><td class='dim'>keyword=电气设计 输送线 3000 → 1200</td></tr><tr><td class='num'>2</td><td>education=本科</td><td class='num drop'>-690</td><td class='dim'>city_current=南京 980 → 290</td></tr>
+</table>
+<p class="dim">只统计<b>一轮之内</b>两次读数之间的变化（跨轮的变化看上面第一张表）；某轮没出现，说明那轮读数不够。</p>
+
+<h2>三、逐步明细（每个条件设完后的读数）</h2>
+<table>
+  <tr><th style="width:52px">轮</th><th>条件</th><th style="width:96px">类型</th>
+      <th style="width:52px">生效</th><th style="width:110px">设完后的读数</th><th>说明</th></tr>
+  <tr><td class='num'>1</td><td>keyword=电气设计 输送线</td><td>input</td><td>✅</td><td class='num'>共3000+位人选</td><td class='dim'>未触发搜索：读数是「上一次搜索」的旧状态</td></tr><tr><td class='num'>1</td><td>city_current=南京</td><td>chips+panel</td><td>✅</td><td class='num'>共1200位人选</td><td class='dim'>即点即搜后的读数</td></tr><tr><td class='num'>1</td><td>education=本科</td><td>chips</td><td>✅</td><td class='num'>共360位人选</td><td class='dim'>即点即搜后的读数</td></tr><tr><td class='num'>2</td><td>city_current=南京</td><td>chips+panel</td><td>✅</td><td class='num'>共980位人选</td><td class='dim'>即点即搜后的读数</td></tr><tr><td class='num'>2</td><td>education=本科</td><td>chips</td><td>✅</td><td class='num'>共290位人选</td><td class='dim'>即点即搜后的读数</td></tr><tr><td class='num'>2</td><td>activity=今天活跃</td><td>dropdown</td><td>✅</td><td class='num'>共142位人选</td><td class='dim'>即点即搜后的读数</td></tr><tr><td class='num'>3</td><td>city_current=南京</td><td>chips+panel</td><td>✅</td><td class='num'>共58位人选</td><td class='dim'>即点即搜后的读数</td></tr>
+</table>
+
+<div class='warn'><b>读不到命中总数的轮次</b>：第 4 轮（EPLAN 输送线）——页面文本里没出现「共N位人选」（可能没刷新完，或文本被截掉）。<b>这里不猜</b>：这几轮就是空的。</div><div class='warn'><b>条件没生效（verify=False，硬失败）</b>：第 4 轮：条件未生效（verify=False）：activity=今天活跃 —— 常见原因：该档位在页面上不存在 / 选项文字不匹配 / 点击落到了别的元素</div>
+
+<h2>四、小猎的结论（它自己写的）</h2>
+<div class='box'>基础盘：『电气设计 输送线 + 南京 + 本科』命中 360；换成职能叫法『电控设计』再加『今天活跃』后掉到 142（活跃度砍得最狠，砍掉约一半）；竞品打法『音飞储存 电气 + 南京』只有 58 —— 说明这条更适合做第二轮补捞，不适合打头阵。第 4 轮白跑：活跃度这个条件没生效（页面 verify 硬失败），需要重跑一次再下结论。</div>
+<ul><li>南京+本科+电气设计 输送线 = 360 人，池子够厚，可以开工</li><li>活跃度是最狠的筛子（290 → 142），非必要不加</li><li>竞品关键词『音飞储存 电气』只有 58 人，适合补捞</li></ul>
+
+<div class="foot">
+本地渲染：本页来自《轮次轨迹》<code>_smoke_rounds_demo.json</code>，
+执行与读数全部由 <code>search_rounds.py</code> 完成，<b>小猎没有手写本页 HTML</b>（可随时由
+<code>report_html.render_search_rounds</code> 重生）· 渲染时间 2026-09-15 17:41:28<br>
+长度预算：小猎的叙述共 422/440 字（未触顶）。<b>命中人数与校验结果不设上限、不被截断</b>——预算只掐小猎的叙述。<br>
+已知脆点：命中总数只能从页面纯文本<b>前 3000 字</b>里读；页面条件极多时可能读不到（读不到就如实标，不猜）。
+</div>
+</body>
+</html>

@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>岗前分析过程文档 · 有机颜料生产技术员（J-CHAT-20260904-153220）</title>
+<style>
+  body { font-family: "Microsoft YaHei", "PingFang SC", sans-serif; margin: 2em auto; max-width: 960px; line-height: 1.7; color: #333; background:#fafafa; padding: 0 1em; }
+  h1 { font-size: 1.4em; border-left: 6px solid #2a6; padding-left: .6em; }
+  h2 { font-size: 1.15em; margin-top: 2em; border-bottom: 2px solid #ddd; padding-bottom: .2em; }
+  h3 { font-size: 1.02em; }
+  table { border-collapse: collapse; width: 100%; margin: .8em 0; background: #fff; }
+  th, td { border: 1px solid #ccc; padding: 6px 10px; font-size: .92em; vertical-align: top; }
+  th { background: #eef4ef; }
+  .score-high { color: #c00; font-weight: bold; }
+  .score-mid { color: #b60; font-weight: bold; }
+  .score-low { color: #888; font-weight: bold; }
+  .badge { display:inline-block; padding:2px 10px; border-radius:12px; font-weight:bold; }
+  .badge-com { background:#fff3cd; color:#856404; }
+  ul, ol { padding-left: 1.4em; }
+  .box { background:#fff; border:1px solid #ddd; border-radius:6px; padding:.8em 1.2em; margin:.8em 0; }
+  .warn { background:#fff5f5; border-left:4px solid #e55; }
+  .note { background:#f3f7ff; border-left:4px solid #59c; }
+  code, pre { background:#f0f0f0; padding:2px 5px; border-radius:3px; font-size:.9em; }
+  pre { padding:.8em; overflow-x:auto; }
+  .kw { background:#eef; padding:3px 8px; border-radius:4px; display:inline-block; margin:2px; }
+</style>
+</head>
+<body>
+
+<h1>步骤① 岗前分析 · 过程文档</h1>
+<p>岗位：有机颜料生产技术员（山东临沭厂区）｜江苏泰信化学股份有限公司<br>
+会话目录：<code>J-CHAT-20260904-153220</code>｜分析时间：2026-09-04 15:32:34<br>
+分析人：小猎（猎头数字合伙人）</p>
+
+<h2>一、本次读了什么</h2>
+<ol>
+  <li><code>jd.txt</code>（岗位 JD 原文，143 行）：江苏泰信化学在禾蛙发布的"有机颜料生产技术员（山东临沭厂区）"，含职位基本信息、职责、任职要求、寻访须知、薪资福利、面试信息及平台附带的"禾禾智能分析"话术。</li>
+  <li><code>data/prompts/analyze_job.txt</code>（岗前分析手册，64 行）：规定了本次必须输出的 JSON 结构（jd_extracted / progress / score / recommendation / search_keywords）及各维度 0-5 评分标准。</li>
+  <li><code>data/prompts/rules.md</code>（成长规则库，26 行）：检查了「① 岗位分析」「④ 汇报/HTML」「流程/工具」小节——目前均为"（暂无）"，无额外纠错规则需要遵守。</li>
+</ol>
+
+<h2>二、岗位信息提取（关键判断）</h2>
+<div class="box">
+<table>
+  <tr><th style="width:120px">项目</th><th>提取结果</th></tr>
+  <tr><td>岗位名称</td><td>有机颜料生产技术员（山东临沭厂区）</td></tr>
+  <tr><td>公司</td><td>江苏泰信化学股份有限公司（禾蛙·迅致直营｜职位编号 J20260730172413126263）</td></tr>
+  <tr><td>地点</td><td>山东临沂临沭（森湖彩化厂区）；面试不可视频 → 必须到场</td></tr>
+  <tr><td>薪资</td><td>15-20万/年（12薪）+绩效/年终/节日福利+住宿补贴；预计佣金 2.52万（25.2K）</td></tr>
+  <tr><td>招聘量</td><td>1 人</td></tr>
+  <tr><td>硬性要求</td><td>统招本科；寻访须知必备条件＝有机颜料行业 2 年以上研发经验；精通偶氮整套生产工序，能独立管控整条生产线；可独立对接代工厂排产；接受赶产夜班</td></tr>
+  <tr><td>岗位实质</td><td>表面叫"生产技术员"，实为有机颜料代加工全流程管控/工艺复合岗（规划原料→对接排产→跟合成/压滤/烘干/拼混→控色光细度→处理异常）</td></tr>
+</table>
+</div>
+
+<h3>判定要点（分歧处）</h3>
+<ul>
+  <li><b>年限自相矛盾</b>：任职要求区写"0-3年"，而寻访须知必备条件写"2年以上研发经验"。以发单方强调的寻访须知口径为准 → 实际要的是有 2 年+有机颜料实操的熟手，页面"0-3年"很可能只是模板默认值。</li>
+  <li><b>岗位定位偏差</b>：岗名、职能分类（油漆/涂料研发）与实际职责（生产管控、对外排产）不对齐，做单时搜索画像须按"工艺/生产管理＋有机颜料行业"双轴取交集，不能只照岗名搜。</li>
+  <li><b>无违法歧视项</b>：全文未见年龄/性别/婚育等歧视要求，无需忽略处理；仅需在面谈环节提醒不触碰此类问题。</li>
+</ul>
+
+<h2>三、进展判断</h2>
+<div class="box">
+  平台页显示"一个月前发布"（2026-07-30 发布），"禾禾智能分析"称 2026-09-01 15:43 刚刷新，且<b>累计接单 0、近 30 天做单顾问 0、推荐简历 0、面试 0、offer 0</b>。<br>
+  判定 <b>status＝刚发布（无推荐）</b>，reported：recommended/interviewing/offer 全 0，无关闭原因。<br>
+  <span class="badge badge-com">双面信号</span> 按手册"无推荐→机会最好"；但发布 36 天无人接单也须警惕——窗口真实，却可能是"窄而难"劝退了同行。
+</div>
+
+<h2>四、逐项评分与依据（各 0-5，共 25）</h2>
+<table>
+  <tr><th>维度</th><th>分值</th><th>依据（对照手册标准）</th></tr>
+  <tr><td>佣金 commission</td><td class="score-mid">3</td><td>2.52万，落在"≥1万=3分"档；未到"≥3万=5分"。</td></tr>
+  <tr><td>HC 数量</td><td class="score-low">1</td><td>招聘 1 人＝单 HC，按"1=1分"。</td></tr>
+  <tr><td>新鲜度</td><td class="score-mid">3</td><td>发布 7-30、已超 30 天（不满分）；但 9-01 刚刷新且零竞争，处于活跃在招，按"≤30 天内活跃"给 3 分而非最低——不过度采信平台"超级新鲜"营销话术。</td></tr>
+  <tr><td>上游靠谱度</td><td class="score-mid">2</td><td>细分化工民企，非大厂/知名头部；有迅致直营＋保回款＋反馈快背书，企业注册资本/经营体量待老板线下核验。</td></tr>
+  <tr><td>匹配难度（反向计分）</td><td class="score-low">1</td><td>较难：偶氮颜料赛道极窄＋须到场面试锁地域＋薪资与"独立管线熟手"错配，候选人池很小。</td></tr>
+  <tr><td><b>总分</b></td><td><b>10 / 25</b></td><td>等级：<b>普通</b>（映射口径：≥20 顶级、14-19 优质、8-13 普通、≤7 放弃）。</td></tr>
+</table>
+
+<h2>五、风险清单</h2>
+<ol>
+  <li><b>JD 自相矛盾</b>：0-3 年 vs 2 年+研发经验，口径必须先对齐。</li>
+  <li><b>岗位定位混淆</b>：生产技术员 vs 研发/独立管线/对外排产复合要求，人才画像易错配。</li>
+  <li><b>候选人池极窄</b>：有机颜料-偶氮颜料属超细分赛道。</li>
+  <li><b>地域硬约束</b>：临沂临沭县厂区＋不可视频面试。</li>
+  <li><b>薪酬吸引力</b>：15-20 万难吸引"能独立管控整线"的资深熟手。</li>
+  <li><b>1 个月零接单</b>：是零竞争红利也可能是行业性劝退信号。</li>
+  <li><b>平台话术偏营销</b>："千载难逢/直接接单"有促单倾向。</li>
+  <li><b>无歧视项</b>：未发现年龄/性别/婚育违法要求。</li>
+</ol>
+
+<h2>六、关键字生成与"实验"过程</h2>
+<p>本次未接入猎聘搜索能力，无法做真实命中量测试；下方为基于 JD 词频的词干抽取→同义扩展→分类对齐的本地模拟迭代（命中量验证需由老板在 PyCharm 用 run_pipeline 后台跑或到猎聘实测）。</p>
+<div class="note">
+  <b>迭代过程记录：</b>
+  <ol>
+    <li><b>一轮（照岗名直搜）</b>："有机颜料生产技术员 临沂" → 判断太窄，几乎必然零结果，舍弃作主搜词。</li>
+    <li><b>二轮（职责词扩展）</b>：职责含"合成/压滤/烘干/拼混/排产/代加工"，职能分类标"油漆/涂料研发" → 并入"工艺工程师、生产主管、车间主任、涂料研发"等职能近义词。</li>
+    <li><b>三轮（竞品对标）</b>：目标行业为"有机颜料"，纳入国内有机颜料主力企业（百合花、双乐颜料、联合化学、七彩化学、亚邦等）＋岗位词做定向挖人。</li>
+    <li><b>四轮（技能导向）</b>：抽取核心工艺词"偶氮颜料、色光、合成、压滤、拼混"做成纯技能串，用于跨行业捞人后人工筛。</li>
+    <li><b>取舍</b>：因地域太窄，各组合默认不加城市强约束（或仅留"临沂/山东"作放宽参考），保证出量。</li>
+  </ol>
+</div>
+<table>
+  <tr><th>组别</th><th>关键词（猎聘用）</th></tr>
+  <tr><td>精确匹配</td><td><span class="kw">有机颜料 生产技术员 偶氮 临沂</span></td></tr>
+  <tr><td>职能相近</td><td><span class="kw">颜料 工艺工程师 生产主管 车间主任 涂料研发 化工生产管理</span></td></tr>
+  <tr><td>竞品对标</td><td><span class="kw">百合花 双乐颜料 联合化学 七彩化学 亚邦 偶氮颜料 工艺工程师</span></td></tr>
+  <tr><td>技能导向</td><td><span class="kw">偶氮颜料 合成 压滤 烘干 拼混 色光 颜料生产工艺</span></td></tr>
+</table>
+
+<h2>七、结论与建议</h2>
+<div class="box warn">
+<b>recommendation＝沟通</b>（非"接单"亦非"放弃"）<br>
+总评：<b>普通（10/25）</b>。这单真实在招、保回款、零竞争是真红利；但条件自相矛盾＋候选人池极窄＋必须到场面试，直接抢单的成单预期不高。<br>
+一句话建议：先与发单方/职位 PM 澄清——①真实年限与"研发/生产"定位到底以哪个为准、②统招本科是否硬卡、③无研发背景但产线实操强的老师傅可否考虑、④候选人地域接受度与是否必须驻厂、⑤一个多月为何无人接单、⑥佣金与回款节点——确认后再决定是否正式接单并投入寻访。
+</div>
+
+<h2>八、能力边界声明（诚实告知）</h2>
+<div class="note">
+  本会话当前<b>已接入</b>：文件读写（读 JD/手册/报告、写 JSON 与 HTML 过程文档）。<br>
+  <b>未接入</b>：猎聘/浏览器采集、候选人池评估、外部搜索、打招呼等一切对外动作。<br>
+  因此：关键字的"真实命中量/竞对人才在网数量"这一步我还没接搜索采集能力，未能实测——建议老板在 PyCharm 用 <code>run_pipeline</code> 后台跑候选采集，结果文件会出现在工作目录，供下一步「池子评估」使用。
+</div>
+
+<hr>
+<p style="color:#888;font-size:.85em">由小猎生成 · J-CHAT-20260904-153220 · analyze_20260904-153234</p>
+</body>
+</html>

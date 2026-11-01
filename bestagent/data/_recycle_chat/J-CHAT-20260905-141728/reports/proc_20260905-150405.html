@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>采集执行过程 — 20260905-150405</title>
+<style>
+body{font-family:'Microsoft YaHei',sans-serif;margin:24px;color:#222}
+h1{font-size:20px;border-left:5px solid #c0392b;padding-left:10px}
+h2{font-size:16px;margin-top:26px;border-bottom:1px solid #ccc;padding-bottom:4px}
+table{border-collapse:collapse;width:100%;margin-top:10px}
+th,td{border:1px solid #bbb;padding:6px 8px;font-size:13px;text-align:left}
+th{background:#f2f2f2}
+.ok{color:#27ae60;font-weight:bold}
+.warn{color:#e67e22}
+.note{background:#fdf6ec;border:1px solid #f0d9a8;padding:10px 14px;font-size:13px;border-radius:4px}
+</style>
+</head>
+<body>
+<h1>【步骤② 探索采集】执行过程记录</h1>
+<p>岗位会话：J-CHAT-20260905-141728 ｜ 执行时间：2026-09-05 15:04 起</p>
+
+<h2>1. 采集计划依据</h2>
+<p>读取 <code>collect_plan_20260905-145530.json</code>（老板已确认），关键字 4 个、条件 1 个：</p>
+<table>
+<tr><th>关键字</th><th>条件</th></tr>
+<tr><td>数字后端设计工程师</td><td rowspan="4">years=1-3年</td></tr>
+<tr><td>物理设计工程师</td></tr>
+<tr><td>PR工程师 Innovus</td></tr>
+<tr><td>海思 数字后端</td></tr>
+</table>
+
+<h2>2. 执行命令</h2>
+<p><code>collect_liepin.py --keyword 数字后端设计工程师 --keyword 物理设计工程师 --keyword "PR工程师 Innovus" --keyword "海思 数字后端" --conds years=1-3年 --out collected_20260905-150405.json</code></p>
+
+<h2>3. 执行结果（逐关键字）</h2>
+<table>
+<tr><th>关键字</th><th>本轮条数</th><th>新增</th></tr>
+<tr><td>数字后端设计工程师</td><td>30</td><td>30</td></tr>
+<tr><td>物理设计工程师</td><td>30</td><td>27</td></tr>
+<tr><td>PR工程师 Innovus</td><td>6</td><td>5</td></tr>
+<tr><td>海思 数字后端</td><td>25</td><td>23</td></tr>
+<tr><td><b>合并去重后</b></td><td colspan="2"><b>85 条</b></td></tr>
+</table>
+<p>轮间限速 8.3–19.6s，无报错。今日账本消耗：search 4/80，extract 91/500，detail 0/100（未开详情页）。</p>
+
+<h2>4. 结果文件</h2>
+<p><code>reports/collected_20260905-150405.json</code>（count=85，rows 含姓名脱敏文本与 res_id_encode）</p>
+
+<h2>5. 相关性初判（供老板参考，待池子评估细评）</h2>
+<p class="note">85 条中主体为"数字后端/IC后端/物理设计"岗位任职者，年限 1-3 年为主，方向大体对口；混入少量无关项（HR/猎头、机械、电机、热管理、化学、失效分析、工艺设备/器件、模拟版图等），以及部分求职意向与目标三地（上海/深圳/南京）不符者，需在逐人评估时剔除或降级。<br>
+<b>点名 top 候选（初步）</b>：周**（华为·数字后端，厦大硕，求职上海）；王**（海思半导体·数字芯片后端，现居上海）；小**（思信驻场华为海思·数字后端，现居南京，求职南京）；庄**（海思 IC后端外包，现居南京雨花台）；刘**（天数智芯/晶晨数字后端，25年绩效A，求职上海）；范**（矽力杰·数字后端，现居南京）；陈**（青岛展诚·数字后端设计，现居深圳）；褚**（上海桐芯·数字后端，带 Innovus/STA/PR 技能标签，现居上海）；钟**（海思芯片物理设计外包，现居深圳，求职上海）；刘**（华为 IC后端，现居杭州，求职成都）。</p>
+
+<h2>6. 建议</h2>
+<ul>
+<li>命中与质量均可用，建议直接进入【③ 池子评估】按方法论逐人评分；暂可不补关键字。</li>
+<li>如老板希望扩大海思/华为对标与三地现居口径，可在下一轮加城市条件（city_current 上海/深圳/南京）并补"IC后端工程师/芯片物理设计"等词——等老板指示再动。</li>
+</ul>
+
+</body>
+</html>

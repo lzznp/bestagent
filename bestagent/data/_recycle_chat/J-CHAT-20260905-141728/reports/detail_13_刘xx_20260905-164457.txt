@@ -1,0 +1,102 @@
+每日任务
+杨猛
+你好，杨猛
+我的主页	个人中心
+安全中心	账户资源
+用户规则	通话管理
+安全退出
+中文简历
+简历编号：e8fb67e26ee1Tc9d17d1164c1|最后一次登录时间：2026/09/04
+方便联系时间：随时联系
+查看大图
+3天内活跃
+刘**
+在职，看看新机会
+男27岁上海硕士工作2年
+数字后端工程师上海天数智芯半导体股份有限公司
+立即沟通
+超级聊聊推荐职位
+金领券3.4折开抢
+已售出13万个
+查看联系方式
+收藏
+转发
+求职意向
+数字后端工程师
+35-55k×15薪
+上海
+全部行业
+附件简历包含更丰富的工作经历内容,索要后可查看候选人的全部资料
+我们已参考附件简历内容，为您进行精准匹配
+索要附件
+工作经历
+上海天数智芯半导体股份有限公司
+（2026.02 - 至今, 7个月）
+港澳台独资/合资计算机软件、电子/半导体/集成电路、人工智能500-999人
+工作地点：
+下属人数：
+0
+职责业绩：
+1. 负责2个300w+ instances tiles的设计的timing收敛；
+2. 前期通过调整fp、加pipeline解决大量timing问题；
+3. 后期通过加group path、调整group path的weight、bound cell、加path margin、改挂mutisource的root点（做长common
+path）fix相关的timing问题
+*该段内容已整合附件简历信息
+晶晨半导体(上海)股份有限公司
+（2024.07 - 2026.02, 1年7个月）
+外商独资/中外合资电子/半导体/集成电路1000-2000人
+数字后端工程师（25年绩效A，最高绩效）
+1. 跨层级设计与流程整合：主导3颗芯片的顶层GPIO规划与全局电源网络设计，具备芯片级集成与模块协同设计经验。熟悉
+Tcl/Shell/Python脚本开发，能根据项目需求搭建和定制自动化流程，提升团队工作效率;
+2. 全流程工具应用与优化：在5颗芯片（台积电6nm/12nm工艺）流片项目中，负责6个模块的物理实现，熟练掌握
+ICC2/Innovus、PrimeTime、StarRC、Calibre等数字后端工具链。基于实际项目需求，优化时序收敛、功耗分析和物理验
+证流程，提升设计效率与签核质量;
+3. 复杂模块实现与问题调试：成功交付12nm工艺下2.816mm²/850MHz与6nm工艺下1.51mm²/850MHz等关键模块，具备从
+Floorplan到Signoff的全流程执行能力。擅长利用工具定位和解决时序违规、DRC/LVS问题，并能结合工艺手册与脚本工具
+进行根因分析与快速修复;
+4. 技术协作与知识传递：在项目团队中承担工具使用指导与流程问题支持角色，协助前后端工程师完成时序调试、物理验证
+及低功耗设计，具备良好的跨职能沟通与问题解决能力
+（2023.07 - 2024.06, 11个月）
+实习生
+模块级全流程交付：独立负责 Audio_top_vad 与 T3X 两个关键模块的后端实现，完成从Floorplan、Placement、CTS、
+Routing至Signoff的全流程，掌握模块级物理设计闭环能力。
+时序与物理验证闭环：运用 StarRC + PrimeTime 进行时序分析与优化，通过 ICE工具 结合手工修调（调整驱动、替换Vt
+单元等）实现时序收敛；运用 Calibre 完成DRC检查与修复，形成从问题定位到修复的验证闭环。
+低功耗与布图规划优化：实施 双电源域（Power Domain） 设计，完成电源网络规划与优化；依据数据流与工艺约束进行
+Floorplan迭代，将模块利用率稳定控制在 65% 以上，提升整体PPA表现。
+项目经历（共1段）
+28nm项目
+（2022.11 - 2023.07）
+项目职务：
+项目描述：
+项目主要内容是从综合后的netlist开始直至timing signoff和physical signoff,主要学习掌握了以下几方面技能:
+1. 学习了解TSMC28 nm的工艺及项目采用的metal stack,了解physical only cell,掌握ARM 提供的reference floorplan以及顶层指定的port location来做floorplan;学会利用工具来分析design中各子模块间的数据流,并基于初版placement结果对floorplan做进一步优化调整
+2. 学习了解powerplan制定的依据,策略以及powerplan的结构
+3. 根据placement的结果,采取添加bound/region,设置group path等方法来优化timing,进行placeopt
+4. 设置cts相关参数以及CTSopt。设置target latency和target skew等参数使得做出来的tree更短更平,并根据时钟树综合结果,学会了利用工具自带的cts timing window/clock tree debugger来分析时钟机构以及时钟树质量
+5. 学习了寄生参数RC的提取流程,并学会了借助RC抽取产生的short和open文件来定位short和open的情况
+6. 学习了解静态时序分析Prime Time的流程,建立dmsa flow。掌握在Prime Time中修复setup time,hold time,max_transition,max_capacitance等violation的修复;学习掌握根据PT和Innovus之间的timing correlation调整Innovus的timing margin的方法。主要通过调整clock uncertainty和rc scale fator来实现;掌握根据Prime Time dmsa修复的tcl返回Innovus做eco route的方法及flow
+7. 学习了物理验证DRC设计规则,分析route drc产生的原因;学习了解calibre drc检查原理以及DRC检查的流程。从Innovus中导出gds,到把标准单元和macro的gds merge到设计中去,最后基于foundary提供的DRC Rule进行DRC检查
+教育经历
+上海大学
+·
+材料物理与化学
+硕士
+2021.09 - 2024.06
+统招
+211
+双一流
+在校经历：师从张统一院士、孙升教授
+青岛理工大学
+材料科学与工程
+本科
+2017.09 - 2021.06
+在校经历：学生会副主席（本科）、校级营销大赛二等奖
+语言能力
+英语
+工作应用
+CET6
+自我评价
+个人总结
+1、熟悉数字后端设计流程,熟悉EDA工具的使用,距今已有三年的学习与实践项目经历
+2、科研项目基于linux系统上进行,熟悉linux环境下的自动化流程

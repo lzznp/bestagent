@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "小猎跑腿",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "description": "小猎跑腿（原 browser-agent / 桥）的执行器：由桥接服务（127.0.0.1:8080）驱动，操作真实已登录浏览器（快照/点击/输入/滚动/提取）",
   "minimum_chrome_version": "116",
   "permissions": [
